@@ -3,8 +3,8 @@ xbx-nrf licensing
 
 Copyright (c) 2026 zuidec
 
-This project uses different licences for different kinds of content. The full
-licence texts are in LICENSES/. Per-path details are in REUSE.toml
+This project uses different licenses for different kinds of content. The full
+license texts are in LICENSES/. Per-path details are in REUSE.toml
 (https://reuse.software).
 
   Firmware and scripts (firmware/, build scripts, config)   MIT
@@ -18,5 +18,5 @@ Exception:
                                  ATTRIBUTION.md in that folder.
 
 Not included: references/third-party/ (git-ignored) holds third-party documents
-that are not part of this project and not covered by its licences; see
+that are not part of this project and not covered by its licenses; see
 references/README.md for their sources.

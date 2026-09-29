@@ -5,7 +5,7 @@ Source: SnapMagic (SnapEDA),
 Alpine; CAD files as provided by SnapMagic and their original authors (see the
 part page).
 
-Licence: [Creative Commons Attribution-ShareAlike 4.0 International][cc] (CC
+License: [Creative Commons Attribution-ShareAlike 4.0 International][cc] (CC
 BY-SA 4.0) with the SnapMagic **Design Exception 1.0**. These files, and our
 modified versions, remain under CC BY-SA 4.0; the Design Exception means using
 them in the xbx-nrf board design doesn't put the board under CC BY-SA.

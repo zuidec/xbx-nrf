@@ -292,7 +292,7 @@ whole device, hence single-player HID.
 | Console | `CONFIG_XBX_USB_CONSOLE`: on in `build-unsigned.sh`, off in `build-signed.sh` |
 
 pid.codes rules: test PIDs `0x0001`–`0x000F` are for development only. Our own
-PID requires a public repo with an open-source licence and a `LICENSE` file
+PID requires a public repo with an open-source license and a `LICENSE` file
 (apply via pull request to pid.codes).
 
 ### Input report (dongle → PC)
