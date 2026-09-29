@@ -18,8 +18,9 @@ The stock **top board** and the **J3** connector our bottom board plugs into.
 Related: [[docs/pcal6416|PCAL6416 (buttons)]], [[docs/a3910|A3910 (rumble)]],
 [[todo#1. Verify / reverse-engineer (stock hardware)]].
 
-Sources: [[references/XB1 1914 TOP BOARD.pdf]],
-[[references/controller-pinouts.txt]], [[references/soc-pinout.txt]].
+Sources: [[references/third-party/XB1 1914 TOP BOARD.pdf]],
+[[references/third-party/controller-pinouts.txt]],
+[[references/third-party/soc-pinout.txt]].
 
 > [!warning] No bare Li-ion cells
 > U5/U6 are boost-only: a 4.2 V cell on the AA contacts passes through to the
