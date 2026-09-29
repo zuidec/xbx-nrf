@@ -1,0 +1,12 @@
+/*
+ * Radio → USB bridge: forwards each new controller report to the HID gamepad
+ * and sends a neutral report when the link is lost.
+ */
+
+#ifndef XBX_DONGLE_BRIDGE_H_
+#define XBX_DONGLE_BRIDGE_H_
+
+/* Start the bridge thread; call after radio_start() and usb_start(). */
+void bridge_start(void);
+
+#endif /* XBX_DONGLE_BRIDGE_H_ */

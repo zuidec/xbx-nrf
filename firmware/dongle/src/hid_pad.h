@@ -41,4 +41,12 @@ int hid_pad_init(void);
 /* Send a new state (thread context). */
 void hid_pad_update(const struct hid_pad_state *state);
 
+struct xbx_input_report;
+
+/*
+ * Radio report (XInput button layout, Y up = positive) to HID state: button
+ * remap, D-pad to hat, Y axes inverted. Pair isn't reported to the PC.
+ */
+void hid_pad_from_radio(const struct xbx_input_report *in, struct hid_pad_state *out);
+
 #endif /* XBX_DONGLE_HID_PAD_H_ */

@@ -15,6 +15,7 @@
 #include <string.h>
 
 #include "hid_pad.h"
+#include "protocol.h"
 
 LOG_MODULE_REGISTER(hid_pad, LOG_LEVEL_INF);
 
@@ -266,6 +267,79 @@ static const struct hid_device_ops pad_ops = {
 	.input_report_done = pad_input_report_done,
 	.output_report = pad_output_report,
 };
+
+static const struct {
+	uint16_t radio;
+	uint16_t hid;
+} button_map[] = {
+	{XBX_BTN_A, HID_PAD_BTN_A},         {XBX_BTN_B, HID_PAD_BTN_B},
+	{XBX_BTN_X, HID_PAD_BTN_X},         {XBX_BTN_Y, HID_PAD_BTN_Y},
+	{XBX_BTN_LB, HID_PAD_BTN_LB},       {XBX_BTN_RB, HID_PAD_BTN_RB},
+	{XBX_BTN_VIEW, HID_PAD_BTN_VIEW},   {XBX_BTN_MENU, HID_PAD_BTN_MENU},
+	{XBX_BTN_GUIDE, HID_PAD_BTN_GUIDE}, {XBX_BTN_LS, HID_PAD_BTN_LS},
+	{XBX_BTN_RS, HID_PAD_BTN_RS},
+};
+
+/* index: bit 0 up, 1 down, 2 left, 3 right (opposites already cancelled) */
+static const uint8_t hat_map[16] = {
+	[0x0] = HID_PAD_HAT_CENTERED,
+	[0x1] = 0, /* up */
+	[0x9] = 1, /* up-right */
+	[0x8] = 2, /* right */
+	[0xA] = 3, /* down-right */
+	[0x2] = 4, /* down */
+	[0x6] = 5, /* down-left */
+	[0x4] = 6, /* left */
+	[0x5] = 7, /* up-left */
+};
+
+static uint8_t dpad_to_hat(uint16_t buttons)
+{
+	uint8_t d = 0;
+
+	if ((buttons & XBX_BTN_DPAD_UP) && !(buttons & XBX_BTN_DPAD_DOWN)) {
+		d |= 0x1;
+	}
+	if ((buttons & XBX_BTN_DPAD_DOWN) && !(buttons & XBX_BTN_DPAD_UP)) {
+		d |= 0x2;
+	}
+	if ((buttons & XBX_BTN_DPAD_LEFT) && !(buttons & XBX_BTN_DPAD_RIGHT)) {
+		d |= 0x4;
+	}
+	if ((buttons & XBX_BTN_DPAD_RIGHT) && !(buttons & XBX_BTN_DPAD_LEFT)) {
+		d |= 0x8;
+	}
+	return d ? hat_map[d] : HID_PAD_HAT_CENTERED;
+}
+
+/* up = positive on the radio, down = positive in HID; -32768 would overflow */
+static int16_t invert_axis(int16_t v)
+{
+	return (v == INT16_MIN) ? INT16_MAX : -v;
+}
+
+void hid_pad_from_radio(const struct xbx_input_report *in, struct hid_pad_state *out)
+{
+	uint16_t buttons = in->buttons;
+
+	out->buttons = 0;
+	for (size_t i = 0; i < ARRAY_SIZE(button_map); i++) {
+		if (buttons & button_map[i].radio) {
+			out->buttons |= button_map[i].hid;
+		}
+	}
+	if (in->buttons_ext & XBX_BTN_EXT_SHARE) {
+		out->buttons |= HID_PAD_BTN_SHARE;
+	}
+
+	out->hat = dpad_to_hat(buttons);
+	out->lx = in->lx;
+	out->ly = invert_axis(in->ly);
+	out->rx = in->rx;
+	out->ry = invert_axis(in->ry);
+	out->lt = MIN(in->lt, 1023);
+	out->rt = MIN(in->rt, 1023);
+}
 
 int hid_pad_init(void)
 {
