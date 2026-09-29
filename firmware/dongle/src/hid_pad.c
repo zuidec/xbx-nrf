@@ -111,7 +111,8 @@ struct out_report {
 } __packed;
 
 BUILD_ASSERT(sizeof(struct in_report) == DT_PROP(DT_NODELABEL(hid_dev_0), in_report_size));
-BUILD_ASSERT(sizeof(struct out_report) == DT_PROP(DT_NODELABEL(hid_dev_0), out_report_size));
+BUILD_ASSERT(sizeof(struct out_report) < DT_PROP(DT_NODELABEL(hid_dev_0), out_report_size),
+	     "OUT endpoint must be larger than the report (short packets end transfers)");
 
 static const struct device *const hid_dev = DEVICE_DT_GET(DT_NODELABEL(hid_dev_0));
 
@@ -121,6 +122,9 @@ static bool have_pending;
 static bool in_flight;
 static bool iface_ready;
 static uint32_t idle_duration;
+static hid_pad_output_cb_t output_cb;
+
+static void output_off(void);
 static struct k_spinlock lock;
 
 static void to_report(struct in_report *r, const struct hid_pad_state *s)
@@ -182,6 +186,8 @@ static void pad_iface_ready(const struct device *dev, const bool ready)
 	LOG_INF("interface %s", ready ? "ready" : "not ready");
 	if (ready) {
 		try_submit();
+	} else {
+		output_off(); /* host gone: stop rumble */
 	}
 }
 
@@ -212,7 +218,21 @@ static int pad_get_report(const struct device *dev, const uint8_t type, const ui
 	return sizeof(tx_report);
 }
 
-/* Output reports arrive via interrupt OUT or SET_REPORT; step 5 forwards them to the radio. */
+void hid_pad_set_output_cb(hid_pad_output_cb_t cb)
+{
+	output_cb = cb;
+}
+
+static void output_off(void)
+{
+	static const uint8_t off[4];
+
+	if (output_cb) {
+		output_cb(off, 0);
+	}
+}
+
+/* Output reports arrive via interrupt OUT or SET_REPORT */
 static void handle_output(const uint8_t *buf, uint16_t len)
 {
 	const struct out_report *r = (const struct out_report *)buf;
@@ -221,8 +241,11 @@ static void handle_output(const uint8_t *buf, uint16_t len)
 		LOG_WRN("unexpected output report (len %u, id %u)", len, len ? buf[0] : 0);
 		return;
 	}
-	LOG_INF("output: rumble %u %u %u %u, LED %u", r->rumble[0], r->rumble[1], r->rumble[2],
+	LOG_DBG("output: rumble %u %u %u %u, LED %u", r->rumble[0], r->rumble[1], r->rumble[2],
 		r->rumble[3], r->led);
+	if (output_cb) {
+		output_cb(r->rumble, r->led);
+	}
 }
 
 static int pad_set_report(const struct device *dev, const uint8_t type, const uint8_t id,

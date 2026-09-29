@@ -38,15 +38,20 @@ static void bridge_thread(void *p1, void *p2, void *p3)
 				LOG_INF("link up");
 			}
 		} else if (link_up) {
+			static const uint8_t off[4];
+
 			hid_pad_update(&neutral);
+			/* don't resume stale rumble when the controller reconnects */
+			radio_set_output(off, 0);
 			link_up = false;
-			LOG_INF("link lost: neutral report sent");
+			LOG_INF("link lost: neutral report sent, rumble off");
 		}
 	}
 }
 
 void bridge_start(void)
 {
+	hid_pad_set_output_cb(radio_set_output);
 	k_thread_create(&bridge_thread_data, bridge_stack, K_THREAD_STACK_SIZEOF(bridge_stack),
 			bridge_thread, NULL, NULL, NULL, BRIDGE_PRIORITY, 0, K_NO_WAIT);
 	k_thread_name_set(&bridge_thread_data, "bridge");

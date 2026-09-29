@@ -24,6 +24,8 @@ static struct xbx_input_report last_input;
 static bool have_seq;
 static uint16_t expected_seq;
 static uint8_t output_seq;
+static uint8_t out_rumble[4];
+static uint8_t out_led;
 
 /* given on every valid report; max 1 so the waiter always gets the newest */
 static K_SEM_DEFINE(input_sem, 0, 1);
@@ -52,9 +54,8 @@ static void queue_ack_payload(void)
 	memset(out, 0, sizeof(*out));
 	out->type = XBX_MSG_OUTPUT;
 	out->seq = output_seq++;
-	/* fake rumble for the link test: follow the controller's trigger values */
-	out->rumble[XBX_RUMBLE_LT] = last_input.lt >> 2;
-	out->rumble[XBX_RUMBLE_RT] = last_input.rt >> 2;
+	memcpy(out->rumble, out_rumble, sizeof(out->rumble));
+	out->led = out_led;
 
 	esb_write_payload(&ack);
 }
@@ -181,4 +182,13 @@ int radio_wait_input(struct xbx_input_report *out, k_timeout_t timeout)
 	}
 	radio_get_last_input(out);
 	return 0;
+}
+
+void radio_set_output(const uint8_t rumble[4], uint8_t led)
+{
+	unsigned int key = irq_lock();
+
+	memcpy(out_rumble, rumble, sizeof(out_rumble));
+	out_led = led;
+	irq_unlock(key);
 }

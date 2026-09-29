@@ -51,6 +51,10 @@ static struct link_stats stats;
 static atomic_t in_flight;
 static struct xbx_output_report last_output;
 
+/* No ACK payload for this long (dongle gone, off or out of range): rumble and LED off */
+#define OUTPUT_TIMEOUT_MS 100
+static atomic_t ack_age_ms; /* ms since the last ACK payload; the TX loop ticks every 1 ms */
+
 static K_SEM_DEFINE(tick_sem, 0, 1);
 
 static void timing_pin_set(int value)
@@ -84,6 +88,7 @@ static void radio_event_handler(struct esb_evt const *event)
 			    rx.data[0] == XBX_MSG_OUTPUT) {
 				memcpy(&last_output, rx.data, sizeof(last_output));
 				stats.acks_with_payload++;
+				atomic_set(&ack_age_ms, 0);
 			}
 		}
 		break;
@@ -175,6 +180,16 @@ static int report_timer_start(void)
 	return counter_start(report_counter);
 }
 
+static void output_off(void)
+{
+	unsigned int key = irq_lock();
+
+	memset(last_output.rumble, 0, sizeof(last_output.rumble));
+	last_output.led = 0;
+	irq_unlock(key);
+	LOG_INF("no ACK for %d ms: rumble and LED off", OUTPUT_TIMEOUT_MS);
+}
+
 static void tx_thread(void *p1, void *p2, void *p3)
 {
 	struct esb_payload tx = {
@@ -188,6 +203,11 @@ static void tx_thread(void *p1, void *p2, void *p3)
 	while (true) {
 		k_sem_take(&tick_sem, K_FOREVER);
 		tick++;
+
+		/* fires once per outage: atomic_inc returns the previous value */
+		if (atomic_inc(&ack_age_ms) == OUTPUT_TIMEOUT_MS) {
+			output_off();
+		}
 
 		if (atomic_get(&in_flight)) {
 			stats.skipped++;
@@ -251,12 +271,12 @@ int main(void)
 		uint32_t done = ok + failed;
 
 		LOG_INF("sent %u/s  ok %u  failed %u  skipped %u  avg attempts %u.%02u  acks %u  "
-			"rumble[%u %u %u %u]",
+			"rumble[%u %u %u %u] led %u",
 			sent, ok, failed, now.skipped - prev.skipped,
 			done ? attempts / done : 0, done ? (attempts * 100 / done) % 100 : 0,
 			now.acks_with_payload - prev.acks_with_payload,
 			last_output.rumble[0], last_output.rumble[1], last_output.rumble[2],
-			last_output.rumble[3]);
+			last_output.rumble[3], last_output.led);
 		prev = now;
 	}
 	return 0;

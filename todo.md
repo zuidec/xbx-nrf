@@ -262,17 +262,26 @@ USB modes, in order; one active at a time.
 	- [x] Radio → HID: button remap, D-pad → hat, Y inversion; latest-wins
 	      submit; neutral report on link loss (1000 ms). evtest: ~1000
 	      updates/s, neutral report 0.999 s after unplugging.
-	- [ ] Output report → rumble/LED in the ACK payload (replaces fake
-	      rumble); Python `hidapi` test script.
+	- [x] Output report → rumble/LED in the ACK payload (replaces fake
+	      rumble); reset on USB and link loss. Test: `printf` to
+	      `/dev/hidrawN`, watch `rumble[…] led` on the controller. OUT
+	      endpoint must exceed the report size (else reports merge).
 	- [ ] Steam: detected, correct layout, Steam Input works.
 	- [ ] Finalize the descriptor in `protocol.md`.
 2. [ ] **XInput, 1–4 players** as an **Xbox 360 Wireless Receiver** (4
        interfaces, in-band connect/disconnect; after GP2040-CE / `xpad`): 8-bit
        triggers, 2 motors, no Share.
-3. [ ] **Mode switching** at plug-in, stored in flash.
-4. [x] Open-source license + `LICENSE` file (MIT / CERN-OHL-S-2.0 /
+3. [ ] **HID PID force feedback** (HID mode game rumble: DirectInput on
+       Windows, SDL/evdev on Linux via `hid-pidff`). PID descriptor and USB
+       side (effect IDs, block load, pool) on the dongle. Effect engine on the
+       dongle or the **controller** (smoother under packet loss, less radio
+       traffic, scales to 4 players; needs a reliable radio command channel).
+       Check: `hid-pidff` has no `FF_RUMBLE`, so SDL may fall back to one
+       combined sine strength.
+4. [ ] **Mode switching** at plug-in, stored in flash.
+5. [x] Open-source license + `LICENSE` file (MIT / CERN-OHL-S-2.0 /
        CC-BY-4.0, REUSE compliant).
-5. [ ] USB IDs: pid.codes test VID/PID `0x1209:0x0001` for now; apply for our
+6. [ ] USB IDs: pid.codes test VID/PID `0x1209:0x0001` for now; apply for our
        own PID once the repo is public.
 
 ### Controller
@@ -285,6 +294,8 @@ USB modes, in order; one active at a time.
 - [ ] Trigger calibration + remapping (stops, hair trigger).
 - [ ] Stick deadzones, calibration in flash.
 - [ ] Rumble PWM ([[docs/a3910#Firmware notes]]).
+- [x] Rumble safety: rumble/LED values off if no ACK payload for 100 ms
+      (`OUTPUT_TIMEOUT_MS`); the motor driver will read these values.
 - [ ] Battery monitoring, low-battery shutdown.
 - [ ] Wired USB gamepad mode.
 
