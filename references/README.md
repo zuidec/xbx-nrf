@@ -1,6 +1,6 @@
 # References
 
-Our own files (in the repo, under the project licence):
+Our own files (in the repo, under the project license):
 
 | File | What |
 |---|---|
@@ -15,7 +15,7 @@ there.
 ## Third-party documents
 
 Kept locally in `references/third-party/`, which is **git-ignored**: they belong
-to their authors and aren't covered by this project's licence, so they're not
+to their authors and aren't covered by this project's license, so they're not
 redistributed. Download them into that folder from the sources below.
 
 | File | What | Source |
