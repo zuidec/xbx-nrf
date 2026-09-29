@@ -253,9 +253,9 @@ USB modes, in order; one active at a time.
 1. [ ] **HID gamepad, 1 player** ([[docs/protocol#USB HID mode (planned, M2)]]):
 	- [x] Move the ESB receiver code into `radio.c` (no behaviour change);
 	      re-run the link test.
-	- [ ] USB device: own context, VID `0x1209` / test PID `0x0001`, strings,
+	- [x] USB device: own context, VID `0x1209` / test PID `0x0001`, strings,
 	      serial from `DEVICEID`; board's CDC-at-boot off.
-	- [ ] `CONFIG_XBX_USB_CONSOLE`: CDC ACM console as a composite function, on
+	- [x] `CONFIG_XBX_USB_CONSOLE`: CDC ACM console as a composite function, on
 	      in `build-unsigned.sh`, off in `build-signed.sh`.
 	- [ ] HID interface + report descriptor; check with `lsusb -v`, `evtest`,
 	      SDL `testcontroller`.

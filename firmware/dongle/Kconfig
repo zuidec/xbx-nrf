@@ -1,0 +1,13 @@
+menu "xbx-nrf dongle"
+
+config XBX_USB_CONSOLE
+	bool "USB serial console as a composite function"
+	default y
+	help
+	  Adds the CDC ACM serial port (log console) next to the gamepad on the
+	  dongle's USB device. On for development builds; release.conf turns it
+	  off.
+
+endmenu
+
+source "Kconfig.zephyr"
