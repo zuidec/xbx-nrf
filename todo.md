@@ -264,8 +264,10 @@ USB modes, in order; one active at a time.
        interfaces, in-band connect/disconnect; after GP2040-CE / `xpad`): 8-bit
        triggers, 2 motors, no Share.
 3. [ ] **Mode switching** at plug-in, stored in flash.
-4. [ ] Own pid.codes PID: needs a public repo, open-source licence, `LICENSE`
-       file.
+4. [x] Open-source licence + `LICENSE` file (MIT / CERN-OHL-S-2.0 /
+       CC-BY-4.0, REUSE compliant).
+5. [ ] USB IDs: pid.codes test VID/PID `0x1209:0x0001` for now; apply for our
+       own PID once the repo is public.
 
 ### Controller
 - [ ] Power state machine: hold pin 9 early → PCAL6416 setup → run;

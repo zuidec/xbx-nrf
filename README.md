@@ -97,3 +97,11 @@ todo.md              task list (Obsidian)
 - [AcidMods — XB1 controller PCB scans](https://acidmods.com/forum/index.php?topic=44547.120)
 - [GP2040-CE](https://github.com/OpenStickCommunity/GP2040-CE) (XInput
   reference)
+
+## License
+
+Copyright (c) 2026 zuidec. Firmware and scripts: **MIT**. Hardware design:
+**CERN-OHL-S-2.0**. Documentation: **CC-BY-4.0**. The stick symbol, footprint
+and 3D model are SnapMagic files under CC-BY-SA-4.0 (see their
+`ATTRIBUTION.md`). Details: [LICENSE](LICENSE), [REUSE.toml](REUSE.toml), full
+texts in [LICENSES/](LICENSES/).

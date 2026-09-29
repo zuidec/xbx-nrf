@@ -1,0 +1,22 @@
+xbx-nrf licensing
+=================
+
+Copyright (c) 2026 zuidec
+
+This project uses different licences for different kinds of content. The full
+licence texts are in LICENSES/. Per-path details are in REUSE.toml
+(https://reuse.software).
+
+  Firmware and scripts (firmware/, build scripts, config)   MIT
+  Hardware design (pcb/, references/pcb-cad.*)             CERN-OHL-S-2.0
+  Documentation (docs/, *.md)                              CC-BY-4.0
+
+Exception:
+
+  pcb/xbx-nrf/lib/RKJXV122400R/  SnapMagic CAD files, CC-BY-SA-4.0 with the
+                                 SnapMagic Design Exception 1.0; see
+                                 ATTRIBUTION.md in that folder.
+
+Not included: references/third-party/ (git-ignored) holds third-party documents
+that are not part of this project and not covered by its licences; see
+references/README.md for their sources.
