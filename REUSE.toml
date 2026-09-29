@@ -1,0 +1,34 @@
+# Licensing per path (REUSE specification 3.x, https://reuse.software).
+# Full licence texts: LICENSES/. Summary: LICENSE.
+version = 1
+
+# Firmware, scripts and repo config
+[[annotations]]
+path = ["firmware/**", ".gitignore", "REUSE.toml"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 zuidec"
+SPDX-License-Identifier = "MIT"
+
+# Hardware design
+[[annotations]]
+path = ["pcb/**", "references/pcb-cad*"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 zuidec"
+SPDX-License-Identifier = "CERN-OHL-S-2.0"
+
+# SnapMagic stick symbol, footprint and 3D model (overrides the hardware rule)
+[[annotations]]
+path = "pcb/xbx-nrf/lib/RKJXV122400R/**"
+precedence = "override"
+SPDX-FileCopyrightText = [
+  "SnapMagic (SnapEDA) and the original authors",
+  "2026 zuidec (modifications, see ATTRIBUTION.md)",
+]
+SPDX-License-Identifier = "CC-BY-SA-4.0"
+
+# Documentation
+[[annotations]]
+path = ["docs/**", "*.md", "references/README.md"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 zuidec"
+SPDX-License-Identifier = "CC-BY-4.0"
