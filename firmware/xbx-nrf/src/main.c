@@ -14,6 +14,8 @@
 
 #include <string.h>
 
+#include <app_version.h>
+
 #include "protocol.h"
 
 LOG_MODULE_REGISTER(ctrl, LOG_LEVEL_INF);
@@ -216,8 +218,9 @@ int main(void)
 	struct link_stats prev = {0};
 	int err;
 
-	LOG_INF("xbx-nrf controller, protocol v%d, channel %d", XBX_PROTOCOL_VERSION,
-		XBX_RF_CHANNEL);
+	LOG_INF("xbx-nrf controller v%s (%s), protocol v%d, channel %d, tx %d dBm",
+		APP_VERSION_STRING, STRINGIFY(APP_BUILD_VERSION), XBX_PROTOCOL_VERSION, XBX_RF_CHANNEL,
+		XBX_TX_POWER_DBM);
 
 #if HAS_TIMING_PIN
 	if (gpio_is_ready_dt(&timing_pin)) {

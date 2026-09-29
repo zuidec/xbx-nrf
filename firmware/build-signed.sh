@@ -43,15 +43,13 @@ if ! grep -q "PRIVATE KEY" "$key"; then
 	exit 1
 fi
 
-if ! command -v west >/dev/null; then
-	echo "error: west not found; run this from ncs-shell" >&2
-	exit 1
-fi
-
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 app_dir="$script_dir/$app"
 build_dir="$app_dir/build-signed"
-export ZEPHYR_BASE="${ZEPHYR_BASE:-$HOME/ncs/v3.4.1/zephyr}"
+
+# shellcheck source=check-sdk.sh
+source "$script_dir/check-sdk.sh"
+xbx_check_sdk "$script_dir" || exit 1
 
 echo "app:   $app"
 echo "board: $board"

@@ -1,0 +1,5 @@
+# Pinned nRF Connect SDK + toolchain for this project.
+# The build scripts refuse to build with anything else. To upgrade on purpose,
+# follow docs/building.md ("Upgrading the SDK").
+NCS_VERSION=v3.4.1
+NCS_TOOLCHAIN_BUNDLE=8285d8ad56
