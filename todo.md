@@ -19,18 +19,19 @@ Locked decisions: [README](README.md). Not yet locked:
 
 ## References
 
-- Schematics: [[references/XB1 1914 TOP BOARD.pdf]],
-  [[references/XB1_1914_BOTTOM_BOARD_SOME_VALUES.pdf]],
-  [[references/XB1_1914_SOC_SOME_VALUES.pdf]]
-- Pinouts: [[references/controller-pinouts.txt]],
-  [[references/soc-pinout.txt]]
+- Schematics: [[references/third-party/XB1 1914 TOP BOARD.pdf]],
+  [[references/third-party/XB1_1914_BOTTOM_BOARD_SOME_VALUES.pdf]],
+  [[references/third-party/XB1_1914_SOC_SOME_VALUES.pdf]]
+- Pinouts: [[references/third-party/controller-pinouts.txt]],
+  [[references/third-party/soc-pinout.txt]]
 - Notes: [[docs/hardware|Hardware]], [[docs/pcal6416|PCAL6416]],
   [[docs/a3910|A3910]], [[docs/protocol|Protocols]], [[docs/gip|GIP]],
   [[docs/building|Building]], [[docs/flashing|Flashing]],
   [[docs/signing|Signing]]
-- Datasheets: [[references/A1304-Datasheet.pdf]] (trigger sensor, 7.7 mA,
-  t_PO 50–70 µs), [[references/A3910-datasheet.pdf]],
-  [[references/PCAL6416A-datasheet.pdf]]
+- Datasheets: [[references/third-party/A1304-Datasheet.pdf]] (trigger sensor,
+  7.7 mA,
+  t_PO 50–70 µs), [[references/third-party/A3910-datasheet.pdf]],
+  [[references/third-party/PCAL6416A-datasheet.pdf]]
 - Outline: [[references/pcb-cad.FCStd]], [[references/pcb-cad-pcbSketch.dxf]];
   KiCad: `pcb/xbx-nrf/`
 
@@ -86,7 +87,7 @@ Locked decisions: [README](README.md). Not yet locked:
 - [x] Sticks are on the bottom board.
 - [x] Stick footprint: Alps **RKJXV122400R** (SnapMagic), in
       `pcb/xbx-nrf/lib/RKJXV122400R/`; pads checked against
-      [[references/product_catalog_rkjxv.pdf]].
+      [[references/third-party/product_catalog_rkjxv.pdf]].
 - [ ] Stock sticks really are RKJXV122400R (calipers or 1:1 print).
 - [ ] Each stick's rotation (which pot is X/Y, axis direction).
 - [ ] Push-switch contact pairs (A/B/C/D).
@@ -235,7 +236,8 @@ Up to 7 paired (least recently connected replaced), 4 connected; 1 kHz for
 - [ ] TDMA: dongle frame + slots, timing correction in ACKs, controller TIMER3
       trim; 1 ms / 2 ms frame switching.
 - [ ] Join / full / drop handling; player number = slot.
-- [ ] USB: 4 player interfaces (HID; XInput as Xbox 360 Wireless Receiver).
+- [ ] USB: 4 players via the XInput mode (Xbox 360 Wireless Receiver); HID
+      stays single-player.
 - [ ] Test: 2 controllers at 1 kHz (two Pro Micros + PCA10059), then 4 at 500
       Hz (more Pro Micro clones).
 - [ ] Factory reset combo; error blinks (mismatch, ambiguity, full).
@@ -243,12 +245,27 @@ Up to 7 paired (least recently connected replaced), 4 connected; 1 kHz for
 
 ### Dongle
 USB modes, in order; one active at a time.
-1. [ ] **HID gamepad** (Zephyr USB HID): 16-bit sticks, 10-bit triggers, all
-       buttons, rumble output report. Draft layout:
-       [[docs/protocol#USB HID mode (dongle ↔ PC), planned]].
-2. [ ] **XInput** (custom class, after GP2040-CE): `045E:028E`, 8-bit
+1. [ ] **HID gamepad, 1 player** ([[docs/protocol#USB HID mode (planned, M2)]]):
+	- [ ] Move the ESB receiver code into `radio.c` (no behaviour change);
+	      re-run the link test.
+	- [ ] USB device: own context, VID `0x1209` / test PID `0x0001`, strings,
+	      serial from `DEVICEID`; board's CDC-at-boot off.
+	- [ ] `CONFIG_XBX_USB_CONSOLE`: CDC ACM console as a composite function, on
+	      in `build-unsigned.sh`, off in `build-signed.sh`.
+	- [ ] HID interface + report descriptor; check with `lsusb -v`, `evtest`,
+	      SDL `testcontroller`.
+	- [ ] Radio → HID: button remap, D-pad → hat, Y inversion; latest-wins
+	      submit; neutral report on link loss.
+	- [ ] Output report → rumble/LED in the ACK payload (replaces fake
+	      rumble); Python `hidapi` test script.
+	- [ ] Steam: detected, correct layout, Steam Input works.
+	- [ ] Finalize the descriptor in `protocol.md`.
+2. [ ] **XInput, 1–4 players** as an **Xbox 360 Wireless Receiver** (4
+       interfaces, in-band connect/disconnect; after GP2040-CE / `xpad`): 8-bit
        triggers, 2 motors, no Share.
 3. [ ] **Mode switching** at plug-in, stored in flash.
+4. [ ] Own pid.codes PID: needs a public repo, open-source licence, `LICENSE`
+       file.
 
 ### Controller
 - [ ] Power state machine: hold pin 9 early → PCAL6416 setup → run;

@@ -30,7 +30,7 @@ Lightspeed. The stock top board and shell stay.
 | Audio | **None in v1** |
 | Wireless | **ESB/Gazell** 2.4 GHz; rumble/LED in ACK payloads |
 | Multiplayer | One dongle: up to **7 paired**, **4 connected**; 1 kHz with 1–2, 500 Hz with 3–4 (time slots) |
-| Dongle USB | **HID gamepad** (first) and **XInput** (`045E:028E`), switchable. No Xbox console support |
+| Dongle USB | **HID gamepad** (1 player; first) and **XInput** as an Xbox 360 Wireless Receiver (1–4 players, hot-plug), switchable. No Xbox console support |
 | Battery | **Rechargeable AAs only** (NiMH or regulated 1.5 V Li-ion AAs) |
 | Power | Stock top board latch and boost converters, via J3 |
 | Rumble | 2× **Allegro A3910**, stock wiring, 8 GPIOs |
@@ -91,14 +91,9 @@ todo.md              task list (Obsidian)
 
 ## References
 
-- [Top board schematic](references/XB1%201914%20TOP%20BOARD.pdf)
-- [Bottom board schematic](references/XB1_1914_BOTTOM_BOARD_SOME_VALUES.pdf)
-- [SoC module schematic](references/XB1_1914_SOC_SOME_VALUES.pdf)
-- [Connector pinouts and test points](references/controller-pinouts.txt)
-- [SoC pinout](references/soc-pinout.txt)
-- Datasheets: 
-  [A1304](references/A1304-Datasheet.pdf),
-  [A3910](references/A3910-datasheet.pdf),
-  [PCAL6416A](references/PCAL6416A-datasheet.pdf)
+- Schematics, scans, pinouts and datasheets:
+  [references/README.md](references/README.md) (third-party, not in the repo;
+  source links there)
 - [AcidMods — XB1 controller PCB scans](https://acidmods.com/forum/index.php?topic=44547.120)
-- [GP2040-CE](https://github.com/OpenStickCommunity/GP2040-CE)(XInput reference)
+- [GP2040-CE](https://github.com/OpenStickCommunity/GP2040-CE) (XInput
+  reference)

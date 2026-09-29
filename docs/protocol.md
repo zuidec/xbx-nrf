@@ -247,8 +247,8 @@ repeating **frame** and gives each connected controller its own **slot**:
   controller shows it and retries slowly, then powers off after a timeout.
 - **Drop:** no report from a slot for ~100 ms *(tune)* → slot freed, USB reports
   a disconnect.
-- **Player number** = slot (USB interface order; optionally shown on the Guide
-  LED).
+- **Player number** = slot (XInput receiver slot; optionally shown on the
+  Guide LED). HID mode is single-player.
 
 ### Message changes (v2)
 | Type | Message | Direction |
@@ -266,35 +266,74 @@ quality (RSSI, for [[todo#Dynamic TX power]]).
   AES-CCM per packet would stop spoofed input. The nRF52840 has hardware for
   both. Not planned for v1.
 
-## USB HID mode (dongle ↔ PC), planned
+## USB modes (dongle ↔ PC)
+
+| Mode | Players | Hot-plug | Use |
+|---|---|---|---|
+| **HID gamepad** | 1 | — | Bring-up, own tools, non-XInput systems |
+| **XInput** (Xbox 360 Wireless Receiver emulation) | 1–4 | Yes, in-band connect/disconnect (`xpad`, Steam, Windows) | Everyday / multiplayer |
+
+Plain HID has no way to add or remove a gamepad without re-enumerating the
+whole device, hence single-player HID.
+
+## USB HID mode (planned, M2)
 
 > [!warning] Draft
-> Not implemented yet (M2). The layout below is the starting proposal; finalize
-> it with the report descriptor and update this page.
+> Design agreed 2026-09-29, not implemented. Finalize the descriptor bytes when
+> building it and update this page.
 
-- Standard HID gamepad (Generic Desktop / Game Pad), Zephyr USB HID class.
-- Our own VID/PID (not Microsoft's); 1 ms interrupt IN endpoint.
-- **One HID interface per player slot (4)**, so the OS sees 4 gamepads. XInput
-  mode likewise emulates the **Xbox 360 Wireless Receiver** (4 interfaces with
-  connect/disconnect; supported by `xpad`, Steam, Windows).
-- Carries the full radio data: 16-bit sticks, 10-bit triggers, every button
-  including Share.
+### Device
+| Item | Value |
+|---|---|
+| VID / PID | `0x1209` (pid.codes) / **`0x0001`** test PID during development |
+| Interfaces | 1 HID gamepad; + CDC ACM console in development builds (composite) |
+| HID endpoints | Interrupt IN 1 ms; interrupt OUT ~4 ms *(tune)* |
+| Serial number | From the nRF52840 `DEVICEID` |
+| Console | `CONFIG_XBX_USB_CONSOLE`: on in `build-unsigned.sh`, off in `build-signed.sh` |
 
-### Input report (dongle → PC), proposal
+pid.codes rules: test PIDs `0x0001`–`0x000F` are for development only. Our own
+PID requires a public repo with an open-source licence and a `LICENSE` file
+(apply via pull request to pid.codes).
 
-| Offset | Size | Field | HID usage |
-|---|---|---|---|
-| 0 | 1 | Report ID `0x01` | |
-| 1 | 2 | Buttons 1–16 | Button page, same bit order as radio `buttons` |
-| 3 | 1 | Buttons 17–18 (Share, Pair) + 6 bits padding | Button page |
-| 4 | 2 | Left stick X | Generic Desktop X, −32768…32767 |
-| 6 | 2 | Left stick Y | Y |
-| 8 | 2 | Right stick X | Rx |
-| 10 | 2 | Right stick Y | Ry |
-| 12 | 2 | Left trigger | Z, 0…1023 |
-| 14 | 2 | Right trigger | Rz, 0…1023 |
+### Input report (dongle → PC)
 
-### Output report (PC → dongle), proposal
+Layout chosen so Linux's generic HID driver emits the same event codes as
+`xpad`; SDL/Steam then map it without a custom mapping.
+
+| Offset | Size | Field | HID usage | Linux event |
+|---|---|---|---|---|
+| 0 | 1 | Report ID `0x01` | | |
+| 1 | 2 | Buttons 1–16 | Button page (see below) | `BTN_*` |
+| 3 | 1 | Hat switch (4 bits, 0–7, 8 = centred) + 4 bits padding | Hat switch | `ABS_HAT0X/Y` |
+| 4 | 2 | Left stick X | X, −32768…32767 | `ABS_X` |
+| 6 | 2 | Left stick Y (**inverted**: HID down = positive) | Y | `ABS_Y` |
+| 8 | 2 | Right stick X | Rx | `ABS_RX` |
+| 10 | 2 | Right stick Y (**inverted**) | Ry | `ABS_RY` |
+| 12 | 2 | Left trigger, 0…1023 | Z | `ABS_Z` |
+| 14 | 2 | Right trigger, 0…1023 | Rz | `ABS_RZ` |
+
+| HID button | Control | Linux event |
+|---|---|---|
+| 1 | A | `BTN_SOUTH` |
+| 2 | B | `BTN_EAST` |
+| 3 | *(unused)* | `BTN_C` |
+| 4 | X | `BTN_NORTH` |
+| 5 | Y | `BTN_WEST` |
+| 6 | *(unused)* | `BTN_Z` |
+| 7 | LB | `BTN_TL` |
+| 8 | RB | `BTN_TR` |
+| 9, 10 | *(unused)* | `BTN_TL2`, `BTN_TR2` |
+| 11 | View | `BTN_SELECT` |
+| 12 | Menu | `BTN_START` |
+| 13 | Guide | `BTN_MODE` |
+| 14 | LS | `BTN_THUMBL` |
+| 15 | RS | `BTN_THUMBR` |
+| 16 | Share | extra button |
+
+The radio `buttons` bits (XInput layout) are remapped to this order; the D-pad
+bits become the hat value.
+
+### Output report (PC → dongle)
 
 | Offset | Size | Field | HID usage |
 |---|---|---|---|
@@ -304,3 +343,10 @@ quality (RSSI, for [[todo#Dynamic TX power]]).
 
 Maps 1:1 onto the radio output report. Games won't use it (no standard HID
 rumble); it's for our own tools and possibly Steam later.
+
+### Behaviour
+- **Latest wins:** each radio report is converted and submitted at once; if the
+  host hasn't collected the previous one, it's replaced and sent on the
+  "report done" callback. Radio → USB delay < ~1 ms.
+- **Link loss:** no radio report for ~100 ms *(tune)* → neutral report (sticks
+  centred, nothing pressed) and rumble off.
