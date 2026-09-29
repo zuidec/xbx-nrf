@@ -8,6 +8,8 @@
 
 #include <stdint.h>
 
+#include <zephyr/kernel.h>
+
 #include "protocol.h"
 
 struct radio_stats {
@@ -24,5 +26,11 @@ int radio_start(void);
 /* Consistent snapshots of data updated from the radio interrupt. */
 void radio_get_stats(struct radio_stats *stats);
 void radio_get_last_input(struct xbx_input_report *input);
+
+/*
+ * Wait for a report newer than the last one returned (thread context).
+ * Returns 0 with a copy in *input, or -EAGAIN after the timeout.
+ */
+int radio_wait_input(struct xbx_input_report *input, k_timeout_t timeout);
 
 #endif /* XBX_DONGLE_RADIO_H_ */

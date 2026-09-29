@@ -48,9 +48,9 @@ rumble/LED data costs no extra transmissions. All fields are little-endian.
 | 1 | 2 | `seq` | +1 per report actually sent; gaps = lost over the air. Gap ≥ 0x8000 = controller restart |
 | 3 | 2 | `buttons` | Bitmap below, 1 = pressed |
 | 5 | 2 | `lx` | Left stick X, −32768…32767 |
-| 7 | 2 | `ly` | Left stick Y |
+| 7 | 2 | `ly` | Left stick Y, **up = positive** (XInput convention) |
 | 9 | 2 | `rx` | Right stick X |
-| 11 | 2 | `ry` | Right stick Y |
+| 11 | 2 | `ry` | Right stick Y, up = positive |
 | 13 | 2 | `lt` | Left trigger, 0…1023 |
 | 15 | 2 | `rt` | Right trigger, 0…1023 |
 | 17 | 1 | `buttons_ext` | bit 0 Share, bit 1 Pair |
@@ -245,8 +245,8 @@ repeating **frame** and gives each connected controller its own **slot**:
   active slots cost at most one report.
 - **Full (4 connected):** the dongle answers with a "full" status; the
   controller shows it and retries slowly, then powers off after a timeout.
-- **Drop:** no report from a slot for ~100 ms *(tune)* → slot freed, USB reports
-  a disconnect.
+- **Drop:** no report from a slot for **1000 ms** → slot freed, USB reports a
+  disconnect. Long enough to ride out brief radio dropouts mid-game.
 - **Player number** = slot (XInput receiver slot; optionally shown on the
   Guide LED). HID mode is single-player.
 
@@ -348,5 +348,6 @@ rumble); it's for our own tools and possibly Steam later.
 - **Latest wins:** each radio report is converted and submitted at once; if the
   host hasn't collected the previous one, it's replaced and sent on the
   "report done" callback. Radio → USB delay < ~1 ms.
-- **Link loss:** no radio report for ~100 ms *(tune)* → neutral report (sticks
-  centred, nothing pressed) and rumble off.
+- **Link loss:** no radio report for **1000 ms** (`LINK_TIMEOUT_MS` in
+  `bridge.c`) → neutral report (sticks centred, nothing pressed) and rumble off.
+  Rumble-off follows in step 5.

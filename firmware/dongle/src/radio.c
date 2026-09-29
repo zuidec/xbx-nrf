@@ -25,6 +25,9 @@ static bool have_seq;
 static uint16_t expected_seq;
 static uint8_t output_seq;
 
+/* given on every valid report; max 1 so the waiter always gets the newest */
+static K_SEM_DEFINE(input_sem, 0, 1);
+
 static void timing_pin_set(int value)
 {
 #if HAS_TIMING_PIN
@@ -79,6 +82,7 @@ static void handle_input(const struct esb_payload *rx)
 	stats.received++;
 	stats.rssi_sum += rx->rssi;
 	memcpy(&last_input, in, sizeof(last_input));
+	k_sem_give(&input_sem);
 }
 
 static void radio_event_handler(struct esb_evt const *event)
@@ -166,4 +170,15 @@ void radio_get_last_input(struct xbx_input_report *out)
 
 	*out = last_input;
 	irq_unlock(key);
+}
+
+int radio_wait_input(struct xbx_input_report *out, k_timeout_t timeout)
+{
+	int err = k_sem_take(&input_sem, timeout);
+
+	if (err) {
+		return err;
+	}
+	radio_get_last_input(out);
+	return 0;
 }

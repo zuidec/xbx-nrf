@@ -246,7 +246,7 @@ Up to 7 paired (least recently connected replaced), 4 connected; 1 kHz for
 - [ ] Test: 2 controllers at 1 kHz (two Pro Micros + PCA10059), then 4 at 500
       Hz (more Pro Micro clones).
 - [ ] Factory reset combo; error blinks (mismatch, ambiguity, full).
-- [ ] Tune: pairing timeout, RSSI threshold, drop timeout.
+- [ ] Tune: pairing timeout, RSSI threshold (drop timeout set: 1000 ms).
 
 ### Dongle
 USB modes, in order; one active at a time.
@@ -259,8 +259,9 @@ USB modes, in order; one active at a time.
 	      in `build-unsigned.sh`, off in `build-signed.sh`.
 	- [x] HID interface + report descriptor; check with `lsusb -v`, `evtest`,
 	      SDL `testcontroller`. evtest: every control maps as designed.
-	- [ ] Radio → HID: button remap, D-pad → hat, Y inversion; latest-wins
-	      submit; neutral report on link loss.
+	- [x] Radio → HID: button remap, D-pad → hat, Y inversion; latest-wins
+	      submit; neutral report on link loss (1000 ms). evtest: ~1000
+	      updates/s, neutral report 0.999 s after unplugging.
 	- [ ] Output report → rumble/LED in the ACK payload (replaces fake
 	      rumble); Python `hidapi` test script.
 	- [ ] Steam: detected, correct layout, Steam Input works.
