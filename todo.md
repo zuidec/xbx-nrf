@@ -257,8 +257,8 @@ USB modes, in order; one active at a time.
 	      serial from `DEVICEID`; board's CDC-at-boot off.
 	- [x] `CONFIG_XBX_USB_CONSOLE`: CDC ACM console as a composite function, on
 	      in `build-unsigned.sh`, off in `build-signed.sh`.
-	- [ ] HID interface + report descriptor; check with `lsusb -v`, `evtest`,
-	      SDL `testcontroller`.
+	- [x] HID interface + report descriptor; check with `lsusb -v`, `evtest`,
+	      SDL `testcontroller`. evtest: every control maps as designed.
 	- [ ] Radio → HID: button remap, D-pad → hat, Y inversion; latest-wins
 	      submit; neutral report on link loss.
 	- [ ] Output report → rumble/LED in the ACK payload (replaces fake

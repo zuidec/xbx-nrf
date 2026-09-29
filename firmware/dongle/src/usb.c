@@ -61,6 +61,11 @@ static int usb_setup(void)
 		return err;
 	}
 
+	err = usbd_register_class(&xbx_usbd, "hid_0", USBD_SPEED_FS, 1);
+	if (err) {
+		return err;
+	}
+
 	if (IS_ENABLED(CONFIG_XBX_USB_CONSOLE)) {
 		err = usbd_register_class(&xbx_usbd, "cdc_acm_0", USBD_SPEED_FS, 1);
 		if (err) {

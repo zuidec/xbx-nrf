@@ -1,6 +1,6 @@
 /*
  * Dongle USB device: identity (pid.codes test IDs), strings, serial number,
- * and the functions it carries (console in development builds; gamepad next).
+ * and the functions it carries (HID gamepad; console in development builds).
  */
 
 #ifndef XBX_DONGLE_USB_H_

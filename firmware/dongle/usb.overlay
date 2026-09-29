@@ -1,0 +1,17 @@
+/*
+ * Board-independent USB functions, added to every build via
+ * EXTRA_DTC_OVERLAY_FILE in CMakeLists.txt (app.overlay would be ignored,
+ * because board overlays exist).
+ */
+
+&zephyr_udc0 {
+	hid_dev_0: hid_dev_0 {
+		compatible = "zephyr,hid-device";
+		label = "XBX-NRF Dongle";
+		protocol-code = "none";
+		in-report-size = <16>;
+		in-polling-period-us = <1000>;
+		out-report-size = <6>;
+		out-polling-period-us = <4000>;
+	};
+};
