@@ -1,0 +1,4 @@
+# clangd: use the sysbuild compile database; drop GCC-only flags clangd rejects.
+CompileFlags:
+  CompilationDatabase: build/xbx-nrf
+  Remove: [-fno-printf-return-value, -fno-reorder-functions, -mfp16-format=*]
