@@ -1,0 +1,13 @@
+/*
+ * Pro Micro nRF52840 (nice!nano clone). The USB serial console is already the
+ * board default, so only the scope timing pin is added here.
+ *
+ * P0.17 = the Pro Micro "D2" position (silkscreen "017" / "P0.17" on most clones).
+ */
+
+/ {
+	zephyr,user {
+		/* scope timing pin: pulses on every received report */
+		timing-gpios = <&gpio0 17 GPIO_ACTIVE_HIGH>;
+	};
+};

@@ -1,0 +1,260 @@
+/*
+ * xbx-nrf controller firmware.
+ *
+ * M1 link test: sends a fake input report every 1 ms over ESB (PTX) and
+ * prints link statistics once per second. The dongle replies with an output
+ * report in the ACK payload.
+ */
+
+#include <zephyr/kernel.h>
+#include <zephyr/drivers/counter.h>
+#include <zephyr/drivers/gpio.h>
+#include <zephyr/logging/log.h>
+#include <esb.h>
+
+#include <string.h>
+
+#include "protocol.h"
+
+LOG_MODULE_REGISTER(ctrl, LOG_LEVEL_INF);
+
+/* One retry fits in a 1 ms frame (ESB minimum retransmit delay is 435 us). */
+#define RETRANSMIT_DELAY_US 450
+#define RETRANSMIT_COUNT    1
+
+/* Report timing comes from a hardware timer: the 32768 Hz system tick can't do an
+ * exact 1 ms (k_timer rounds to 33 ticks = 1.007 ms, ~993 reports/s).
+ * TIMER2 is used by ESB.
+ */
+static const struct device *const report_counter = DEVICE_DT_GET(DT_NODELABEL(timer3));
+
+#define ZEPHYR_USER DT_PATH(zephyr_user)
+#if DT_NODE_HAS_PROP(ZEPHYR_USER, timing_gpios)
+static const struct gpio_dt_spec timing_pin = GPIO_DT_SPEC_GET(ZEPHYR_USER, timing_gpios);
+#define HAS_TIMING_PIN 1
+#else
+#define HAS_TIMING_PIN 0
+#endif
+
+struct link_stats {
+	uint32_t sent;
+	uint32_t ok;
+	uint32_t failed;
+	uint32_t attempts;
+	uint32_t skipped; /* tick arrived while the previous report was still in flight */
+	uint32_t acks_with_payload;
+};
+
+static struct link_stats stats;
+static atomic_t in_flight;
+static struct xbx_output_report last_output;
+
+static K_SEM_DEFINE(tick_sem, 0, 1);
+
+static void timing_pin_set(int value)
+{
+#if HAS_TIMING_PIN
+	gpio_pin_set_dt(&timing_pin, value);
+#endif
+}
+
+static void radio_event_handler(struct esb_evt const *event)
+{
+	struct esb_payload rx;
+
+	switch (event->evt_id) {
+	case ESB_EVENT_TX_SUCCESS:
+		stats.ok++;
+		stats.attempts += event->tx_attempts;
+		timing_pin_set(0);
+		atomic_set(&in_flight, 0);
+		break;
+	case ESB_EVENT_TX_FAILED:
+		stats.failed++;
+		stats.attempts += event->tx_attempts;
+		timing_pin_set(0);
+		atomic_set(&in_flight, 0);
+		break;
+	case ESB_EVENT_RX_RECEIVED:
+		/* ACK payloads from the dongle */
+		while (esb_read_rx_payload(&rx) == 0) {
+			if (rx.length == sizeof(struct xbx_output_report) &&
+			    rx.data[0] == XBX_MSG_OUTPUT) {
+				memcpy(&last_output, rx.data, sizeof(last_output));
+				stats.acks_with_payload++;
+			}
+		}
+		break;
+	default:
+		break;
+	}
+}
+
+static int radio_init(void)
+{
+	static const uint8_t base_addr_0[4] = XBX_BASE_ADDR_0;
+	static const uint8_t base_addr_1[4] = XBX_BASE_ADDR_1;
+	static const uint8_t prefixes[] = XBX_ADDR_PREFIXES;
+	struct esb_config config = ESB_DEFAULT_CONFIG;
+	int err;
+
+	config.mode = ESB_MODE_PTX;
+	config.protocol = ESB_PROTOCOL_ESB_DPL;
+	config.bitrate = ESB_BITRATE_2MBPS;
+	config.retransmit_delay = RETRANSMIT_DELAY_US;
+	config.retransmit_count = RETRANSMIT_COUNT;
+	config.tx_output_power = XBX_TX_POWER_DBM;
+	config.use_fast_ramp_up = true;
+	config.selective_auto_ack = true;
+	config.event_handler = radio_event_handler;
+
+	err = esb_init(&config);
+	if (err) {
+		return err;
+	}
+	err = esb_set_base_address_0(base_addr_0);
+	if (err) {
+		return err;
+	}
+	err = esb_set_base_address_1(base_addr_1);
+	if (err) {
+		return err;
+	}
+	err = esb_set_prefixes(prefixes, ARRAY_SIZE(prefixes));
+	if (err) {
+		return err;
+	}
+	return esb_set_rf_channel(XBX_RF_CHANNEL);
+}
+
+/* Fake input for the link test: sticks sweep slowly, A toggles every 500 ms. */
+static void fill_fake_input(struct xbx_input_report *report, uint32_t tick, uint16_t seq)
+{
+	int16_t sweep = (int16_t)((tick * 64u) & 0xFFFF);
+
+	memset(report, 0, sizeof(*report));
+	report->type = XBX_MSG_INPUT;
+	report->seq = seq;
+	report->buttons = ((tick / 500u) & 1u) ? XBX_BTN_A : 0;
+	report->lx = sweep;
+	report->ly = -sweep;
+	report->rx = sweep / 2;
+	report->ry = -sweep / 2;
+	report->lt = (tick >> 2) & 0x3FF;
+	report->rt = 0x3FF - ((tick >> 2) & 0x3FF);
+	report->battery = 0xFF;
+	report->timestamp_us = k_cyc_to_us_floor32(k_cycle_get_32());
+}
+
+static void report_tick(const struct device *dev, void *user_data)
+{
+	ARG_UNUSED(dev);
+	ARG_UNUSED(user_data);
+	k_sem_give(&tick_sem);
+}
+
+static int report_timer_start(void)
+{
+	struct counter_top_cfg top = {
+		.ticks = counter_us_to_ticks(report_counter, XBX_REPORT_PERIOD_US),
+		.callback = report_tick,
+		.user_data = NULL,
+		.flags = 0,
+	};
+	int err;
+
+	if (!device_is_ready(report_counter)) {
+		return -ENODEV;
+	}
+	err = counter_set_top_value(report_counter, &top);
+	if (err) {
+		return err;
+	}
+	return counter_start(report_counter);
+}
+
+static void tx_thread(void *p1, void *p2, void *p3)
+{
+	struct esb_payload tx = {
+		.pipe = 0,
+		.noack = false,
+		.length = sizeof(struct xbx_input_report),
+	};
+	uint32_t tick = 0;
+	uint16_t seq = 0; /* only advances when a report is actually sent */
+
+	while (true) {
+		k_sem_take(&tick_sem, K_FOREVER);
+		tick++;
+
+		if (atomic_get(&in_flight)) {
+			stats.skipped++;
+			continue;
+		}
+
+		/* drop anything stale (e.g. a report left behind after TX_FAILED) */
+		esb_flush_tx();
+
+		fill_fake_input((struct xbx_input_report *)tx.data, tick, seq);
+
+		atomic_set(&in_flight, 1);
+		timing_pin_set(1);
+		if (esb_write_payload(&tx) == 0) {
+			stats.sent++;
+			seq++;
+		} else {
+			timing_pin_set(0);
+			atomic_set(&in_flight, 0);
+		}
+	}
+}
+
+K_THREAD_DEFINE(tx_tid, 1024, tx_thread, NULL, NULL, NULL, K_PRIO_COOP(2), 0, 0);
+
+int main(void)
+{
+	struct link_stats prev = {0};
+	int err;
+
+	LOG_INF("xbx-nrf controller, protocol v%d, channel %d", XBX_PROTOCOL_VERSION,
+		XBX_RF_CHANNEL);
+
+#if HAS_TIMING_PIN
+	if (gpio_is_ready_dt(&timing_pin)) {
+		gpio_pin_configure_dt(&timing_pin, GPIO_OUTPUT_INACTIVE);
+	}
+#endif
+
+	err = radio_init();
+	if (err) {
+		LOG_ERR("ESB init failed: %d", err);
+		return 0;
+	}
+
+	err = report_timer_start();
+	if (err) {
+		LOG_ERR("report timer start failed: %d", err);
+		return 0;
+	}
+
+	while (true) {
+		k_sleep(K_SECONDS(1));
+
+		struct link_stats now = stats;
+		uint32_t sent = now.sent - prev.sent;
+		uint32_t ok = now.ok - prev.ok;
+		uint32_t failed = now.failed - prev.failed;
+		uint32_t attempts = now.attempts - prev.attempts;
+		uint32_t done = ok + failed;
+
+		LOG_INF("sent %u/s  ok %u  failed %u  skipped %u  avg attempts %u.%02u  acks %u  "
+			"rumble[%u %u %u %u]",
+			sent, ok, failed, now.skipped - prev.skipped,
+			done ? attempts / done : 0, done ? (attempts * 100 / done) % 100 : 0,
+			now.acks_with_payload - prev.acks_with_payload,
+			last_output.rumble[0], last_output.rumble[1], last_output.rumble[2],
+			last_output.rumble[3]);
+		prev = now;
+	}
+	return 0;
+}
