@@ -28,7 +28,8 @@ Lightspeed. The stock top board and shell stay.
 | Scope | New **bottom board only**; stock top board, shell, triggers, motors reused |
 | MCU | **nRF52840**: certified module (controller), Nordic PCA10059 (dongle) |
 | Audio | **None in v1** |
-| Wireless | **ESB/Gazell** 2.4 GHz; 1 kHz input reports, rumble/LED in ACK payloads |
+| Wireless | **ESB/Gazell** 2.4 GHz; rumble/LED in ACK payloads |
+| Multiplayer | One dongle: up to **7 paired**, **4 connected**; 1 kHz with 1–2, 500 Hz with 3–4 (time slots) |
 | Dongle USB | **HID gamepad** (first) and **XInput** (`045E:028E`), switchable. No Xbox console support |
 | Battery | **Rechargeable AAs only** (NiMH or regulated 1.5 V Li-ion AAs) |
 | Power | Stock top board latch and boost converters, via J3 |
@@ -67,6 +68,8 @@ firmware/build-signed.sh dongle <board>    # signed release build
 |---|---|
 | [docs/building.md](docs/building.md) | SDK setup, versions, build scripts |
 | [docs/flashing.md](docs/flashing.md) | Flashing and debugging |
+| [docs/protocol.md](docs/protocol.md) | Radio and USB HID protocols |
+| [docs/gip.md](docs/gip.md) | Xbox GIP protocol notes (optional mode) |
 | [docs/signing.md](docs/signing.md) | Firmware signing (MCUboot, keys) |
 
 ## Repository layout

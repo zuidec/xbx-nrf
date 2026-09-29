@@ -25,8 +25,9 @@ Locked decisions: [README](README.md). Not yet locked:
 - Pinouts: [[references/controller-pinouts.txt]],
   [[references/soc-pinout.txt]]
 - Notes: [[docs/hardware|Hardware]], [[docs/pcal6416|PCAL6416]],
-  [[docs/a3910|A3910]], [[docs/building|Building]],
-  [[docs/flashing|Flashing]], [[docs/signing|Signing]]
+  [[docs/a3910|A3910]], [[docs/protocol|Protocols]], [[docs/gip|GIP]],
+  [[docs/building|Building]], [[docs/flashing|Flashing]],
+  [[docs/signing|Signing]]
 - Datasheets: [[references/A1304-Datasheet.pdf]] (trigger sensor, 7.7 mA,
   t_PO 50–70 µs), [[references/A3910-datasheet.pdf]],
   [[references/PCAL6416A-datasheet.pdf]]
@@ -219,14 +220,32 @@ Code: `firmware/{xbx-nrf,dongle}/src/main.c`,
 - [ ] Busy Wi-Fi, distance, other channels (`XBX_RF_CHANNEL`).
 - [ ] Tune retransmit delay/count (min delay 435 µs → one retry per 1 ms).
 - [ ] Dongle timing pin once usable PCA10059 pads are known.
-- [x] Packet format ([[docs/building#Versions]], `protocol.h`).
-- [ ] Pairing (Pair button / Guide combo).
-- [ ] Channel hopping.
+- [x] Packet format v1 ([[docs/protocol#Radio (controller ↔ dongle)]]).
+- [ ] Channel hopping (per-dongle sequence, driven by the TDMA schedule).
+
+### Pairing & multiple controllers (protocol v2)
+Design: [[docs/protocol#Pairing & multiple controllers (planned, protocol v2)]].
+Up to 7 paired (least recently connected replaced), 4 connected; 1 kHz for
+1–2, 500 Hz for 3–4.
+- [ ] Per-dongle random address; pipe 0 = pairing, pipes 1–7 = controllers;
+      pairing table in flash (settings).
+- [ ] Pairing mode (Pair hold / dongle button / unpaired at plug-in), channel
+      scan, PAIR_REQ/OFFER/CONFIRM/DONE (repeat until answered), RSSI check.
+- [ ] Channel choice at first use (quietest of the candidate list).
+- [ ] TDMA: dongle frame + slots, timing correction in ACKs, controller TIMER3
+      trim; 1 ms / 2 ms frame switching.
+- [ ] Join / full / drop handling; player number = slot.
+- [ ] USB: 4 player interfaces (HID; XInput as Xbox 360 Wireless Receiver).
+- [ ] Test: 2 controllers at 1 kHz (two Pro Micros + PCA10059), then 4 at 500
+      Hz (more Pro Micro clones).
+- [ ] Factory reset combo; error blinks (mismatch, ambiguity, full).
+- [ ] Tune: pairing timeout, RSSI threshold, drop timeout.
 
 ### Dongle
 USB modes, in order; one active at a time.
 1. [ ] **HID gamepad** (Zephyr USB HID): 16-bit sticks, 10-bit triggers, all
-       buttons, rumble output report.
+       buttons, rumble output report. Draft layout:
+       [[docs/protocol#USB HID mode (dongle ↔ PC), planned]].
 2. [ ] **XInput** (custom class, after GP2040-CE): `045E:028E`, 8-bit
        triggers, 2 motors, no Share.
 3. [ ] **Mode switching** at plug-in, stored in flash.
@@ -270,6 +289,8 @@ USB modes, in order; one active at a time.
 
 - [ ] **M1:** 1 kHz link, latency and loss measured ([[#Link]]).
 - [ ] **M2:** dongle works as HID, then XInput ([[#Dongle]]).
+- [ ] **M2b:** pairing; 2 controllers at 1 kHz, then 4 at 500 Hz
+      ([[#Pairing & multiple controllers (protocol v2)]]).
 - [ ] **M3:** dev board on a stock top board via J3: buttons, Guide, power
       hold/off.
 - [ ] **M4:** first custom board fits; inputs + rumble work.
@@ -293,6 +314,25 @@ USB modes, in order; one active at a time.
   controller steps power down while strong, up fast on weak RSSI or lost ACKs
   (with hysteresis). Dongle does the same for ACKs.
 - Decide after real-hardware link margin and M5.
+
+### Trigger rumble (controller-side)
+Games rarely drive the trigger motors, and XInput can't (2 motors only).
+- **Rumble mixing:** feed part of the heavy/light rumble into the trigger
+  motors when the host sends only 2 values. Configurable strength.
+- **Local trigger effects:** click when a trigger crosses a threshold, buzz at a
+  trigger stop; generated on the controller, pairs with hair-trigger mode.
+- **4-value HID output report** for our own tools (and maybe Steam later).
+
+### GIP dongle mode
+Optional third USB mode speaking Microsoft's protocol ([[docs/gip]]). Gains:
+impulse triggers in Windows games that use them, native Share, 10-bit triggers.
+Feasible (no auth on PC via the opt-out GUID; GP2040-CE as reference), but
+metadata needs Microsoft's compiler, and on Linux `xpad` drops trigger rumble.
+- [ ] **Test first:** genuine Series controller over USB, SDL `testcontroller`
+      trigger rumble, with and without Steam, on Linux. No buzz → GIP isn't
+      worth it on Linux.
+- [ ] Get the "gipdocs" download (metadata compiler, gamepad JSON template).
+- [ ] Decide VID/PID (Microsoft's for `xpad` auto-binding, or bind manually).
 
 ---
 
