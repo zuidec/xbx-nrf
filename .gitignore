@@ -1,0 +1,67 @@
+# --- Claude ------------------------------------------------------------------
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+.mcp.json
+
+# --- Secrets -----------------------------------------------------------------
+secrets.*
+SECRETS.*
+# private keys (signing keys live in ~/.config/xbx-nrf/keys, never in the repo)
+*.pem
+*.key
+*.p12
+*.pfx
+*.der
+keys/
+
+# --- Firmware build artifacts (Zephyr / nRF Connect SDK) ---------------------
+build/
+build_*/
+build-*/
+twister-out*/
+*.hex
+*.bin
+*.elf
+*.map
+*.o
+*.a
+*.d
+*.uf2
+compile_commands.json
+
+# DFU packages generated with nrfutil
+dongle*.zip
+*_dfu.zip
+
+# --- KiCad ---------------------------------------------------------------------
+*-backups/
+_autosave-*
+*.lck
+fp-info-cache
+*.kicad_prl
+*.bak
+# fabrication outputs
+gerbers/
+production/
+*.gbr
+*.drl
+*-drl_map.*
+*-job.gbrjob
+*-bom.csv
+*-pos.csv
+
+# --- FreeCAD -------------------------------------------------------------------
+*.FCBak
+
+# --- Tools / editors / OS ------------------------------------------------------
+__pycache__/
+*.pyc
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+
+# Obsidian per-user workspace state (keep the rest of .obsidian/ if you want shared settings)
+.obsidian/workspace*.json
