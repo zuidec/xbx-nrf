@@ -4,6 +4,9 @@ CLAUDE.md
 CLAUDE.local.md
 .mcp.json
 
+# --- Third-party references (not redistributable; see references/README.md) ---
+references/third-party/
+
 # --- Secrets -----------------------------------------------------------------
 secrets.*
 SECRETS.*

@@ -16,7 +16,8 @@ Microsoft's protocol for Xbox One/Series controllers. Only needed for an
 optional future **GIP dongle mode** (impulse triggers on Windows; see
 [[todo#Future / v2]]). Our own protocols: [[docs/protocol]].
 
-Source: [[references/windows_protocols-ms-gipusb.pdf]] (MS-GIPUSB, 2024; §
+Source: [[references/third-party/windows_protocols-ms-gipusb.pdf]] (MS-GIPUSB,
+2024; §
 numbers below). Reference implementation: GP2040-CE's Xbox One mode (MIT).
 
 ## Feasibility summary
