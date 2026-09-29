@@ -56,9 +56,17 @@ echo "board: $board"
 echo "key:   $key"
 echo "out:   $build_dir"
 
+# release.conf (if the app has one): release-only settings, e.g. no USB console
+release_conf=()
+if [ -f "$app_dir/release.conf" ]; then
+	release_conf=(-DEXTRA_CONF_FILE="$app_dir/release.conf")
+	echo "conf:  $app_dir/release.conf"
+fi
+
 west build --pristine -b "$board" -d "$build_dir" "$app_dir" "$@" -- \
 	-DSB_CONF_FILE="$app_dir/sysbuild-signed.conf" \
-	-DSB_CONFIG_BOOT_SIGNATURE_KEY_FILE="\"$key\""
+	-DSB_CONFIG_BOOT_SIGNATURE_KEY_FILE="\"$key\"" \
+	"${release_conf[@]}"
 
 echo
 echo "signed images:"

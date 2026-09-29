@@ -3,7 +3,7 @@
  *
  * M1 link test: the radio (radio.c) receives input reports and answers with
  * output reports in the ACK payload; main prints link statistics once per
- * second. USB gamepad output (HID, then XInput) comes in M2.
+ * second. USB (usb.c): device identity and console; gamepad output comes next.
  */
 
 #include <zephyr/kernel.h>
@@ -13,6 +13,7 @@
 
 #include "protocol.h"
 #include "radio.h"
+#include "usb.h"
 
 LOG_MODULE_REGISTER(dongle, LOG_LEVEL_INF);
 
@@ -24,6 +25,12 @@ int main(void)
 	LOG_INF("xbx-nrf dongle v%s (%s), protocol v%d, channel %d, tx %d dBm",
 		APP_VERSION_STRING, STRINGIFY(APP_BUILD_VERSION), XBX_PROTOCOL_VERSION, XBX_RF_CHANNEL,
 		XBX_TX_POWER_DBM);
+
+	err = usb_start();
+	if (err) {
+		LOG_ERR("USB start failed: %d", err);
+		return 0;
+	}
 
 	err = radio_start();
 	if (err) {
