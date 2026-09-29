@@ -201,6 +201,7 @@ Code: `firmware/{xbx-nrf,dongle}/src/main.c`,
 > | Desk, TIMER3 + seq fix | 1000/s, lost 0, RSSI −55 dBm; `failed` > 0 with `lost` 0 = lost ACKs only |
 > | Across the room, 0 dBm | RSSI −79…−89 dBm, 0–65 % delivered |
 > | Across the room, +8 dBm | RSSI −69…−74 dBm, 98–99.8 % delivered |
+> | Scope, P0.17 | One-way ~232 µs (max 232.2); round trip mean 350.5 µs (332.8 min, 983.9 max = retry, ~2 % of reports); period mean 999.94 µs (999.91–1010) |
 >
 > Clone antennas are weak. Remaining loss looks like fades/interference →
 > channel hopping.
@@ -216,8 +217,11 @@ Code: `firmware/{xbx-nrf,dongle}/src/main.c`,
 - [ ] Check controller `skipped` when the dongle shows `rx` < 1000 with low
       `lost` (seen once: `rx 942 lost 2`).
 - [ ] If still marginal: 1 Mbps (+3–4 dB; recheck `RETRANSMIT_DELAY_US`).
-- [ ] Latency on the scope (P0.17: controller high while in flight, dongle
-      pulses on receive).
+- [x] Latency on the scope (P0.17; results above). A 33 µs FRFR minimum was
+      a measurement artifact.
+- [ ] Start each transmission from the TIMER3 interrupt (or PPI) instead of a
+      woken thread: today's period jitter is up to ~10 µs, which eats TDMA slot
+      margin.
 - [ ] Busy Wi-Fi, distance, other channels (`XBX_RF_CHANNEL`).
 - [ ] Tune retransmit delay/count (min delay 435 µs → one retry per 1 ms).
 - [ ] Dongle timing pin once usable PCA10059 pads are known.
@@ -234,7 +238,8 @@ Up to 7 paired (least recently connected replaced), 4 connected; 1 kHz for
       scan, PAIR_REQ/OFFER/CONFIRM/DONE (repeat until answered), RSSI check.
 - [ ] Channel choice at first use (quietest of the candidate list).
 - [ ] TDMA: dongle frame + slots, timing correction in ACKs, controller TIMER3
-      trim; 1 ms / 2 ms frame switching.
+      trim; 1 ms / 2 ms frame switching. Measured transaction 333–345 µs →
+      ~155 µs margin in a 500 µs slot.
 - [ ] Join / full / drop handling; player number = slot.
 - [ ] USB: 4 players via the XInput mode (Xbox 360 Wireless Receiver); HID
       stays single-player.
@@ -287,7 +292,7 @@ USB modes, in order; one active at a time.
 - [x] SDK pinned in `firmware/ncs-version` (v3.4.1, toolchain 8285d8ad56),
       checked by the build scripts.
 - [x] App `VERSION` files (0.1.0); boot log shows version, build ID, protocol.
-- [ ] `git tag v0.1.0` once M1 is done.
+- [x] `git tag v0.1.0` once M1 is done.
 
 ### Firmware signing
 [[docs/signing|Signing]]
@@ -295,7 +300,7 @@ USB modes, in order; one active at a time.
 - [x] `.gitignore` key patterns.
 - [x] `sysbuild-signed.conf` + `build-signed.sh`; dongle build verified.
 - [x] Image version from `VERSION` (`0.1.0+0`).
-- [ ] **Back up both keys offline.**
+- [x] **Back up both keys offline.**
 - [ ] Update method: MCUboot serial recovery over USB (`mcumgr`/`smpmgr`).
 - [ ] Downgrade protection.
 - [ ] Release: lock APPROTECT.
@@ -306,7 +311,7 @@ USB modes, in order; one active at a time.
 
 ## 6. Prototyping milestones
 
-- [ ] **M1:** 1 kHz link, latency and loss measured ([[#Link]]).
+- [x] **M1:** 1 kHz link, latency and loss measured ([[#Link]]).
 - [ ] **M2:** dongle works as HID, then XInput ([[#Dongle]]).
 - [ ] **M2b:** pairing; 2 controllers at 1 kHz, then 4 at 500 Hz
       ([[#Pairing & multiple controllers (protocol v2)]]).
