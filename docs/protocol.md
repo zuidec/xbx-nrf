@@ -287,7 +287,7 @@ whole device, hence single-player HID.
 |---|---|
 | VID / PID | `0x1209` (pid.codes) / **`0x0001`** test PID during development |
 | Interfaces | 1 HID gamepad; + CDC ACM console in development builds (composite) |
-| HID endpoints | Interrupt IN 1 ms; interrupt OUT ~4 ms *(tune)* |
+| HID endpoints | Interrupt IN 1 ms; interrupt OUT ~4 ms *(tune)*, max packet 64 (must exceed the 6-byte report, or reports merge) |
 | Serial number | From the nRF52840 `DEVICEID` |
 | Console | `CONFIG_XBX_USB_CONSOLE`: on in `build-unsigned.sh`, off in `build-signed.sh` |
 
@@ -341,8 +341,14 @@ bits become the hat value.
 | 1 | 4 | Rumble heavy, light, LT, RT (0…255) | Vendor page `0xFF00` |
 | 5 | 1 | Guide LED (0…255) | Vendor page `0xFF00` |
 
-Maps 1:1 onto the radio output report. Games won't use it (no standard HID
-rumble); it's for our own tools and possibly Steam later.
+Maps 1:1 onto the radio output report: the dongle forwards the values in the
+next ACK payloads (live within ~2 ms). Rumble stays on until changed; it's
+reset to 0 when the USB interface goes down or the link is lost.
+
+This vendor report is for testing and our own tools; games don't use it.
+Test without extra tools: `printf '\x02\xff\x00\x00\x80\x40' >
+/dev/hidrawN` (heavy 255, RT 128, LED 64). Game rumble in HID mode needs HID
+PID force feedback (planned); XInput mode gets it via `xpad`.
 
 ### Behaviour
 - **Latest wins:** each radio report is converted and submitted at once; if the
@@ -350,4 +356,3 @@ rumble); it's for our own tools and possibly Steam later.
   "report done" callback. Radio → USB delay < ~1 ms.
 - **Link loss:** no radio report for **1000 ms** (`LINK_TIMEOUT_MS` in
   `bridge.c`) → neutral report (sticks centred, nothing pressed) and rumble off.
-  Rumble-off follows in step 5.

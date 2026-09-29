@@ -11,7 +11,11 @@
 		protocol-code = "none";
 		in-report-size = <16>;
 		in-polling-period-us = <1000>;
-		out-report-size = <6>;
+		/*
+		 * Also the OUT endpoint's max packet size: keep it above the 6-byte
+		 * report so each report is a short packet that ends its transfer.
+		 */
+		out-report-size = <64>;
 		out-polling-period-us = <4000>;
 	};
 };

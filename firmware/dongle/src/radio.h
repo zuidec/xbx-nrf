@@ -33,4 +33,10 @@ void radio_get_last_input(struct xbx_input_report *input);
  */
 int radio_wait_input(struct xbx_input_report *input, k_timeout_t timeout);
 
+/*
+ * Rumble (heavy, light, LT, RT: 0..255) and Guide LED for the controller; sent
+ * in the next ACK payloads until changed.
+ */
+void radio_set_output(const uint8_t rumble[4], uint8_t led);
+
 #endif /* XBX_DONGLE_RADIO_H_ */
