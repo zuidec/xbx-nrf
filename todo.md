@@ -343,7 +343,7 @@ constants (deadzone, drift window, settle time) on the real TMR sticks.
       through their full range → press again → saved. Breadboard: a button
       combo stands in (all header pins are used).
 - [x] Radial inner deadzone, outer saturation (full deflection = ±32767).
-- [ ] Boot-time centre check: re-centre within a small window of the stored
+- [x] Boot-time centre check: re-centre within a small window of the stored
       centre, else keep it (stick held at power-up).
 - [ ] Triggers on the same data: stops, remapping, hair trigger.
 - [ ] Commands for the host program ([[#Calibration program]]).
