@@ -6,6 +6,7 @@
  */
 
 #include <zephyr/kernel.h>
+#include <zephyr/drivers/gpio.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/usb/usbd.h>
 
@@ -16,9 +17,10 @@
 LOG_MODULE_REGISTER(usb, LOG_LEVEL_INF);
 
 /* pid.codes VID with a test PID (development only; see docs/protocol.md) */
-#define XBX_USB_VID       0x1209
-#define XBX_USB_PID       0x0001
-#define XBX_USB_MAX_POWER 50 /* 2 mA units: 100 mA */
+#define XBX_USB_VID        0x1209
+#define XBX_USB_PID_HID    0x0001
+#define XBX_USB_PID_XINPUT 0x0002
+#define XBX_USB_MAX_POWER  50 /* 2 mA units: 100 mA */
 
 /* bcdDevice from the app VERSION file: 0.1.0 -> 0x0010 */
 BUILD_ASSERT(APP_VERSION_MAJOR < 100 && APP_VERSION_MINOR < 10 && APP_PATCHLEVEL < 10,
@@ -27,7 +29,16 @@ BUILD_ASSERT(APP_VERSION_MAJOR < 100 && APP_VERSION_MINOR < 10 && APP_PATCHLEVEL
 	(((APP_VERSION_MAJOR / 10) << 12) | ((APP_VERSION_MAJOR % 10) << 8) |                     \
 	 (APP_VERSION_MINOR << 4) | APP_PATCHLEVEL)
 
-USBD_DEVICE_DEFINE(xbx_usbd, DEVICE_DT_GET(DT_NODELABEL(zephyr_udc0)), XBX_USB_VID, XBX_USB_PID);
+USBD_DEVICE_DEFINE(xbx_usbd, DEVICE_DT_GET(DT_NODELABEL(zephyr_udc0)), XBX_USB_VID,
+		   XBX_USB_PID_HID);
+
+#define ZEPHYR_USER DT_PATH(zephyr_user)
+#if DT_NODE_HAS_PROP(ZEPHYR_USER, mode_gpios)
+static const struct gpio_dt_spec mode_pin = GPIO_DT_SPEC_GET(ZEPHYR_USER, mode_gpios);
+#endif
+
+static enum usb_mode mode;
+static bool mode_read;
 
 USBD_DESC_LANG_DEFINE(xbx_lang);
 USBD_DESC_MANUFACTURER_DEFINE(xbx_mfr, "zuidec");
@@ -42,6 +53,44 @@ static void usb_msg_cb(struct usbd_context *const ctx, const struct usbd_msg *co
 {
 	ARG_UNUSED(ctx);
 	LOG_INF("USB: %s", usbd_msg_type_string(msg->type));
+}
+
+enum usb_mode usb_mode_get(void)
+{
+	if (mode_read) {
+		return mode;
+	}
+	mode_read = true;
+	mode = USB_MODE_HID;
+#if DT_NODE_HAS_PROP(ZEPHYR_USER, mode_gpios)
+	if (gpio_is_ready_dt(&mode_pin) && gpio_pin_configure_dt(&mode_pin, GPIO_INPUT) == 0) {
+		k_busy_wait(100); /* let the pull-up charge the pin */
+		if (gpio_pin_get_dt(&mode_pin) > 0) {
+			mode = USB_MODE_XINPUT;
+		}
+		gpio_pin_configure_dt(&mode_pin, GPIO_DISCONNECTED); /* no pull-up current */
+	}
+#endif
+	return mode;
+}
+
+static int register_functions(void)
+{
+	int err;
+
+	if (usb_mode_get() == USB_MODE_XINPUT) {
+		static const char *const names[] = {"xinput_0", "xinput_1", "xinput_2",
+						    "xinput_3"};
+
+		for (size_t i = 0; i < ARRAY_SIZE(names); i++) {
+			err = usbd_register_class(&xbx_usbd, names[i], USBD_SPEED_FS, 1);
+			if (err) {
+				return err;
+			}
+		}
+		return usbd_device_set_pid(&xbx_usbd, XBX_USB_PID_XINPUT);
+	}
+	return usbd_register_class(&xbx_usbd, "hid_0", USBD_SPEED_FS, 1);
 }
 
 static int usb_setup(void)
@@ -61,7 +110,7 @@ static int usb_setup(void)
 		return err;
 	}
 
-	err = usbd_register_class(&xbx_usbd, "hid_0", USBD_SPEED_FS, 1);
+	err = register_functions();
 	if (err) {
 		return err;
 	}
@@ -89,6 +138,8 @@ static int usb_setup(void)
 int usb_start(void)
 {
 	int err;
+
+	LOG_INF("USB mode: %s", usb_mode_get() == USB_MODE_XINPUT ? "XInput" : "HID");
 
 	err = usb_setup();
 	if (err) {

@@ -29,10 +29,12 @@ int main(void)
 		APP_VERSION_STRING, STRINGIFY(APP_BUILD_VERSION), XBX_PROTOCOL_VERSION, XBX_RF_CHANNEL,
 		XBX_TX_POWER_DBM);
 
-	err = hid_pad_init();
-	if (err) {
-		LOG_ERR("HID init failed: %d", err);
-		return 0;
+	if (usb_mode_get() == USB_MODE_HID) {
+		err = hid_pad_init();
+		if (err) {
+			LOG_ERR("HID init failed: %d", err);
+			return 0;
+		}
 	}
 
 	err = usb_start();

@@ -274,7 +274,18 @@ USB modes, in order; one active at a time.
 	- [x] Finalize the descriptor in `protocol.md`.
 2. [ ] **XInput, 1–4 players** as an **Xbox 360 Wireless Receiver** (4
        interfaces, in-band connect/disconnect; after GP2040-CE / `xpad`): 8-bit
-       triggers, 2 motors, no Share.
+       triggers, 2 motors, no Share. pid.codes IDs: `xpad` binds any `0x1209`
+       interface of the receiver type (FF/5D/81); Linux only (Windows'
+       driver wants Microsoft's IDs).
+	- [ ] Mode strap (P0.06 to GND = XInput, PID `0x0002`) and XInput USB
+	      class: 4 interfaces, interrupt IN/OUT 32 bytes at 1 ms, presence
+	      packets and presence-query replies. Test: `xpad` binds all 4,
+	      no gamepad until a controller connects.
+	- [ ] Slot 0 bridge: radio → 360 report, connect on link up,
+	      disconnect after the link timeout. Test: `evtest`, Steam.
+	- [ ] Output: rumble → heavy/light separately, LED pattern → Guide
+	      LED, power-off command. Test: `fftest`, `sdl-rumble` low/high.
+	- [ ] XInput section in `protocol.md`.
 3. [x] **HID PID force feedback** (HID mode game rumble via `hid-pidff`).
        Sine only: the kernel emulates `FF_RUMBLE` as a sine (⅔ strong +
        ⅓ weak), so SDL/Steam rumble works but as one blended strength;
@@ -282,7 +293,7 @@ USB modes, in order; one active at a time.
        output = 4 motor levels in the existing output report, no radio
        change; trigger mixing stays controller-side
        ([[#Trigger rumble (controller-side)]]).
-	- [ ] PID descriptor (sine + envelope, required reports), effect table,
+	- [x] PID descriptor (sine + envelope, required reports), effect table,
 	      block load / pool / free, device control, gain. Test: no
 	      `hid-pidff` errors in `dmesg`, `fftest` uploads a sine.
 	- [x] Engine: active effects → motor strength every 1 ms (magnitude ×
@@ -290,7 +301,8 @@ USB modes, in order; one active at a time.
 	      vendor report, both motors. Tested: `fftest` (gain, delay,
 	      duration, summing), SDL `SDL_JoystickRumble`.
 	- [x] PID section in `protocol.md`.
-4. [ ] **Mode switching** at plug-in, stored in flash.
+4. [ ] **Mode switching:** physical switch on the dongle PCB, read once at
+       boot before USB starts (breadboard: jumper, see step 2).
 5. [x] Open-source license + `LICENSE` file (MIT / CERN-OHL-S-2.0 /
        CC-BY-4.0, REUSE compliant).
 6. [ ] USB IDs: pid.codes test VID/PID `0x1209:0x0001` for now; apply for our
@@ -300,6 +312,12 @@ USB modes, in order; one active at a time.
 - [ ] Power state machine: hold pin 9 early → PCAL6416 setup → run;
       long-press Guide / idle / no dongle / low battery → release hold.
 - [ ] Boot reason: Guide / Pair (→ pairing) / USB.
+- [ ] Power-off from the PC: the dongle already decodes XInput power-off
+      (`00 00 08 C0`, sent by `xpad` when Guide is held 5 s); forward it as
+      a bit in the output report `flags` → controller shuts down (needs the
+      power state machine). HID mode has no such command.
+- [ ] Find out how Steam turns controllers off: it can over Bluetooth;
+      unknown whether it does for `xpad` / USB receivers.
 - [ ] USB-powered "off" state.
 - [ ] PCAL6416 polling ([[docs/pcal6416#Firmware notes]]).
 - [ ] Stick/trigger ADC, trigger supply pulsed in sync.
