@@ -31,8 +31,12 @@ LOG_MODULE_REGISTER(input, LOG_LEVEL_INF);
 #define DEBOUNCE_MS 5
 
 #define ADC_MAX           4095 /* 12 bit */
-#define STICK_DEADZONE    40   /* raw counts around the centre, ~1 % of the range */
 #define STICK_INITIAL_SPAN 1200 /* assumed reach until the stick has gone further */
+
+/* Radial shaping, as a fraction of full deflection (32767); tune on the real sticks */
+#define STICK_FULL           32767
+#define STICK_INNER_DEADZONE (STICK_FULL * 3 / 100)  /* below: centred */
+#define STICK_OUTER_SAT      (STICK_FULL * 95 / 100) /* at or above: full */
 #define CALIBRATION_SAMPLES 32
 
 #define COMBO_HOLD_MS 3000
@@ -129,29 +133,58 @@ static void axis_calibrate(struct stick_axis *axis, int32_t center)
 	axis->max = MIN(center + STICK_INITIAL_SPAN, ADC_MAX);
 }
 
-/* raw counts to -32767..32767, outside the deadzone rescaled to the full range */
-static int16_t axis_scale(struct stick_axis *axis, int16_t raw)
+/* raw counts to -32767..32767 on the axis' own span each side; no deadzone */
+static int32_t axis_norm(struct stick_axis *axis, int16_t raw)
 {
 	int32_t d = raw - axis->center;
-	int32_t span;
-	int32_t out;
 
 	if (!axis->fixed) {
 		axis->min = MIN(axis->min, raw);
 		axis->max = MAX(axis->max, raw);
 	}
-
-	if (d > STICK_DEADZONE) {
-		span = axis->max - axis->center - STICK_DEADZONE;
-		out = (d - STICK_DEADZONE) * 32767 / MAX(span, 1);
-	} else if (d < -STICK_DEADZONE) {
-		span = axis->center - axis->min - STICK_DEADZONE;
-		out = (d + STICK_DEADZONE) * 32767 / MAX(span, 1);
+	if (d >= 0) {
+		d = d * STICK_FULL / MAX(axis->max - axis->center, 1);
 	} else {
-		out = 0;
+		d = d * STICK_FULL / MAX(axis->center - axis->min, 1);
 	}
-	out = CLAMP(out, -32767, 32767);
-	return axis->invert ? -out : out;
+	return CLAMP(d, -STICK_FULL, STICK_FULL);
+}
+
+static uint32_t isqrt(uint32_t v)
+{
+	uint32_t r = 0;
+
+	for (uint32_t bit = 1u << 30; bit; bit >>= 2) {
+		if (v >= r + bit) {
+			v -= r + bit;
+			r = (r >> 1) + bit;
+		} else {
+			r >>= 1;
+		}
+	}
+	return r;
+}
+
+/*
+ * Radial inner deadzone and outer saturation: the distance from centre is
+ * mapped from [inner, outer] to [0, full], the direction is kept. Diagonals
+ * don't snag, and every direction reaches the edge of the circle.
+ */
+static void stick_shape(int32_t *x, int32_t *y)
+{
+	uint32_t r = isqrt((uint32_t)(*x * *x) + (uint32_t)(*y * *y));
+	int64_t scaled;
+
+	if (r <= STICK_INNER_DEADZONE) {
+		*x = 0;
+		*y = 0;
+		return;
+	}
+	scaled = MIN((int64_t)(r - STICK_INNER_DEADZONE) * STICK_FULL /
+			     (STICK_OUTER_SAT - STICK_INNER_DEADZONE),
+		     STICK_FULL);
+	*x = CLAMP(*x * scaled / r, -STICK_FULL, STICK_FULL);
+	*y = CLAMP(*y * scaled / r, -STICK_FULL, STICK_FULL);
 }
 
 enum cal_state {
@@ -467,8 +500,12 @@ void input_read(struct xbx_input_report *report)
 	report->buttons = pressed & 0xFFFF;
 	report->lt = (pressed & PIN_LT) ? TRIGGER_MAX : 0;
 	report->rt = (pressed & PIN_RT) ? TRIGGER_MAX : 0;
-	report->lx = axis_scale(&axis_x, x);
-	report->ly = axis_scale(&axis_y, y);
+	int32_t lx = axis_norm(&axis_x, x);
+	int32_t ly = axis_norm(&axis_y, y);
+
+	stick_shape(&lx, &ly);
+	report->lx = axis_x.invert ? -lx : lx;
+	report->ly = axis_y.invert ? -ly : ly;
 }
 
 static void led_set(const struct pwm_dt_spec *led, uint8_t level)
