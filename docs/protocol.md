@@ -272,7 +272,7 @@ quality (RSSI, for [[todo#Dynamic TX power]]).
 | Mode | Players | Hot-plug | Use |
 |---|---|---|---|
 | **HID gamepad** | 1 | — | Bring-up, own tools, non-XInput systems |
-| **XInput** (Xbox 360 Wireless Receiver emulation) | 1–4 | Yes, in-band connect/disconnect (`xpad`; Linux only) | Everyday / multiplayer, two-motor rumble |
+| **XInput** (Xbox 360 Wireless Receiver emulation) | 1–4 | Yes, in-band connect/disconnect (`xpad`; Windows untested) | Everyday / multiplayer, two-motor rumble |
 
 Plain HID has no way to add or remove a gamepad without re-enumerating the
 whole device, hence single-player HID.
@@ -285,7 +285,7 @@ descriptor sets.
 
 ## USB HID mode
 
-Descriptor: `report_desc` in `firmware/dongle/src/hid_pad.c`, one Gamepad
+Descriptor: `report_desc` in `firmware/common/src/hid_pad.c`, one Gamepad
 application collection. Tested with `evtest`, SDL and Steam on Linux.
 
 ### Device
@@ -426,9 +426,9 @@ SDL `SDL_JoystickRumble`; watch `rumble[…]` on the controller.
 
 The dongle poses as an Xbox 360 Wireless Receiver as Linux's `xpad` driver
 knows it: `xpad` binds any `0x1209` interface of the receiver type, so no
-Microsoft IDs are needed. Windows' receiver driver only binds Microsoft's IDs,
-so this mode is Linux-only (Steam included). Code: `xinput.c` (USB class,
-packets), `bridge.c` (slot 0, output).
+Microsoft IDs are needed. Tested on Linux (Steam included); whether Windows'
+driver binds the receiver type with our IDs is untested ([[todo#Dongle]]).
+Code: `xinput.c` (USB class, packets), `bridge.c` (slot 0, output).
 
 ### Device
 | Item | Value |
