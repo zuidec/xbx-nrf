@@ -1,5 +1,5 @@
 ---
-title: xbx-nrf protocols (radio + USB HID)
+title: xbx-nrf protocols (radio + USB)
 created: 2026-09-29
 tags:
   - xbx-nrf
@@ -9,13 +9,14 @@ aliases:
   - protocol
   - radio protocol
   - HID report
+  - XInput
 ---
 
 # xbx-nrf protocols
 
-Two links: **radio** (controller ↔ dongle, implemented) and **USB** (dongle ↔
-PC; HID mode implemented, XInput planned). XInput and GIP modes reuse the radio
-data; see [[docs/gip]] for GIP. Tasks: [[todo#Link]], [[todo#Dongle]].
+Two links: **radio** (controller ↔ dongle) and **USB** (dongle ↔ PC: HID and
+XInput modes, implemented). Both USB modes reuse the radio data, as would the
+planned GIP mode ([[docs/gip]]). Tasks: [[todo#Link]], [[todo#Dongle]].
 
 ## Radio (controller ↔ dongle)
 
@@ -271,10 +272,16 @@ quality (RSSI, for [[todo#Dynamic TX power]]).
 | Mode | Players | Hot-plug | Use |
 |---|---|---|---|
 | **HID gamepad** | 1 | — | Bring-up, own tools, non-XInput systems |
-| **XInput** (Xbox 360 Wireless Receiver emulation) | 1–4 | Yes, in-band connect/disconnect (`xpad`, Steam, Windows) | Everyday / multiplayer |
+| **XInput** (Xbox 360 Wireless Receiver emulation) | 1–4 | Yes, in-band connect/disconnect (`xpad`; Linux only) | Everyday / multiplayer, two-motor rumble |
 
 Plain HID has no way to add or remove a gamepad without re-enumerating the
 whole device, hence single-player HID.
+
+**Mode selection:** read once at boot, before USB starts (`usb_mode_get()` in
+`usb.c`); changing it needs a reset. Pro Micro: jumper P0.06 to GND = XInput,
+open = HID (`mode-gpios` in the board overlay). Dongle PCB: a switch
+([[todo#Dongle]]). Each mode has its own PID, so hosts never mix up the two
+descriptor sets.
 
 ## USB HID mode
 
@@ -414,3 +421,69 @@ SDL `SDL_JoystickRumble`; watch `rumble[…]` on the controller.
 - **Link loss:** no radio report for **1000 ms** (`LINK_TIMEOUT_MS` in
   `bridge.c`) → neutral report (sticks centred, nothing pressed), rumble off,
   PID effects stopped.
+
+## USB XInput mode
+
+The dongle poses as an Xbox 360 Wireless Receiver as Linux's `xpad` driver
+knows it: `xpad` binds any `0x1209` interface of the receiver type, so no
+Microsoft IDs are needed. Windows' receiver driver only binds Microsoft's IDs,
+so this mode is Linux-only (Steam included). Code: `xinput.c` (USB class,
+packets), `bridge.c` (slot 0, output).
+
+### Device
+| Item | Value |
+|---|---|
+| VID / PID | `0x1209` / **`0x0002`** test PID |
+| Interfaces | 4 × vendor class `0xFF`, subclass `0x5D`, protocol `0x81` (one per player slot); + CDC ACM console in development builds |
+| Endpoints | Per interface: interrupt IN and OUT, 32 bytes, 1 ms (`xpad` requires exactly these two) |
+| Gamepad | Created by `xpad` when a slot reports a controller: "Generic X-Box pad", product ID `0x02a1` |
+
+Only slot 0 carries a controller until pairing and multiple controllers
+([[#Pairing & multiple controllers (planned, protocol v2)]]); slots 1–3 report
+none.
+
+### Input packets (dongle → PC)
+
+Presence, 2 bytes: `08 80` = controller connected, `08 00` = none. `xpad` adds
+or removes the slot's gamepad on each change.
+
+Pad data, 29 bytes:
+
+| Offset | Size | Field |
+|---|---|---|
+| 0–5 | 6 | `00 01 00 F0 00 13` (pad data valid; wired-360 report header) |
+| 6 | 2 | Buttons, XInput `wButtons` layout (= radio `buttons`, passed through) |
+| 8 | 1 | Left trigger 0…255 (radio value >> 2) |
+| 9 | 1 | Right trigger 0…255 |
+| 10 | 8 | LX, LY, RX, RY, s16 LE, up = positive (as on the radio) |
+| 18 | 11 | 0 |
+
+Share and Pair have no XInput bit and aren't sent.
+
+### Output packets (PC → dongle)
+
+The commands `xpad` sends; others are ignored.
+
+| Bytes | Command | Dongle action |
+|---|---|---|
+| `00 01 0F C0 00 <strong> <weak> …` | Rumble | Heavy = strong, light = weak |
+| `00 00 08 4<n> …` | LED pattern `n` (0–15) | Guide LED: 0 = off, anything else = on |
+| `00 00 08 C0 …` | Power off (Guide held 5 s) | Logged ([[todo#Controller]]) |
+| `08 00 0F C0 …` | Presence query (at bind) | Repeat the presence packet |
+
+### Behaviour
+- **Connect/disconnect:** link up → presence connected, then pad data from
+  every radio report; no radio report for **1000 ms** → presence
+  disconnected, rumble off. The gamepad disappears from the PC.
+- **Newest wins:** one IN transfer in flight per slot; a newer report replaces
+  one not yet sent. Presence packets go first.
+- **Rumble:** native `FF_RUMBLE` (`xpad` via the kernel's memoryless FF helper),
+  heavy and light separate. The helper also emulates periodic effects on both
+  motors. Off when the interface goes down or the link is lost; LT/RT motors
+  stay 0 (XInput has only 2).
+- **LED:** `xpad` sets the player pattern when it adds the gamepad (again
+  after a reconnect).
+
+Tests: `evtest`, `fftest /dev/input/eventN` (rumbles: one motor each),
+SDL `SDL_JoystickRumble` with low only, then high only; watch `rumble[…] led`
+on the controller.
