@@ -337,7 +337,7 @@ USB modes, in order; one active at a time.
 ### Stick and trigger calibration
 Framework now on the breadboard (raw ADC counts, board-independent); tune the
 constants (deadzone, drift window, settle time) on the real TMR sticks.
-- [ ] Calibration data in flash (Zephyr settings on the storage partition):
+- [x] Calibration data in flash (Zephyr settings on the storage partition):
       per axis min / centre / max and direction.
 - [ ] On-device routine: calibration button → move sticks and triggers
       through their full range → press again → saved. Breadboard: a button

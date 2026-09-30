@@ -1,8 +1,13 @@
 /*
  * Breadboard input (see input.h). Buttons are polled every 1 ms with an eager
  * debounce: a change is reported at once, then the pin is ignored for
- * DEBOUNCE_MS. The stick centre is measured at boot; the range grows to the
- * furthest position seen, so rotate the stick once after power-up.
+ * DEBOUNCE_MS.
+ *
+ * Stick: with a stored calibration (calib.c) its centre and range are used as
+ * they are. Without one, the centre is measured at boot and the range grows
+ * to the furthest position seen, so rotate the stick once after power-up.
+ * Temporary controls until the calibration routine: View + Menu held 3 s
+ * stores the current centre and range; View + Menu + LS erases them.
  */
 
 #include <zephyr/kernel.h>
@@ -11,6 +16,7 @@
 #include <zephyr/drivers/pwm.h>
 #include <zephyr/logging/log.h>
 
+#include "calib.h"
 #include "input.h"
 #include "protocol.h"
 
@@ -22,6 +28,10 @@ LOG_MODULE_REGISTER(input, LOG_LEVEL_INF);
 #define STICK_DEADZONE    40   /* raw counts around the centre, ~1 % of the range */
 #define STICK_INITIAL_SPAN 1200 /* assumed reach until the stick has gone further */
 #define CALIBRATION_SAMPLES 32
+
+#define COMBO_HOLD_MS 3000
+#define COMBO_SAVE    (XBX_BTN_VIEW | XBX_BTN_MENU)
+#define COMBO_ERASE   (XBX_BTN_VIEW | XBX_BTN_MENU | XBX_BTN_LS)
 
 #define TRIGGER_MAX 1023
 
@@ -70,6 +80,7 @@ static uint8_t lockout_ms[ARRAY_SIZE(pins)];
 struct stick_axis {
 	int16_t center, min, max; /* raw counts */
 	bool invert;
+	bool fixed; /* stored calibration: the range doesn't grow */
 };
 
 static struct stick_axis axis_x = {.invert = IS_ENABLED(CONFIG_XBX_LSTICK_INVERT_X)};
@@ -108,8 +119,10 @@ static int16_t axis_scale(struct stick_axis *axis, int16_t raw)
 	int32_t span;
 	int32_t out;
 
-	axis->min = MIN(axis->min, raw);
-	axis->max = MAX(axis->max, raw);
+	if (!axis->fixed) {
+		axis->min = MIN(axis->min, raw);
+		axis->max = MAX(axis->max, raw);
+	}
 
 	if (d > STICK_DEADZONE) {
 		span = axis->max - axis->center - STICK_DEADZONE;
@@ -122,6 +135,68 @@ static int16_t axis_scale(struct stick_axis *axis, int16_t raw)
 	}
 	out = CLAMP(out, -32767, 32767);
 	return axis->invert ? -out : out;
+}
+
+/* use the stored calibration for this axis, if there is one */
+static bool axis_load(struct stick_axis *axis, enum calib_axis_id id)
+{
+	struct calib_data data;
+	const struct calib_axis *c;
+
+	if (!calib_get(&data) || !(data.valid & BIT(id))) {
+		return false;
+	}
+	c = &data.axis[id];
+	axis->min = c->min;
+	axis->center = c->center;
+	axis->max = c->max;
+	axis->invert = c->flags & CALIB_FLAG_INVERT;
+	axis->fixed = true;
+	return true;
+}
+
+static void axis_store(struct calib_data *data, enum calib_axis_id id, struct stick_axis *axis)
+{
+	struct calib_axis *c = &data->axis[id];
+
+	c->min = axis->min;
+	c->center = axis->center;
+	c->max = axis->max;
+	c->flags = axis->invert ? CALIB_FLAG_INVERT : 0;
+	data->valid |= BIT(id);
+	axis->fixed = true;
+}
+
+/* temporary save/erase combos (see top of file); fire once per hold */
+static void combo_check(void)
+{
+	static uint32_t held_ms;
+	static bool fired;
+	uint32_t buttons = pressed & 0xFFFF;
+
+	if ((buttons & COMBO_SAVE) != COMBO_SAVE) {
+		held_ms = 0;
+		fired = false;
+		return;
+	}
+	if (fired || ++held_ms < COMBO_HOLD_MS) {
+		return;
+	}
+	fired = true;
+
+	if ((buttons & COMBO_ERASE) == COMBO_ERASE) {
+		axis_x.fixed = false;
+		axis_y.fixed = false;
+		calib_erase();
+	} else {
+		struct calib_data data = {0};
+
+		axis_store(&data, CALIB_LX, &axis_x);
+		axis_store(&data, CALIB_LY, &axis_y);
+		LOG_INF("storing: x %d..%d..%d  y %d..%d..%d", axis_x.min, axis_x.center,
+			axis_x.max, axis_y.min, axis_y.center, axis_y.max);
+		calib_save(&data);
+	}
 }
 
 static int stick_init(void)
@@ -158,8 +233,12 @@ static int stick_init(void)
 	}
 	axis_calibrate(&axis_x, sum_x / CALIBRATION_SAMPLES);
 	axis_calibrate(&axis_y, sum_y / CALIBRATION_SAMPLES);
-
 	LOG_INF("stick centre x %d y %d (of %d)", axis_x.center, axis_y.center, ADC_MAX);
+
+	if (axis_load(&axis_x, CALIB_LX) && axis_load(&axis_y, CALIB_LY)) {
+		LOG_INF("stored: x %d..%d..%d  y %d..%d..%d", axis_x.min, axis_x.center,
+			axis_x.max, axis_y.min, axis_y.center, axis_y.max);
+	}
 	if (axis_x.center < ADC_MAX / 4 || axis_x.center > ADC_MAX * 3 / 4 ||
 	    axis_y.center < ADC_MAX / 4 || axis_y.center > ADC_MAX * 3 / 4) {
 		LOG_WRN("stick centre far off mid-scale: no VCC on the pots?");
@@ -192,6 +271,10 @@ int input_init(void)
 	}
 	k_msleep(20); /* let VCC and the pots settle before calibrating */
 
+	err = calib_init();
+	if (err) {
+		LOG_WRN("calibration storage unavailable: %d", err);
+	}
 	return stick_init();
 }
 
@@ -217,6 +300,7 @@ void input_read(struct xbx_input_report *report)
 	int16_t x, y;
 
 	buttons_scan();
+	combo_check();
 	report->buttons = pressed & 0xFFFF;
 	report->lt = (pressed & PIN_LT) ? TRIGGER_MAX : 0;
 	report->rt = (pressed & PIN_RT) ? TRIGGER_MAX : 0;
