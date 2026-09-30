@@ -279,8 +279,8 @@ USB modes, in order; one active at a time.
 2. [ ] **XInput, 1–4 players** as an **Xbox 360 Wireless Receiver** (4
        interfaces, in-band connect/disconnect; after GP2040-CE / `xpad`): 8-bit
        triggers, 2 motors, no Share. pid.codes IDs: `xpad` binds any `0x1209`
-       interface of the receiver type (FF/5D/81); Linux only (Windows'
-       driver wants Microsoft's IDs).
+       interface of the receiver type (FF/5D/81). Windows untested: check
+       whether its driver binds the receiver type with our IDs.
 	- [x] Mode strap (P0.06 to GND = XInput, PID `0x0002`) and XInput USB
 	      class: 4 interfaces, interrupt IN/OUT 32 bytes at 1 ms, presence
 	      packets and presence-query replies. Test: `xpad` binds all 4,
@@ -332,7 +332,23 @@ USB modes, in order; one active at a time.
 - [x] Rumble safety: rumble/LED values off if no ACK payload for 100 ms
       (`OUTPUT_TIMEOUT_MS`); the motor driver will read these values.
 - [ ] Battery monitoring, low-battery shutdown.
-- [ ] Wired USB gamepad mode.
+- [ ] **Wired USB gamepad mode:** a PC enumerating the controller = wired
+      (radio off); a charger alone keeps it wireless. `CONFIG_XBX_WIRED`
+      (default on) off for wireless tests with the USB console attached.
+	- [ ] Share the dongle's HID gamepad and PID code in `firmware/common`
+	      (dongle unchanged).
+	- [ ] Controller USB device "XBX-NRF Gamepad", test PID `0x0003`: HID
+	      gamepad + PID + CDC console (development builds).
+	- [ ] Wired switch: enumerated → radio off, input → HID, rumble (PID /
+	      vendor report) → local motors; unplugged → radio again.
+	- [ ] Mode at plug-in, 8BitDo-style: X held → XInput, B held →
+	      HID; remembered in flash until changed.
+	- [ ] Wired XInput (test PID `0x0004`): wired 360 interface (FF/5D/01),
+	      20-byte report, rumble `00 08 …`, LED `01 03 …`, `xpad`'s vendor
+	      "magic" request.
+	- [ ] Windows: HID PID rumble (Windows' PID driver likely also wants a
+	      PID State report and Axes Enable) and wired XInput (driver binds
+	      by interface class?).
 
 ### Stick and trigger calibration
 Framework now on the breadboard (raw ADC counts, board-independent); tune the
