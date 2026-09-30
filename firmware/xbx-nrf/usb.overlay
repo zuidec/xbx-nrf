@@ -1,0 +1,21 @@
+/*
+ * Board-independent USB functions for wired mode, added to every build via
+ * EXTRA_DTC_OVERLAY_FILE in CMakeLists.txt (app.overlay would be ignored,
+ * because board overlays exist). Same reports as the dongle's HID mode.
+ */
+
+&zephyr_udc0 {
+	hid_dev_0: hid_dev_0 {
+		compatible = "zephyr,hid-device";
+		label = "XBX-NRF Gamepad";
+		protocol-code = "none";
+		in-report-size = <16>;
+		in-polling-period-us = <1000>;
+		/*
+		 * Also the OUT endpoint's max packet size: keep it above every output
+		 * report so each one is a short packet that ends its transfer.
+		 */
+		out-report-size = <64>;
+		out-polling-period-us = <1000>; /* PID uploads send several reports in a row */
+	};
+};

@@ -1,5 +1,12 @@
 menu "xbx-nrf controller"
 
+config XBX_USB_CONSOLE
+	bool "USB serial console as a composite function"
+	default y
+	help
+	  Adds the CDC ACM serial port (log console) next to the wired-mode
+	  gamepad on the controller's USB device. On for development builds.
+
 config XBX_FAKE_INPUT
 	bool "Send a test pattern instead of real input"
 	help

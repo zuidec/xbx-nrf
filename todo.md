@@ -337,7 +337,7 @@ USB modes, in order; one active at a time.
       (default on) off for wireless tests with the USB console attached.
 	- [x] Share the dongle's HID gamepad and PID code in `firmware/common`
 	      (dongle unchanged).
-	- [ ] Controller USB device "XBX-NRF Gamepad", test PID `0x0003`: HID
+	- [x] Controller USB device "XBX-NRF Gamepad", test PID `0x0003`: HID
 	      gamepad + PID + CDC console (development builds).
 	- [ ] Wired switch: enumerated → radio off, input → HID, rumble (PID /
 	      vendor report) → local motors; unplugged → radio again.
