@@ -147,8 +147,8 @@ Locked decisions: [README](README.md). Not yet locked:
 
 ### MCU / radio
 - [x] MCU: **nRF52840** (no audio in v1).
-- [ ] Module: pre-certified nRF52840 **with an RF pad or u.FL** (for the stock
-      antennas); check its size.
+- [ ] Module: **Raytac MDBT50Q-U1MV2** preferred (as the dongle; u.FL to the
+      stock antennas via coax); check its size and fit.
 - [ ] **Stock antennas: verify before ordering the PCB.** Top board: `ANT` (Z4,
       Z5, Z6 → J5/J6), `ANT1` (Z1, Z2, Z3 → J8). Stock SoC board: coax J1, J2.
       One was Xbox Wireless, one Bluetooth.
@@ -193,8 +193,22 @@ Locked decisions: [README](README.md). Not yet locked:
 ## 4. Hardware design — dongle
 
 - [ ] Prototype on the PCA10059 (after the Pro Micro breadboard).
-- [ ] **Custom dongle PCB** (the plan): USB mode switch read at boot
-      ([[#Dongle]] step 4), pair button, status LED, antenna.
+- [ ] **Custom dongle PCB** (the plan), module **Raytac MDBT50Q-U1MV2**
+      (u.FL; 32.768 kHz crystal; USB with VBUS and VDDH):
+	- [ ] Power from USB 5 V on VBUS + VDDH (no LDO); VDD becomes REG0's
+	      output: decoupling per the module's high-voltage-mode reference.
+	- [ ] USB-C (CC: 5.1 kΩ to GND each), ESD diodes at the connector,
+	      VBUS ≤ 10 µF.
+	- [ ] u.FL → pigtail (MHF1) → (RP-)SMA bulkhead, 2–3 dBi dipole; base
+	      station on a USB cable rather than a stick.
+	- [ ] USB mode switch read at boot ([[#Dongle]] step 4), pair button,
+	      status LED (sized for the VDD chosen below); avoid P0.09/P0.10
+	      (NFC) and P0.18 (reset).
+	- [ ] SWD pads (TC2030 footprint): first flash over SWD.
+	- [ ] Firmware: own board definition based on `nrf52840dongle`,
+	      including REGOUT0 → 3.0 V (GPIOs run at 1.8 V otherwise).
+	- [ ] Order 5–6 modules in one DigiKey Marketplace order ($25 flat
+	      shipping), shared with the controller.
 
 ---
 

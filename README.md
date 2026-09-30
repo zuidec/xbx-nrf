@@ -26,7 +26,7 @@ Lightspeed. The stock top board and shell stay.
 |---|---|
 | Target | Xbox Series X\|S (1914); Elite Series 2 (1797) maybe later |
 | Scope | New **bottom board only**; stock top board, shell, triggers, motors reused |
-| MCU | **nRF52840**: certified module (controller), Nordic PCA10059 (dongle) |
+| MCU | **nRF52840** modules on the controller and the dongle |
 | Audio | **None in v1** |
 | Wireless | **ESB/Gazell** 2.4 GHz; rumble/LED in ACK payloads |
 | Multiplayer | One dongle: up to **7 paired**, **4 connected**; 1 kHz with 1–2, 500 Hz with 3–4 (time slots) |
