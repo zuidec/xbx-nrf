@@ -138,7 +138,9 @@ Locked decisions: [README](README.md). Not yet locked:
 - [ ] VBUS detect (J3 pin 12).
 - [ ] **Charging:** external (default) / VBUS to J7 for Play & Charge / in
       controller (needs chemistry detection; probably not worth it).
-- [ ] Stick supply: LDO with enable (like AN+) or load switch.
+- [ ] Stick supply: **1.8 V** LDO with enable (like AN+; lower consumption),
+      pulsed around each sample like the trigger supply. Check the TMR sticks'
+      1.8 V rating, current and settling time.
 - [ ] Trigger sensor supply: switched, pulsed (on, ≥ 100 µs, sample, off).
 - [ ] No back-powering: float GPIOs before a rail goes down.
 
@@ -162,10 +164,12 @@ Locked decisions: [README](README.md). Not yet locked:
 - [ ] USB D+/D− from J3 (90 Ω pair); ESD on the top board?
 
 ### Inputs
-- [ ] Sticks: stock pots or TMR/Hall?
-- [ ] Stick pot wiring gives the report's directions (right, up = positive),
+- [x] Sticks: **TMR** (low noise, no wear drift).
+- [ ] Stick wiring gives the report's directions (right, up = positive),
       so no firmware inversion is needed. The breadboard stick reads X
       reversed.
+- [ ] Calibration button on its own GPIO, reachable without opening the
+      shell (battery bay?) ([[#Stick and trigger calibration]]).
 - [ ] Triggers: A1304 at the stock positions.
 - [ ] I2C to the PCAL6416 + pull-ups ([[docs/pcal6416#Connections]]).
 - [ ] B, LSC, RSC switches.
@@ -320,14 +324,29 @@ USB modes, in order; one active at a time.
       unknown whether it does for `xpad` / USB receivers.
 - [ ] USB-powered "off" state.
 - [ ] PCAL6416 polling ([[docs/pcal6416#Firmware notes]]).
-- [ ] Stick/trigger ADC, trigger supply pulsed in sync.
-- [ ] Trigger calibration + remapping (stops, hair trigger).
-- [ ] Stick deadzones, calibration in flash.
+- [ ] Stick/trigger ADC: internal 0.6 V reference, gain 1/3 → 0–1.8 V at
+      12 bits (not ratiometric; calibration absorbs the LDO offset; if it
+      drifts, measure the 1.8 V rail on the 8th analog input). Stick and
+      trigger supplies pulsed around each sample.
 - [ ] Rumble PWM ([[docs/a3910#Firmware notes]]).
 - [x] Rumble safety: rumble/LED values off if no ACK payload for 100 ms
       (`OUTPUT_TIMEOUT_MS`); the motor driver will read these values.
 - [ ] Battery monitoring, low-battery shutdown.
 - [ ] Wired USB gamepad mode.
+
+### Stick and trigger calibration
+Framework now on the breadboard (raw ADC counts, board-independent); tune the
+constants (deadzone, drift window, settle time) on the real TMR sticks.
+- [ ] Calibration data in flash (Zephyr settings on the storage partition):
+      per axis min / centre / max and direction.
+- [ ] On-device routine: calibration button → move sticks and triggers
+      through their full range → press again → saved. Breadboard: a button
+      combo stands in (all header pins are used).
+- [ ] Radial inner deadzone, outer saturation (full deflection = ±32767).
+- [ ] Boot-time centre check: re-centre within a small window of the stored
+      centre, else keep it (stick held at power-up).
+- [ ] Triggers on the same data: stops, remapping, hair trigger.
+- [ ] Commands for the host program ([[#Calibration program]]).
 
 ### Build & versions
 [[docs/building|Building]]
@@ -354,7 +373,7 @@ USB modes, in order; one active at a time.
 ## 6. Prototyping milestones
 
 - [x] **M1:** 1 kHz link, latency and loss measured ([[#Link]]).
-- [ ] **M2:** dongle works as HID, then XInput ([[#Dongle]]).
+- [x] **M2:** dongle works as HID, then XInput ([[#Dongle]]).
 - [ ] **M2b:** pairing; 2 controllers at 1 kHz, then 4 at 500 Hz
       ([[#Pairing & multiple controllers (protocol v2)]]).
 - [ ] **M3:** dev board on a stock top board via J3: buttons, Guide, power
@@ -402,9 +421,16 @@ metadata needs Microsoft's compiler, and on Linux `xpad` drops trigger rumble.
 
 ---
 
+### Calibration program
+Small OS-agnostic host tool (Python + `hidapi`, or similar): live stick and
+trigger view, guided calibration, deadzone / curve / trigger-stop settings.
+- [ ] Transport: vendor HID interface (no driver on any OS). Over the
+      controller's wired USB first; via the dongle needs a reliable radio
+      command channel.
+- [ ] Command set, shared with the on-device routine's stored data.
+
 ## Open questions
 
 - Is the latch self-holding (expected: no)?
 - Is J3 pin 13 Pair sense? What is pin 11?
 - Does a Play & Charge pack need I2C commands to charge?
-- Stock stick pots or TMR?
