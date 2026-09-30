@@ -277,11 +277,11 @@ USB modes, in order; one active at a time.
        triggers, 2 motors, no Share. pid.codes IDs: `xpad` binds any `0x1209`
        interface of the receiver type (FF/5D/81); Linux only (Windows'
        driver wants Microsoft's IDs).
-	- [ ] Mode strap (P0.06 to GND = XInput, PID `0x0002`) and XInput USB
+	- [x] Mode strap (P0.06 to GND = XInput, PID `0x0002`) and XInput USB
 	      class: 4 interfaces, interrupt IN/OUT 32 bytes at 1 ms, presence
 	      packets and presence-query replies. Test: `xpad` binds all 4,
 	      no gamepad until a controller connects.
-	- [ ] Slot 0 bridge: radio → 360 report, connect on link up,
+	- [x] Slot 0 bridge: radio → 360 report, connect on link up,
 	      disconnect after the link timeout. Test: `evtest`, Steam.
 	- [ ] Output: rumble → heavy/light separately, LED pattern → Guide
 	      LED, power-off command. Test: `fftest`, `sdl-rumble` low/high.

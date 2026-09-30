@@ -1,7 +1,9 @@
 /*
  * Radio → USB bridge. The radio interrupt only stores the newest report and
  * wakes this thread; converting and submitting happens here, in thread
- * context, as the USB stack requires.
+ * context, as the USB stack requires. Reports go to the HID gamepad or to
+ * XInput slot 0, per the USB mode; link up/down is a connect/disconnect in
+ * XInput mode and a neutral report in HID mode.
  *
  * Also the rumble mixer: with each radio report (1 kHz while linked) the PID
  * engine's strength is combined with the vendor output report, the larger
@@ -20,6 +22,8 @@
 #include "hid_pid.h"
 #include "protocol.h"
 #include "radio.h"
+#include "usb.h"
+#include "xinput.h"
 
 LOG_MODULE_REGISTER(bridge, LOG_LEVEL_INF);
 
@@ -66,29 +70,43 @@ static void output_update(void)
 static void bridge_thread(void *p1, void *p2, void *p3)
 {
 	const struct hid_pad_state neutral = {.hat = HID_PAD_HAT_CENTERED};
+	const bool xinput = usb_mode_get() == USB_MODE_XINPUT;
 	struct xbx_input_report in;
 	struct hid_pad_state state;
 	bool link_up = false;
 
 	while (true) {
 		if (radio_wait_input(&in, K_MSEC(LINK_TIMEOUT_MS)) == 0) {
-			hid_pad_from_radio(&in, &state);
-			hid_pad_update(&state);
-			output_update();
 			if (!link_up) {
 				link_up = true;
 				LOG_INF("link up");
+				if (xinput) {
+					/* presence first: the host adds the gamepad */
+					xinput_set_connected(0, true);
+				}
 			}
+			if (xinput) {
+				xinput_update(0, &in);
+			} else {
+				hid_pad_from_radio(&in, &state);
+				hid_pad_update(&state);
+			}
+			output_update();
 		} else if (link_up) {
 			static const uint8_t off[4];
 
-			hid_pad_update(&neutral);
+			if (xinput) {
+				xinput_set_connected(0, false);
+			} else {
+				hid_pad_update(&neutral);
+			}
 			/* don't resume stale rumble when the controller reconnects */
 			vendor_output(off, 0);
 			hid_pid_stop_all();
 			radio_set_output(off, 0);
 			link_up = false;
-			LOG_INF("link lost: neutral report sent, rumble off");
+			LOG_INF("link lost: %s, rumble off",
+				xinput ? "slot 0 disconnected" : "neutral report sent");
 		}
 	}
 }
