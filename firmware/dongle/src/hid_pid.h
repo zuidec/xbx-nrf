@@ -227,4 +227,13 @@ int hid_pid_output(const uint8_t *buf, uint16_t len);
 int hid_pid_set_feature(uint8_t id, const uint8_t *buf, uint16_t len);
 int hid_pid_get_feature(uint8_t id, uint8_t *buf, uint16_t len);
 
+/* Stop all effects (link lost: don't resume stale rumble on reconnect). */
+void hid_pid_stop_all(void);
+
+/*
+ * Engine: rumble strength 0..255 at uptime now_ms, the sum of all playing
+ * effects. Call every 1 ms; ends effects whose duration and loops are done.
+ */
+uint8_t hid_pid_strength(uint32_t now_ms);
+
 #endif /* XBX_DONGLE_HID_PID_H_ */
