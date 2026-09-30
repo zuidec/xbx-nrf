@@ -7,5 +7,5 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(xbx_dongle)
 
 target_sources(app PRIVATE src/main.c src/radio.c src/usb.c src/hid_pad.c src/hid_pid.c
-	src/bridge.c)
+	src/xinput.c src/bridge.c)
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../common/include)
