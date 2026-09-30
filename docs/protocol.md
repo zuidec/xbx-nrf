@@ -286,8 +286,8 @@ application collection. Tested with `evtest`, SDL and Steam on Linux.
 |---|---|
 | VID / PID | `0x1209` (pid.codes) / **`0x0001`** test PID during development |
 | Interfaces | 1 HID gamepad; + CDC ACM console in development builds (composite) |
-| Reports | Input ID 1, 16 bytes (= `in-report-size` in `usb.overlay`); output ID 2, 6 bytes |
-| HID endpoints | Interrupt IN 1 ms; interrupt OUT ~4 ms *(tune)*, max packet 64 (must exceed the 6-byte report, or reports merge) |
+| Reports | Input ID 1, 16 bytes (= `in-report-size` in `usb.overlay`); output ID 2, 6 bytes; PID `0x11`–`0x23` ([[#Force feedback (PID)]]) |
+| HID endpoints | Interrupt IN 1 ms; interrupt OUT 1 ms (PID uploads send several reports in a row), max packet 64 (must exceed every output report, or reports merge) |
 | Serial number | From the nRF52840 `DEVICEID` |
 | Console | `CONFIG_XBX_USB_CONSOLE`: on in `build-unsigned.sh`, off in `build-signed.sh` |
 
@@ -347,12 +347,70 @@ reset to 0 when the USB interface goes down or the link is lost.
 
 This vendor report is for testing and our own tools; games and Steam don't
 use it (no evdev force feedback). Test: `tools/test-rumble.sh <hr|lr|all>
-<0-255>` (1 s pulse via `/dev/hidrawN`). Game rumble in HID mode needs HID PID
-force feedback (planned); XInput mode gets it via `xpad`.
+<0-255>` (1 s pulse via `/dev/hidrawN`). Game rumble uses
+[[#Force feedback (PID)]].
+
+### Force feedback (PID)
+
+HID PID reports (usage page `0x0F`) inside the gamepad collection; Linux's
+`hid-pidff` binds to them without quirks. Code: `hid_pid.c` (descriptor,
+effect table, engine), `bridge.c` (mixing).
+
+**Sine only.** The input core emulates `FF_RUMBLE` on any device with periodic
+effects: each rumble becomes a sine with magnitude ⅔ strong + ⅓ weak (50 ms
+period). SDL, Steam and Proton use `FF_RUMBLE`, so games rumble, but with one
+blended strength: heavy/light separation needs XInput mode. Other effect types
+(constant, ramp, conditions) only serve DirectInput wheel/joystick games.
+`hid-pidff` needs Set Envelope for any periodic effect, so it's included.
+
+Output reports (after the ID; levels 0…255, times u16 LE in ms):
+
+| ID | Report | Fields |
+|---|---|---|
+| `0x11` | Set Effect | block, type (1 = sine), duration (`0xFFFF` = infinite), trigger repeat, start delay, gain, trigger button, direction enable (bit 0), direction |
+| `0x12` | Set Envelope | block, attack level, fade level, attack time, fade time |
+| `0x13` | Set Periodic | block, magnitude, offset (s8), phase, period |
+| `0x14` | Effect Operation | block, op (1 start, 2 start solo, 3 stop), loop count |
+| `0x15` | Block Free | block |
+| `0x16` | Device Control | 1 enable / 2 disable actuators, 3 stop all, 4 reset, 5 pause, 6 continue |
+| `0x17` | Device Gain | gain |
+
+Feature reports:
+
+| ID | Report | Direction | Fields |
+|---|---|---|---|
+| `0x21` | Create New Effect | set | type (1 = sine) |
+| `0x22` | Block Load | get | block (0 on failure), status (1 success, 2 full, 3 error), RAM pool available (u16) |
+| `0x23` | Pool | get | RAM pool size (u16), simultaneous max (16), bit 0 device-managed pool |
+
+Block indexes are 1–16. Upload: Create New Effect → Block Load returns the
+lowest free block → Set Effect / Set Periodic / Set Envelope for that block →
+Effect Operation starts it. Direction, trigger and phase are accepted and
+ignored.
+
+**Engine** (`hid_pid_strength()`, every radio report, i.e. 1 kHz while
+linked): for each playing effect, after the start delay, magnitude with the
+envelope applied × effect gain × device gain; effects end after duration ×
+loop count. Playing effects add up, capped at 255; 0 while actuators are
+disabled or paused.
+
+**Mixing:** heavy and light each take the larger of the PID strength and the
+vendor report; LT, RT and the LED are vendor-only. Trigger rumble mixing is
+controller-side ([[todo#Trigger rumble (controller-side)]]).
+
+**Resets:**
+- Device Control Reset frees all effects but keeps the device gain:
+  `hid-pidff` sends it before the first upload, after setting the gain.
+- USB interface down: effects freed, gain back to maximum, rumble off.
+- Link loss: all effects stopped (a reconnect doesn't resume old rumble).
+
+Tests: `fftest /dev/input/eventN` (only the sine and the two rumbles upload),
+SDL `SDL_JoystickRumble`; watch `rumble[…]` on the controller.
 
 ### Behaviour
 - **Latest wins:** each radio report is converted and submitted at once; if the
   host hasn't collected the previous one, it's replaced and sent on the
   "report done" callback. Radio → USB delay < ~1 ms.
 - **Link loss:** no radio report for **1000 ms** (`LINK_TIMEOUT_MS` in
-  `bridge.c`) → neutral report (sticks centred, nothing pressed) and rumble off.
+  `bridge.c`) → neutral report (sticks centred, nothing pressed), rumble off,
+  PID effects stopped.
