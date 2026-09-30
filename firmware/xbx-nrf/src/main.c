@@ -3,7 +3,9 @@
  *
  * Sends an input report every 1 ms over ESB (PTX) and prints link statistics
  * once per second. The dongle replies with an output report in the ACK
- * payload. Input: the breadboard pins (input.c), or a test pattern with
+ * payload. Wired mode (CONFIG_XBX_WIRED): while a PC has the USB device
+ * configured, reports go to the USB HID gamepad instead and the radio pauses;
+ * rumble then comes from the PC (PID effects, vendor report). Input: the breadboard pins (input.c), or a test pattern with
  * CONFIG_XBX_FAKE_INPUT.
  */
 
@@ -18,6 +20,7 @@
 #include <app_version.h>
 
 #include "hid_pad.h"
+#include "hid_pid.h"
 #include "input.h"
 #include "protocol.h"
 #include "usb.h"
@@ -55,6 +58,11 @@ static struct link_stats stats;
 static atomic_t in_flight;
 static struct xbx_output_report last_output;
 static struct xbx_input_report last_input; /* for the stats line */
+static bool wired;
+
+/* wired mode: last HID vendor output report (USB thread) */
+static uint8_t host_rumble[4];
+static struct k_spinlock host_lock;
 
 /* No ACK payload for this long (dongle gone, off or out of range): rumble and LED off */
 #define OUTPUT_TIMEOUT_MS 100
@@ -192,14 +200,61 @@ static void output_off(void)
 	LOG_INF("no ACK for %d ms: rumble and LED off", OUTPUT_TIMEOUT_MS);
 }
 
+static void host_output(const uint8_t rumble[4], uint8_t led)
+{
+	k_spinlock_key_t key = k_spin_lock(&host_lock);
+
+	ARG_UNUSED(led); /* Guide LED: later */
+	memcpy(host_rumble, rumble, sizeof(host_rumble));
+	k_spin_unlock(&host_lock, key);
+}
+
+/* heavy/light for the motors: from the dongle, or wired from the PC (larger of
+ * the vendor report and the PID strength, as on the dongle)
+ */
+static void rumble_get(uint8_t *heavy, uint8_t *light)
+{
+	if (wired) {
+		uint8_t pid = hid_pid_strength(k_uptime_get_32());
+		k_spinlock_key_t key = k_spin_lock(&host_lock);
+
+		*heavy = MAX(host_rumble[XBX_RUMBLE_HEAVY], pid);
+		*light = MAX(host_rumble[XBX_RUMBLE_LIGHT], pid);
+		k_spin_unlock(&host_lock, key);
+	} else {
+		*heavy = last_output.rumble[XBX_RUMBLE_HEAVY];
+		*light = last_output.rumble[XBX_RUMBLE_LIGHT];
+	}
+}
+
+/* follow the USB host: wired while one is active (never with CONFIG_XBX_WIRED=n) */
+static void wired_update(void)
+{
+	bool now = IS_ENABLED(CONFIG_XBX_WIRED) && usb_host_active();
+
+	if (now == wired) {
+		return;
+	}
+	wired = now;
+	if (wired) {
+		unsigned int key = irq_lock();
+
+		/* dongle values are stale now */
+		memset(last_output.rumble, 0, sizeof(last_output.rumble));
+		last_output.led = 0;
+		irq_unlock(key);
+	}
+	LOG_INF("%s", wired ? "wired: USB host active, radio paused" : "wireless: radio resumed");
+}
+
 #if !defined(CONFIG_XBX_FAKE_INPUT)
 /* show heavy/light rumble on the LEDs; only touches the PWM on a change */
 static void rumble_leds_update(void)
 {
 	static uint8_t shown[2];
-	uint8_t heavy = last_output.rumble[XBX_RUMBLE_HEAVY];
-	uint8_t light = last_output.rumble[XBX_RUMBLE_LIGHT];
+	uint8_t heavy, light;
 
+	rumble_get(&heavy, &light);
 	if (heavy != shown[0] || light != shown[1]) {
 		input_set_rumble(heavy, light);
 		shown[0] = heavy;
@@ -227,8 +282,10 @@ static void tx_thread(void *p1, void *p2, void *p3)
 		k_sem_take(&tick_sem, K_FOREVER);
 		tick++;
 
+		wired_update();
+
 		/* fires once per outage: atomic_inc returns the previous value */
-		if (atomic_inc(&ack_age_ms) == OUTPUT_TIMEOUT_MS) {
+		if (atomic_inc(&ack_age_ms) == OUTPUT_TIMEOUT_MS && !wired) {
 			output_off();
 		}
 
@@ -239,6 +296,15 @@ static void tx_thread(void *p1, void *p2, void *p3)
 		input_read(report);
 		rumble_leds_update();
 #endif
+
+		if (wired) {
+			struct hid_pad_state state;
+
+			hid_pad_from_radio(report, &state);
+			hid_pad_update(&state);
+			last_input = *report;
+			continue;
+		}
 
 		if (atomic_get(&in_flight)) {
 			stats.skipped++;
@@ -294,6 +360,7 @@ int main(void)
 		LOG_ERR("HID init failed: %d", err);
 		return 0;
 	}
+	hid_pad_set_output_cb(host_output);
 	err = usb_start();
 	if (err) {
 		LOG_ERR("USB start failed: %d", err);
@@ -329,8 +396,12 @@ int main(void)
 			now.acks_with_payload - prev.acks_with_payload,
 			last_output.rumble[0], last_output.rumble[1], last_output.rumble[2],
 			last_output.rumble[3], last_output.led);
-		LOG_INF("buttons %04x  lx %d ly %d  lt %u rt %u", last_input.buttons, last_input.lx,
-			last_input.ly, last_input.lt, last_input.rt);
+		uint8_t heavy, light;
+
+		rumble_get(&heavy, &light);
+		LOG_INF("%s  buttons %04x  lx %d ly %d  lt %u rt %u  motors %u %u",
+			wired ? "wired" : "radio", last_input.buttons, last_input.lx, last_input.ly,
+			last_input.lt, last_input.rt, heavy, light);
 		prev = now;
 	}
 	return 0;

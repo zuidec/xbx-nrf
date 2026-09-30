@@ -1,5 +1,12 @@
 menu "xbx-nrf controller"
 
+config XBX_WIRED
+	bool "Wired mode: be a USB gamepad while a PC has the device configured"
+	default y
+	help
+	  The radio pauses while wired; a charger alone doesn't count. Turn off
+	  to test the wireless link with the USB console attached.
+
 config XBX_USB_CONSOLE
 	bool "USB serial console as a composite function"
 	default y
