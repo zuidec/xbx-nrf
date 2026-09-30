@@ -335,7 +335,7 @@ USB modes, in order; one active at a time.
 - [ ] **Wired USB gamepad mode:** a PC enumerating the controller = wired
       (radio off); a charger alone keeps it wireless. `CONFIG_XBX_WIRED`
       (default on) off for wireless tests with the USB console attached.
-	- [ ] Share the dongle's HID gamepad and PID code in `firmware/common`
+	- [x] Share the dongle's HID gamepad and PID code in `firmware/common`
 	      (dongle unchanged).
 	- [ ] Controller USB device "XBX-NRF Gamepad", test PID `0x0003`: HID
 	      gamepad + PID + CDC console (development builds).
