@@ -6,8 +6,14 @@
  * Stick: with a stored calibration (calib.c) its centre and range are used as
  * they are. Without one, the centre is measured at boot and the range grows
  * to the furthest position seen, so rotate the stick once after power-up.
- * Temporary controls until the calibration routine: View + Menu held 3 s
- * stores the current centre and range; View + Menu + LS erases them.
+ *
+ * Calibration routine (start: calibration button, or View + Menu held 3 s):
+ * the centre is measured with the stick at rest (status LED on), then the
+ * stick is swept through its full range (LED blinks) and the calibration
+ * button or a new View + Menu press stores it (LED on 1 s). Too little range:
+ * fast blink, keep sweeping. B or 60 s without confirming cancels. Reports
+ * are neutral meanwhile. View + Menu + LS held 3 s erases the calibration.
+ * Status LED: the heavy rumble LED (the Guide LED on the real controller).
  */
 
 #include <zephyr/kernel.h>
@@ -30,14 +36,22 @@ LOG_MODULE_REGISTER(input, LOG_LEVEL_INF);
 #define CALIBRATION_SAMPLES 32
 
 #define COMBO_HOLD_MS 3000
-#define COMBO_SAVE    (XBX_BTN_VIEW | XBX_BTN_MENU)
+#define COMBO_CAL     (XBX_BTN_VIEW | XBX_BTN_MENU)
 #define COMBO_ERASE   (XBX_BTN_VIEW | XBX_BTN_MENU | XBX_BTN_LS)
+
+#define CAL_SETTLE_MS      200  /* stick released, spring settled */
+#define CAL_CENTRE_SAMPLES 256
+#define CAL_TIMEOUT_MS     60000
+#define CAL_MIN_SPAN       (ADC_MAX / 8) /* per side, raw counts */
+#define CAL_DONE_MS        1000
+#define CAL_ERROR_MS       1000
 
 #define TRIGGER_MAX 1023
 
 /* not XInput buttons: targets beyond the 16 button bits */
-#define PIN_LT BIT(16)
-#define PIN_RT BIT(17)
+#define PIN_LT  BIT(16)
+#define PIN_RT  BIT(17)
+#define PIN_CAL BIT(18)
 
 #define ZEPHYR_USER DT_PATH(zephyr_user)
 
@@ -64,6 +78,9 @@ static const struct input_pin pins[] = {
 	PIN(ls_gpios, XBX_BTN_LS),
 	PIN(lt_gpios, PIN_LT),
 	PIN(rt_gpios, PIN_RT),
+#if DT_NODE_HAS_PROP(ZEPHYR_USER, calib_gpios)
+	PIN(calib_gpios, PIN_CAL),
+#endif
 };
 
 static const struct gpio_dt_spec vcc_enable = GPIO_DT_SPEC_GET(ZEPHYR_USER, vcc_enable_gpios);
@@ -137,6 +154,28 @@ static int16_t axis_scale(struct stick_axis *axis, int16_t raw)
 	return axis->invert ? -out : out;
 }
 
+enum cal_state {
+	CAL_IDLE,
+	CAL_CENTRE, /* measuring the centre, stick at rest */
+	CAL_SWEEP,  /* collecting the range */
+	CAL_DONE,   /* saved: LED on for a moment */
+};
+
+static struct {
+	enum cal_state state;
+	uint32_t ms;       /* time in the current state */
+	uint32_t error_ms; /* fast blink left */
+	uint32_t n;
+	int32_t sum_x, sum_y;
+	struct stick_axis prev_x, prev_y; /* restored on cancel */
+	bool armed; /* start request released: the next press confirms */
+} cal;
+
+/* last rumble request, shown on the LEDs whenever not calibrating */
+static uint8_t rumble_heavy, rumble_light;
+
+static void led_set(const struct pwm_dt_spec *led, uint8_t level);
+
 /* use the stored calibration for this axis, if there is one */
 static bool axis_load(struct stick_axis *axis, enum calib_axis_id id)
 {
@@ -167,35 +206,146 @@ static void axis_store(struct calib_data *data, enum calib_axis_id id, struct st
 	axis->fixed = true;
 }
 
-/* temporary save/erase combos (see top of file); fire once per hold */
-static void combo_check(void)
+static void status_led(bool on)
+{
+	led_set(&led_heavy, on ? 0xFF : 0);
+	led_set(&led_light, 0);
+}
+
+static void cal_enter(enum cal_state state)
+{
+	cal.state = state;
+	cal.ms = 0;
+	if (state == CAL_IDLE) {
+		input_set_rumble(rumble_heavy, rumble_light); /* LEDs back to rumble */
+	}
+}
+
+/* idle: View + Menu (+ LS) held 3 s, or the calibration button; fire once per hold */
+static void cal_idle(void)
 {
 	static uint32_t held_ms;
 	static bool fired;
-	uint32_t buttons = pressed & 0xFFFF;
+	static bool btn_prev;
+	bool btn = pressed & PIN_CAL;
+	bool start = btn && !btn_prev;
 
-	if ((buttons & COMBO_SAVE) != COMBO_SAVE) {
+	btn_prev = btn;
+	if ((pressed & COMBO_CAL) != COMBO_CAL) {
 		held_ms = 0;
 		fired = false;
+	} else if (!fired && ++held_ms >= COMBO_HOLD_MS) {
+		fired = true;
+		if ((pressed & COMBO_ERASE) == COMBO_ERASE) {
+			axis_x.fixed = false;
+			axis_y.fixed = false;
+			calib_erase();
+			return;
+		}
+		start = true;
+	}
+	if (start) {
+		LOG_INF("calibration: leave the stick at rest");
+		cal.prev_x = axis_x;
+		cal.prev_y = axis_y;
+		cal.sum_x = 0;
+		cal.sum_y = 0;
+		cal.n = 0;
+		cal_enter(CAL_CENTRE);
+	}
+}
+
+static bool cal_span_ok(const struct stick_axis *a)
+{
+	return a->center - a->min >= CAL_MIN_SPAN && a->max - a->center >= CAL_MIN_SPAN;
+}
+
+static void cal_finish(void)
+{
+	struct calib_data data = {0};
+
+	if (!cal_span_ok(&axis_x) || !cal_span_ok(&axis_y)) {
+		LOG_WRN("calibration: too little range (x %d..%d..%d  y %d..%d..%d), keep going",
+			axis_x.min, axis_x.center, axis_x.max, axis_y.min, axis_y.center,
+			axis_y.max);
+		cal.error_ms = CAL_ERROR_MS;
 		return;
 	}
-	if (fired || ++held_ms < COMBO_HOLD_MS) {
+	axis_store(&data, CALIB_LX, &axis_x);
+	axis_store(&data, CALIB_LY, &axis_y);
+	LOG_INF("calibration: storing x %d..%d..%d  y %d..%d..%d", axis_x.min, axis_x.center,
+		axis_x.max, axis_y.min, axis_y.center, axis_y.max);
+	calib_save(&data);
+	cal_enter(CAL_DONE);
+}
+
+static void cal_cancel(const char *why)
+{
+	axis_x = cal.prev_x;
+	axis_y = cal.prev_y;
+	LOG_INF("calibration cancelled (%s)", why);
+	cal_enter(CAL_IDLE);
+}
+
+/* one 1 ms step of the routine; x, y: raw stick sample */
+static void cal_step(int16_t x, int16_t y)
+{
+	bool request = (pressed & COMBO_CAL) == COMBO_CAL || (pressed & PIN_CAL);
+
+	cal.ms++;
+	switch (cal.state) {
+	case CAL_IDLE:
+		cal_idle();
 		return;
-	}
-	fired = true;
-
-	if ((buttons & COMBO_ERASE) == COMBO_ERASE) {
-		axis_x.fixed = false;
-		axis_y.fixed = false;
-		calib_erase();
-	} else {
-		struct calib_data data = {0};
-
-		axis_store(&data, CALIB_LX, &axis_x);
-		axis_store(&data, CALIB_LY, &axis_y);
-		LOG_INF("storing: x %d..%d..%d  y %d..%d..%d", axis_x.min, axis_x.center,
-			axis_x.max, axis_y.min, axis_y.center, axis_y.max);
-		calib_save(&data);
+	case CAL_CENTRE:
+		status_led(true);
+		if (cal.ms <= CAL_SETTLE_MS) {
+			return;
+		}
+		cal.sum_x += x;
+		cal.sum_y += y;
+		if (++cal.n < CAL_CENTRE_SAMPLES) {
+			return;
+		}
+		axis_x.center = axis_x.min = axis_x.max = cal.sum_x / CAL_CENTRE_SAMPLES;
+		axis_y.center = axis_y.min = axis_y.max = cal.sum_y / CAL_CENTRE_SAMPLES;
+		axis_x.fixed = true;
+		axis_y.fixed = true;
+		cal.armed = false;
+		cal.error_ms = 0;
+		LOG_INF("calibration: centre x %d y %d; release View + Menu, move the stick "
+			"through its full range, then press View + Menu again (B cancels)",
+			axis_x.center, axis_y.center);
+		cal_enter(CAL_SWEEP);
+		return;
+	case CAL_SWEEP:
+		axis_x.min = MIN(axis_x.min, x);
+		axis_x.max = MAX(axis_x.max, x);
+		axis_y.min = MIN(axis_y.min, y);
+		axis_y.max = MAX(axis_y.max, y);
+		if (cal.error_ms) {
+			cal.error_ms--;
+			status_led((cal.ms / 62) & 1); /* ~8 Hz */
+		} else {
+			status_led((cal.ms / 500) & 1); /* 1 Hz */
+		}
+		if (pressed & XBX_BTN_B) {
+			cal_cancel("B");
+		} else if (cal.ms >= CAL_TIMEOUT_MS) {
+			cal_cancel("timeout");
+		} else if (!request) {
+			cal.armed = true;
+		} else if (cal.armed) {
+			cal.armed = false;
+			cal_finish();
+		}
+		return;
+	case CAL_DONE:
+		status_led(true);
+		if (cal.ms >= CAL_DONE_MS) {
+			cal_enter(CAL_IDLE);
+		}
+		return;
 	}
 }
 
@@ -300,16 +450,25 @@ void input_read(struct xbx_input_report *report)
 	int16_t x, y;
 
 	buttons_scan();
-	combo_check();
+
+	/* on an ADC error the stick holds its last position */
+	if (stick_sample(&x, &y) != 0) {
+		return;
+	}
+	cal_step(x, y);
+
+	if (cal.state != CAL_IDLE) {
+		/* neutral while calibrating: nothing moves in-game */
+		report->buttons = 0;
+		report->lx = report->ly = 0;
+		report->lt = report->rt = 0;
+		return;
+	}
 	report->buttons = pressed & 0xFFFF;
 	report->lt = (pressed & PIN_LT) ? TRIGGER_MAX : 0;
 	report->rt = (pressed & PIN_RT) ? TRIGGER_MAX : 0;
-
-	/* on an ADC error the stick holds its last position */
-	if (stick_sample(&x, &y) == 0) {
-		report->lx = axis_scale(&axis_x, x);
-		report->ly = axis_scale(&axis_y, y);
-	}
+	report->lx = axis_scale(&axis_x, x);
+	report->ly = axis_scale(&axis_y, y);
 }
 
 static void led_set(const struct pwm_dt_spec *led, uint8_t level)
@@ -322,6 +481,10 @@ static void led_set(const struct pwm_dt_spec *led, uint8_t level)
 
 void input_set_rumble(uint8_t heavy, uint8_t light)
 {
-	led_set(&led_heavy, heavy);
-	led_set(&led_light, light);
+	rumble_heavy = heavy;
+	rumble_light = light;
+	if (cal.state == CAL_IDLE) {
+		led_set(&led_heavy, heavy);
+		led_set(&led_light, light);
+	}
 }
