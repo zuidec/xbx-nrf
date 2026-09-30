@@ -15,6 +15,7 @@
 #include <string.h>
 
 #include "hid_pad.h"
+#include "hid_pid.h"
 #include "protocol.h"
 
 LOG_MODULE_REGISTER(hid_pad, LOG_LEVEL_INF);
@@ -84,6 +85,9 @@ static const uint8_t report_desc[] = {
 		HID_REPORT_COUNT(2),
 		HID_INPUT(DATA_VAR_ABS),
 
+		/* force feedback (PID page, report IDs 0x11..0x23) */
+		HID_PID_DESC,
+
 		/* output: rumble heavy, light, LT, RT, Guide LED */
 		HID_REPORT_ID(OUT_REPORT_ID),
 		HID_USAGE_PAGE16(0xFF00),
@@ -113,6 +117,8 @@ struct out_report {
 BUILD_ASSERT(sizeof(struct in_report) == DT_PROP(DT_NODELABEL(hid_dev_0), in_report_size));
 BUILD_ASSERT(sizeof(struct out_report) < DT_PROP(DT_NODELABEL(hid_dev_0), out_report_size),
 	     "OUT endpoint must be larger than the report (short packets end transfers)");
+BUILD_ASSERT(HID_PID_MAX_OUTPUT_LEN < DT_PROP(DT_NODELABEL(hid_dev_0), out_report_size),
+	     "OUT endpoint must be larger than the PID reports");
 
 static const struct device *const hid_dev = DEVICE_DT_GET(DT_NODELABEL(hid_dev_0));
 
@@ -187,7 +193,9 @@ static void pad_iface_ready(const struct device *dev, const bool ready)
 	if (ready) {
 		try_submit();
 	} else {
-		output_off(); /* host gone: stop rumble */
+		/* host gone: stop rumble */
+		hid_pid_reset();
+		output_off();
 	}
 }
 
@@ -209,6 +217,9 @@ static int pad_get_report(const struct device *dev, const uint8_t type, const ui
 	k_spinlock_key_t key;
 
 	ARG_UNUSED(dev);
+	if (type == HID_REPORT_TYPE_FEATURE) {
+		return hid_pid_get_feature(id, buf, len);
+	}
 	if (type != HID_REPORT_TYPE_INPUT || id != IN_REPORT_ID || len < sizeof(tx_report)) {
 		return -ENOTSUP;
 	}
@@ -237,6 +248,9 @@ static void handle_output(const uint8_t *buf, uint16_t len)
 {
 	const struct out_report *r = (const struct out_report *)buf;
 
+	if (len >= 1 && buf[0] != OUT_REPORT_ID && hid_pid_output(buf, len) != -ENOENT) {
+		return;
+	}
 	if (len != sizeof(*r) || r->id != OUT_REPORT_ID) {
 		LOG_WRN("unexpected output report (len %u, id %u)", len, len ? buf[0] : 0);
 		return;
@@ -252,7 +266,9 @@ static int pad_set_report(const struct device *dev, const uint8_t type, const ui
 			  const uint16_t len, const uint8_t *const buf)
 {
 	ARG_UNUSED(dev);
-	ARG_UNUSED(id);
+	if (type == HID_REPORT_TYPE_FEATURE) {
+		return hid_pid_set_feature(id, buf, len);
+	}
 	if (type != HID_REPORT_TYPE_OUTPUT) {
 		return -ENOTSUP;
 	}
@@ -371,6 +387,8 @@ int hid_pad_init(void)
 	if (!device_is_ready(hid_dev)) {
 		return -ENODEV;
 	}
+
+	hid_pid_reset();
 
 	/* first report after the interface comes up: neutral */
 	to_report(&pending, &neutral);
