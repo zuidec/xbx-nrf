@@ -365,6 +365,9 @@ constants (deadzone, drift window, settle time) on the real TMR sticks.
       centre, else keep it (stick held at power-up).
 - [ ] Triggers on the same data: stops, remapping, hair trigger.
 - [ ] Commands for the host program ([[#Calibration program]]).
+- [ ] User page `docs/controller.md`: wired / wireless, X / B mode,
+      calibration controls. Write once the calibration button and Guide LED
+      exist (the routine's controls change with the hardware).
 
 ### Build & versions
 [[docs/building|Building]]
