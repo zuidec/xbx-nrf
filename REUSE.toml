@@ -2,9 +2,9 @@
 # Full license texts: LICENSES/. Summary: LICENSE.
 version = 1
 
-# Firmware, scripts and repo config
+# Firmware, tools and repo config
 [[annotations]]
-path = ["firmware/**", ".gitignore", "REUSE.toml"]
+path = ["firmware/**", "tools/**", ".gitignore", "REUSE.toml"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 zuidec"
 SPDX-License-Identifier = "MIT"
