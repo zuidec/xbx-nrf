@@ -275,13 +275,21 @@ USB modes, in order; one active at a time.
 2. [ ] **XInput, 1–4 players** as an **Xbox 360 Wireless Receiver** (4
        interfaces, in-band connect/disconnect; after GP2040-CE / `xpad`): 8-bit
        triggers, 2 motors, no Share.
-3. [ ] **HID PID force feedback** (HID mode game rumble: DirectInput on
-       Windows, SDL/evdev on Linux via `hid-pidff`). PID descriptor and USB
-       side (effect IDs, block load, pool) on the dongle. Effect engine on the
-       dongle or the **controller** (smoother under packet loss, less radio
-       traffic, scales to 4 players; needs a reliable radio command channel).
-       Check: `hid-pidff` has no `FF_RUMBLE`, so SDL may fall back to one
-       combined sine strength.
+3. [ ] **HID PID force feedback** (HID mode game rumble via `hid-pidff`).
+       Sine only: the kernel emulates `FF_RUMBLE` as a sine (⅔ strong +
+       ⅓ weak), so SDL/Steam rumble works but as one blended strength;
+       separate heavy/light needs XInput. Engine on the dongle:
+       output = 4 motor levels in the existing output report, no radio
+       change; trigger mixing stays controller-side
+       ([[#Trigger rumble (controller-side)]]).
+	- [ ] PID descriptor (sine + envelope, required reports), effect table,
+	      block load / pool / free, device control, gain. Test: no
+	      `hid-pidff` errors in `dmesg`, `fftest` uploads a sine.
+	- [ ] Engine: active effects → motor strength every 1 ms (magnitude ×
+	      effect gain × device gain; duration, delay, loops), max with the
+	      vendor report, both motors. Test: `fftest`, SDL
+	      `testcontroller`, Steam.
+	- [ ] PID section in `protocol.md`.
 4. [ ] **Mode switching** at plug-in, stored in flash.
 5. [x] Open-source license + `LICENSE` file (MIT / CERN-OHL-S-2.0 /
        CC-BY-4.0, REUSE compliant).
