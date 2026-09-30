@@ -1,9 +1,10 @@
 /*
  * xbx-nrf controller firmware.
  *
- * M1 link test: sends a fake input report every 1 ms over ESB (PTX) and
- * prints link statistics once per second. The dongle replies with an output
- * report in the ACK payload.
+ * Sends an input report every 1 ms over ESB (PTX) and prints link statistics
+ * once per second. The dongle replies with an output report in the ACK
+ * payload. Input: the breadboard pins (input.c), or a test pattern with
+ * CONFIG_XBX_FAKE_INPUT.
  */
 
 #include <zephyr/kernel.h>
@@ -16,6 +17,7 @@
 
 #include <app_version.h>
 
+#include "input.h"
 #include "protocol.h"
 
 LOG_MODULE_REGISTER(ctrl, LOG_LEVEL_INF);
@@ -50,6 +52,7 @@ struct link_stats {
 static struct link_stats stats;
 static atomic_t in_flight;
 static struct xbx_output_report last_output;
+static struct xbx_input_report last_input; /* for the stats line */
 
 /* No ACK payload for this long (dongle gone, off or out of range): rumble and LED off */
 #define OUTPUT_TIMEOUT_MS 100
@@ -134,14 +137,12 @@ static int radio_init(void)
 	return esb_set_rf_channel(XBX_RF_CHANNEL);
 }
 
-/* Fake input for the link test: sticks sweep slowly, A toggles every 500 ms. */
-static void fill_fake_input(struct xbx_input_report *report, uint32_t tick, uint16_t seq)
+#if defined(CONFIG_XBX_FAKE_INPUT)
+/* Test pattern: sticks sweep slowly, A toggles every 500 ms, triggers ramp. */
+static void fill_fake_input(struct xbx_input_report *report, uint32_t tick)
 {
 	int16_t sweep = (int16_t)((tick * 64u) & 0xFFFF);
 
-	memset(report, 0, sizeof(*report));
-	report->type = XBX_MSG_INPUT;
-	report->seq = seq;
 	report->buttons = ((tick / 500u) & 1u) ? XBX_BTN_A : 0;
 	report->lx = sweep;
 	report->ly = -sweep;
@@ -149,9 +150,8 @@ static void fill_fake_input(struct xbx_input_report *report, uint32_t tick, uint
 	report->ry = -sweep / 2;
 	report->lt = (tick >> 2) & 0x3FF;
 	report->rt = 0x3FF - ((tick >> 2) & 0x3FF);
-	report->battery = 0xFF;
-	report->timestamp_us = k_cyc_to_us_floor32(k_cycle_get_32());
 }
+#endif
 
 static void report_tick(const struct device *dev, void *user_data)
 {
@@ -190,6 +190,22 @@ static void output_off(void)
 	LOG_INF("no ACK for %d ms: rumble and LED off", OUTPUT_TIMEOUT_MS);
 }
 
+#if !defined(CONFIG_XBX_FAKE_INPUT)
+/* show heavy/light rumble on the LEDs; only touches the PWM on a change */
+static void rumble_leds_update(void)
+{
+	static uint8_t shown[2];
+	uint8_t heavy = last_output.rumble[XBX_RUMBLE_HEAVY];
+	uint8_t light = last_output.rumble[XBX_RUMBLE_LIGHT];
+
+	if (heavy != shown[0] || light != shown[1]) {
+		input_set_rumble(heavy, light);
+		shown[0] = heavy;
+		shown[1] = light;
+	}
+}
+#endif
+
 static void tx_thread(void *p1, void *p2, void *p3)
 {
 	struct esb_payload tx = {
@@ -197,8 +213,13 @@ static void tx_thread(void *p1, void *p2, void *p3)
 		.noack = false,
 		.length = sizeof(struct xbx_input_report),
 	};
+	struct xbx_input_report *report = (struct xbx_input_report *)tx.data;
 	uint32_t tick = 0;
 	uint16_t seq = 0; /* only advances when a report is actually sent */
+
+	memset(report, 0, sizeof(*report));
+	report->type = XBX_MSG_INPUT;
+	report->battery = 0xFF;
 
 	while (true) {
 		k_sem_take(&tick_sem, K_FOREVER);
@@ -209,6 +230,14 @@ static void tx_thread(void *p1, void *p2, void *p3)
 			output_off();
 		}
 
+#if defined(CONFIG_XBX_FAKE_INPUT)
+		fill_fake_input(report, tick);
+#else
+		/* scan even when skipping, so debounce timing stays per ms */
+		input_read(report);
+		rumble_leds_update();
+#endif
+
 		if (atomic_get(&in_flight)) {
 			stats.skipped++;
 			continue;
@@ -217,7 +246,9 @@ static void tx_thread(void *p1, void *p2, void *p3)
 		/* drop anything stale (e.g. a report left behind after TX_FAILED) */
 		esb_flush_tx();
 
-		fill_fake_input((struct xbx_input_report *)tx.data, tick, seq);
+		report->seq = seq;
+		report->timestamp_us = k_cyc_to_us_floor32(k_cycle_get_32());
+		last_input = *report;
 
 		atomic_set(&in_flight, 1);
 		timing_pin_set(1);
@@ -245,6 +276,14 @@ int main(void)
 #if HAS_TIMING_PIN
 	if (gpio_is_ready_dt(&timing_pin)) {
 		gpio_pin_configure_dt(&timing_pin, GPIO_OUTPUT_INACTIVE);
+	}
+#endif
+
+#if !defined(CONFIG_XBX_FAKE_INPUT)
+	err = input_init();
+	if (err) {
+		LOG_ERR("input init failed: %d", err);
+		return 0;
 	}
 #endif
 
@@ -277,6 +316,8 @@ int main(void)
 			now.acks_with_payload - prev.acks_with_payload,
 			last_output.rumble[0], last_output.rumble[1], last_output.rumble[2],
 			last_output.rumble[3], last_output.led);
+		LOG_INF("buttons %04x  lx %d ly %d  lt %u rt %u", last_input.buttons, last_input.lx,
+			last_input.ly, last_input.lt, last_input.rt);
 		prev = now;
 	}
 	return 0;

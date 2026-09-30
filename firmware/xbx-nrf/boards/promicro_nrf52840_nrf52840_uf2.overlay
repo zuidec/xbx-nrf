@@ -1,15 +1,102 @@
 /*
- * Pro Micro nRF52840 (nice!nano clone). The USB serial console is already the
- * board default, so only the scope timing pin is added here.
+ * Pro Micro nRF52840 (nice!nano clone) breadboard controller.
  *
- * P0.17 = the Pro Micro "D2" position (silkscreen "017" / "P0.17" on most clones).
+ * Buttons connect the pin to GND (internal pull-up). The left stick's pots
+ * run from VCC to GND with the wipers on AIN0/AIN5. Rumble LEDs: heavy =
+ * on-board LED (P0.15), light = P0.31 → resistor → LED → GND.
+ *
+ * All 18 header GPIOs are used, so the board's I2C and UART pins are freed
+ * (the console is USB CDC ACM) and the scope timing pin is gone.
  */
+
+#include <zephyr/dt-bindings/adc/nrf-saadc.h>
+
+#define BTN(port, pin) <&gpio##port pin (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>
 
 / {
 	zephyr,user {
-		/* scope timing pin: high while a report is in flight */
-		timing-gpios = <&gpio0 17 GPIO_ACTIVE_HIGH>;
+		a-gpios = BTN(0, 6);
+		b-gpios = BTN(0, 8);
+		x-gpios = BTN(0, 20);
+		y-gpios = BTN(0, 22);
+		lb-gpios = BTN(0, 24);
+		rb-gpios = BTN(1, 15);
+		view-gpios = BTN(1, 13);
+		menu-gpios = BTN(1, 11);
+		dpad-up-gpios = BTN(1, 4);
+		dpad-down-gpios = BTN(1, 6);
+		dpad-left-gpios = BTN(0, 9);
+		dpad-right-gpios = BTN(0, 10);
+		ls-gpios = BTN(0, 17);
+		lt-gpios = BTN(1, 0);
+		rt-gpios = BTN(0, 11);
+
+		/*
+		 * Switched VCC pin. Active-high as on the nice!nano v2; if VCC
+		 * measures 0 V, change to GPIO_ACTIVE_LOW.
+		 */
+		vcc-enable-gpios = <&gpio0 13 GPIO_ACTIVE_HIGH>;
+
+		io-channels = <&adc 0>, <&adc 1>;
+		io-channel-names = "lx", "ly";
+
+		/* LEDs are active-high: normal polarity */
+		pwms = <&pwm0 0 PWM_USEC(1000) PWM_POLARITY_NORMAL>,
+		       <&pwm0 1 PWM_USEC(1000) PWM_POLARITY_NORMAL>;
+		pwm-names = "heavy", "light";
 	};
+};
+
+/* Ratiometric: gain 1/4 with a VDD/4 reference reads 0..VDD */
+&adc {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	channel@0 {
+		reg = <0>;
+		zephyr,gain = "ADC_GAIN_1_4";
+		zephyr,reference = "ADC_REF_VDD_1_4";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,input-positive = <NRF_SAADC_AIN0>; /* P0.02 */
+		zephyr,resolution = <12>;
+	};
+
+	channel@1 {
+		reg = <1>;
+		zephyr,gain = "ADC_GAIN_1_4";
+		zephyr,reference = "ADC_REF_VDD_1_4";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,input-positive = <NRF_SAADC_AIN5>; /* P0.29 */
+		zephyr,resolution = <12>;
+	};
+};
+
+&pwm0_default {
+	group1 {
+		psels = <NRF_PSEL(PWM_OUT0, 0, 15)>,
+			<NRF_PSEL(PWM_OUT1, 0, 31)>;
+	};
+};
+
+&pwm0_sleep {
+	group1 {
+		psels = <NRF_PSEL(PWM_OUT0, 0, 15)>,
+			<NRF_PSEL(PWM_OUT1, 0, 31)>;
+		low-power-enable;
+	};
+};
+
+/* their pins are buttons here (M3 brings I2C back for the PCAL6416) */
+&i2c0 {
+	status = "disabled";
+};
+
+&i2c1 {
+	status = "disabled";
+};
+
+&uart0 {
+	status = "disabled";
 };
 
 /* 1 kHz report timer (TIMER2 is used by ESB) */

@@ -163,6 +163,9 @@ Locked decisions: [README](README.md). Not yet locked:
 
 ### Inputs
 - [ ] Sticks: stock pots or TMR/Hall?
+- [ ] Stick pot wiring gives the report's directions (right, up = positive),
+      so no firmware inversion is needed. The breadboard stick reads X
+      reversed.
 - [ ] Triggers: A1304 at the stock positions.
 - [ ] I2C to the PCAL6416 + pull-ups ([[docs/pcal6416#Connections]]).
 - [ ] B, LSC, RSC switches.
