@@ -17,8 +17,10 @@
 
 #include <app_version.h>
 
+#include "hid_pad.h"
 #include "input.h"
 #include "protocol.h"
+#include "usb.h"
 
 LOG_MODULE_REGISTER(ctrl, LOG_LEVEL_INF);
 
@@ -286,6 +288,17 @@ int main(void)
 		return 0;
 	}
 #endif
+
+	err = hid_pad_init();
+	if (err) {
+		LOG_ERR("HID init failed: %d", err);
+		return 0;
+	}
+	err = usb_start();
+	if (err) {
+		LOG_ERR("USB start failed: %d", err);
+		return 0;
+	}
 
 	err = radio_init();
 	if (err) {
