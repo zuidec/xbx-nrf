@@ -13,9 +13,9 @@ aliases:
 
 # xbx-nrf protocols
 
-Two links: **radio** (controller ↔ dongle, implemented) and **USB HID** (dongle
-↔ PC, planned). XInput and GIP modes reuse the radio data; see [[docs/gip]] for
-GIP. Tasks: [[todo#Link]], [[todo#Dongle]].
+Two links: **radio** (controller ↔ dongle, implemented) and **USB** (dongle ↔
+PC; HID mode implemented, XInput planned). XInput and GIP modes reuse the radio
+data; see [[docs/gip]] for GIP. Tasks: [[todo#Link]], [[todo#Dongle]].
 
 ## Radio (controller ↔ dongle)
 
@@ -276,17 +276,17 @@ quality (RSSI, for [[todo#Dynamic TX power]]).
 Plain HID has no way to add or remove a gamepad without re-enumerating the
 whole device, hence single-player HID.
 
-## USB HID mode (planned, M2)
+## USB HID mode
 
-> [!warning] Draft
-> Design agreed 2026-09-29, not implemented. Finalize the descriptor bytes when
-> building it and update this page.
+Descriptor: `report_desc` in `firmware/dongle/src/hid_pad.c`, one Gamepad
+application collection. Tested with `evtest`, SDL and Steam on Linux.
 
 ### Device
 | Item | Value |
 |---|---|
 | VID / PID | `0x1209` (pid.codes) / **`0x0001`** test PID during development |
 | Interfaces | 1 HID gamepad; + CDC ACM console in development builds (composite) |
+| Reports | Input ID 1, 16 bytes (= `in-report-size` in `usb.overlay`); output ID 2, 6 bytes |
 | HID endpoints | Interrupt IN 1 ms; interrupt OUT ~4 ms *(tune)*, max packet 64 (must exceed the 6-byte report, or reports merge) |
 | Serial number | From the nRF52840 `DEVICEID` |
 | Console | `CONFIG_XBX_USB_CONSOLE`: on in `build-unsigned.sh`, off in `build-signed.sh` |
@@ -304,13 +304,13 @@ Layout chosen so Linux's generic HID driver emits the same event codes as
 |---|---|---|---|---|
 | 0 | 1 | Report ID `0x01` | | |
 | 1 | 2 | Buttons 1–16 | Button page (see below) | `BTN_*` |
-| 3 | 1 | Hat switch (4 bits, 0–7, 8 = centred) + 4 bits padding | Hat switch | `ABS_HAT0X/Y` |
-| 4 | 2 | Left stick X | X, −32768…32767 | `ABS_X` |
+| 3 | 1 | Hat switch (4 bits, 0–7, 8 = centred) + 4 bits padding | Hat switch: logical 0–7 = 0–315° (unit degrees), Null State | `ABS_HAT0X/Y` |
+| 4 | 2 | Left stick X | X, logical −32768…32767 | `ABS_X` |
 | 6 | 2 | Left stick Y (**inverted**: HID down = positive) | Y | `ABS_Y` |
 | 8 | 2 | Right stick X | Rx | `ABS_RX` |
 | 10 | 2 | Right stick Y (**inverted**) | Ry | `ABS_RY` |
-| 12 | 2 | Left trigger, 0…1023 | Z | `ABS_Z` |
-| 14 | 2 | Right trigger, 0…1023 | Rz | `ABS_RZ` |
+| 12 | 2 | Left trigger | Z, logical 0…1023 | `ABS_Z` |
+| 14 | 2 | Right trigger | Rz, logical 0…1023 | `ABS_RZ` |
 
 | HID button | Control | Linux event |
 |---|---|---|
@@ -338,17 +338,17 @@ bits become the hat value.
 | Offset | Size | Field | HID usage |
 |---|---|---|---|
 | 0 | 1 | Report ID `0x02` | |
-| 1 | 4 | Rumble heavy, light, LT, RT (0…255) | Vendor page `0xFF00` |
-| 5 | 1 | Guide LED (0…255) | Vendor page `0xFF00` |
+| 1 | 4 | Rumble heavy, light, LT, RT (0…255) | Vendor page `0xFF00`, usage `0x01` |
+| 5 | 1 | Guide LED (0…255) | Vendor page `0xFF00`, usage `0x01` |
 
 Maps 1:1 onto the radio output report: the dongle forwards the values in the
 next ACK payloads (live within ~2 ms). Rumble stays on until changed; it's
 reset to 0 when the USB interface goes down or the link is lost.
 
-This vendor report is for testing and our own tools; games don't use it.
-Test without extra tools: `printf '\x02\xff\x00\x00\x80\x40' >
-/dev/hidrawN` (heavy 255, RT 128, LED 64). Game rumble in HID mode needs HID
-PID force feedback (planned); XInput mode gets it via `xpad`.
+This vendor report is for testing and our own tools; games and Steam don't
+use it (no evdev force feedback). Test: `tools/test-rumble.sh <hr|lr|all>
+<0-255>` (1 s pulse via `/dev/hidrawN`). Game rumble in HID mode needs HID PID
+force feedback (planned); XInput mode gets it via `xpad`.
 
 ### Behaviour
 - **Latest wins:** each radio report is converted and submitted at once; if the
