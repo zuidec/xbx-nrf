@@ -253,7 +253,7 @@ Up to 7 paired (least recently connected replaced), 4 connected; 1 kHz for
 
 ### Dongle
 USB modes, in order; one active at a time.
-1. [ ] **HID gamepad, 1 player** ([[docs/protocol#USB HID mode (planned, M2)]]):
+1. [x] **HID gamepad, 1 player** ([[docs/protocol#USB HID mode]]):
 	- [x] Move the ESB receiver code into `radio.c` (no behaviour change);
 	      re-run the link test.
 	- [x] USB device: own context, VID `0x1209` / test PID `0x0001`, strings,
@@ -269,8 +269,9 @@ USB modes, in order; one active at a time.
 	      rumble); reset on USB and link loss. Test: `printf` to
 	      `/dev/hidrawN`, watch `rumble[…] led` on the controller. OUT
 	      endpoint must exceed the report size (else reports merge).
-	- [ ] Steam: detected, correct layout, Steam Input works.
-	- [ ] Finalize the descriptor in `protocol.md`.
+	- [x] Steam: detected, correct layout, Steam Input works (breadboard
+	      input). No rumble: needs PID (step 3).
+	- [x] Finalize the descriptor in `protocol.md`.
 2. [ ] **XInput, 1–4 players** as an **Xbox 360 Wireless Receiver** (4
        interfaces, in-band connect/disconnect; after GP2040-CE / `xpad`): 8-bit
        triggers, 2 motors, no Share.
