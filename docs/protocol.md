@@ -16,7 +16,9 @@ aliases:
 
 Two links: **radio** (controller ↔ dongle) and **USB** (dongle ↔ PC: HID and
 XInput modes, implemented). Both USB modes reuse the radio data, as would the
-planned GIP mode ([[docs/gip]]). Tasks: [[todo#Link]], [[todo#Dongle]].
+planned GIP mode ([[docs/gip]]). The controller can also be a USB gamepad
+itself ([[#Controller wired USB mode]]). Tasks: [[todo#Link]],
+[[todo#Dongle]], [[todo#Controller]].
 
 ## Radio (controller ↔ dongle)
 
@@ -487,3 +489,59 @@ The commands `xpad` sends; others are ignored.
 Tests: `evtest`, `fftest /dev/input/eventN` (rumbles: one motor each),
 SDL `SDL_JoystickRumble` with low only, then high only; watch `rumble[…] led`
 on the controller.
+
+## Controller wired USB mode
+
+The controller as a USB gamepad over its own USB port (J3 D+/D−; Pro Micro:
+its USB-C port), no dongle. Code: `firmware/xbx-nrf/src/usb.c` (device, mode),
+`xinput_wired.c` (wired 360 class), `main.c` (switch, rumble).
+
+### When it's wired
+- **Wired** = a PC has the USB device configured and the bus isn't suspended
+  (`usb_host_active()`). A charger never configures it: the controller stays
+  wireless.
+- While wired: reports go to USB, the radio pauses (the dongle sees link loss
+  after 1000 ms), rumble comes from the PC. Unconfigured, suspended or
+  unplugged → radio again.
+- `CONFIG_XBX_WIRED` (default on): off → never wired, for wireless tests with
+  the USB console attached.
+
+### Mode (8BitDo-style)
+
+| Held at boot | Mode | VID / PID | Rumble |
+|---|---|---|---|
+| X | Wired XInput (Xbox 360 pad) | `0x1209` / `0x0004` | Heavy / light via `xpad` |
+| B | HID gamepad + PID | `0x1209` / `0x0003` | Blended strength ([[#Force feedback (PID)]]) |
+| Neither | Stored mode (settings key `usb/mode`), default HID | | |
+
+The button must be held through ~20 ms of samples right after the buttons are
+set up; flash is written only when the mode changes. Read at boot only for now
+(plugged in while running: [[todo#Controller]]).
+
+**HID mode** is the dongle's HID mode ([[#USB HID mode]]): same shared code
+and reports, device name "XBX-NRF Gamepad". Heavy and light each take the
+larger of the vendor report and the PID strength.
+
+### Wired XInput
+
+| Item | Value |
+|---|---|
+| Interface | Vendor class `0xFF`, subclass `0x5D`, protocol `0x01` (`xpad`: wired 360 for any `0x1209` device), plus the 17-byte class-specific descriptor (type `0x21`) real pads carry; its layout is undocumented, bytes copied |
+| Endpoints | Interrupt IN 32 bytes, 1 ms; interrupt OUT 32 bytes, 8 ms (as real pads) |
+| Device class | `0xFF/0xFF/0xFF` as real pads; Misc / IAD when the console is included |
+| Gamepad | "Generic X-Box pad" (`xpad`'s name for unlisted devices) |
+
+Input report, 20 bytes: `00 14`, buttons (XInput `wButtons`, = radio
+`buttons`), LT, RT (0…255), LX, LY, RX, RY (s16 LE, up = positive), 6 × `00`.
+
+| Bytes (PC → pad) | Command | Controller action |
+|---|---|---|
+| `00 08 00 <strong> <weak> …` | Rumble | Heavy = strong, light = weak |
+| `01 03 <n>` | LED pattern | Logged (Guide LED later) |
+| Vendor IN request `0x01` (to the interface) | `xpad`'s start-up request | Answered with 20 zero bytes |
+
+Windows untested ([[todo#Controller]]).
+
+Tests: `lsusb` (PID), `evtest`, `fftest` and SDL rumble as in the dongle's
+modes; the controller's stats line shows `wired` / `radio` and the motor
+values.
