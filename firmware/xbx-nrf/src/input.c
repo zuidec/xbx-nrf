@@ -3,9 +3,11 @@
  * debounce: a change is reported at once, then the pin is ignored for
  * DEBOUNCE_MS.
  *
- * Stick: with a stored calibration (calib.c) its centre and range are used as
- * they are. Without one, the centre is measured at boot and the range grows
- * to the furthest position seen, so rotate the stick once after power-up.
+ * Stick: with a stored calibration (calib.c) its range is used as it is; the
+ * centre measured at boot replaces the stored one if the stick is still and
+ * close to it (spring and temperature drift), otherwise (stick held) the stored
+ * centre stays. Without a calibration, the centre is measured at boot and the
+ * range grows to the furthest position seen: rotate the stick once.
  *
  * Calibration routine (start: calibration button, or View + Menu held 3 s):
  * the centre is measured with the stick at rest (status LED on), then the
@@ -21,6 +23,8 @@
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/pwm.h>
 #include <zephyr/logging/log.h>
+
+#include <stdlib.h>
 
 #include "calib.h"
 #include "input.h"
@@ -38,6 +42,10 @@ LOG_MODULE_REGISTER(input, LOG_LEVEL_INF);
 #define STICK_INNER_DEADZONE (STICK_FULL * 3 / 100)  /* below: centred */
 #define STICK_OUTER_SAT      (STICK_FULL * 95 / 100) /* at or above: full */
 #define CALIBRATION_SAMPLES 32
+
+/* Boot-time centre check, raw counts; tune on the real sticks */
+#define CENTRE_WINDOW    (ADC_MAX * 25 / 1000) /* max distance from the stored centre */
+#define CENTRE_MAX_NOISE (ADC_MAX / 100)       /* max sample spread: stick still */
 
 #define COMBO_HOLD_MS 3000
 #define COMBO_CAL     (XBX_BTN_VIEW | XBX_BTN_MENU)
@@ -382,11 +390,27 @@ static void cal_step(int16_t x, int16_t y)
 	}
 }
 
+/* stored centre, or the boot measurement if the stick is still and close to it */
+static void axis_boot_centre(struct stick_axis *axis, char name, int16_t boot, int16_t spread)
+{
+	if (spread > CENTRE_MAX_NOISE) {
+		LOG_WRN("%c: stick moving at boot (spread %d): stored centre %d kept", name,
+			spread, axis->center);
+	} else if (abs(boot - axis->center) > CENTRE_WINDOW) {
+		LOG_WRN("%c: boot centre %d too far from stored %d (stick held?): stored kept",
+			name, boot, axis->center);
+	} else {
+		LOG_INF("%c: centre %d (stored %d)", name, boot, axis->center);
+		axis->center = boot;
+	}
+}
+
 static int stick_init(void)
 {
 	int32_t sum_x = 0;
 	int32_t sum_y = 0;
-	int16_t x, y;
+	int16_t min_x = ADC_MAX, max_x = 0, min_y = ADC_MAX, max_y = 0;
+	int16_t x, y, boot_x, boot_y;
 	int err;
 
 	if (!adc_is_ready_dt(&adc_lx)) {
@@ -413,14 +437,23 @@ static int stick_init(void)
 		}
 		sum_x += x;
 		sum_y += y;
+		min_x = MIN(min_x, x);
+		max_x = MAX(max_x, x);
+		min_y = MIN(min_y, y);
+		max_y = MAX(max_y, y);
+		k_msleep(1); /* spread over ~32 ms: a moving stick shows as spread */
 	}
-	axis_calibrate(&axis_x, sum_x / CALIBRATION_SAMPLES);
-	axis_calibrate(&axis_y, sum_y / CALIBRATION_SAMPLES);
-	LOG_INF("stick centre x %d y %d (of %d)", axis_x.center, axis_y.center, ADC_MAX);
+	boot_x = sum_x / CALIBRATION_SAMPLES;
+	boot_y = sum_y / CALIBRATION_SAMPLES;
+	axis_calibrate(&axis_x, boot_x);
+	axis_calibrate(&axis_y, boot_y);
+	LOG_INF("stick centre x %d y %d (of %d)", boot_x, boot_y, ADC_MAX);
 
 	if (axis_load(&axis_x, CALIB_LX) && axis_load(&axis_y, CALIB_LY)) {
 		LOG_INF("stored: x %d..%d..%d  y %d..%d..%d", axis_x.min, axis_x.center,
 			axis_x.max, axis_y.min, axis_y.center, axis_y.max);
+		axis_boot_centre(&axis_x, 'x', boot_x, max_x - min_x);
+		axis_boot_centre(&axis_y, 'y', boot_y, max_y - min_y);
 	}
 	if (axis_x.center < ADC_MAX / 4 || axis_x.center > ADC_MAX * 3 / 4 ||
 	    axis_y.center < ADC_MAX / 4 || axis_y.center > ADC_MAX * 3 / 4) {
