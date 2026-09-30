@@ -1,7 +1,7 @@
 ---
 title: xbx-nrf TODO
 created: 2026-09-28
-updated: 2026-09-29
+updated: 2026-09-30
 tags:
   - xbx-nrf
   - todo
@@ -89,7 +89,8 @@ Locked decisions: [README](README.md). Not yet locked:
       `pcb/xbx-nrf/lib/RKJXV122400R/`; pads checked against
       [[references/third-party/product_catalog_rkjxv.pdf]].
 - [ ] Stock sticks really are RKJXV122400R (calipers or 1:1 print).
-- [ ] Each stick's rotation (which pot is X/Y, axis direction).
+- [ ] Each stick's orientation (which output is X/Y, axis direction; check
+      again with the TMR modules).
 - [ ] Push-switch contact pairs (A/B/C/D).
 - [ ] A1304 placement relative to the trigger magnets.
 - [ ] Stick supply `AN+`: U6 TLV70718 (1.8 V LDO with enable).
@@ -157,7 +158,8 @@ Locked decisions: [README](README.md). Not yet locked:
 	- [ ] Top board's matching network at 2.4 GHz.
 	- [ ] Pi network on our board (3 footprints, VNA-tuned, 0 Ω bypass).
 	- [ ] Fallback: chip-antenna module at the shell edge.
-- [ ] Analog inputs: 8 on the nRF52840; 4 stick + 2 trigger + 1 battery = 7.
+- [ ] Analog inputs: 8 on the nRF52840; 4 stick + 2 trigger + 1 battery = 7
+      (8 if the 1.8 V stick rail is measured).
 - [ ] RF layout: short 50 Ω CPW to the coax, ground vias, away from motors and
       battery wiring.
 - [ ] SWD header / pads.
@@ -190,8 +192,9 @@ Locked decisions: [README](README.md). Not yet locked:
 
 ## 4. Hardware design — dongle
 
-- [ ] Prototype on the PCA10059.
-- [ ] Custom dongle PCB (optional, if the PCA10059 falls short).
+- [ ] Prototype on the PCA10059 (after the Pro Micro breadboard).
+- [ ] **Custom dongle PCB** (the plan): USB mode switch read at boot
+      ([[#Dongle]] step 4), pair button, status LED, antenna.
 
 ---
 
@@ -213,8 +216,9 @@ Code: `firmware/{xbx-nrf,dongle}/src/main.c`,
 > Clone antennas are weak. Remaining loss looks like fades/interference →
 > channel hopping.
 
-- [ ] **Update the default boards in `build-unsigned.sh`** once real hardware
-      exists (custom board; `nrf52840dongle/nrf52840`).
+- [ ] **Update the default boards in `build-unsigned.sh`** as hardware moves
+      on: dongle → PCA10059 (`nrf52840dongle/nrf52840`), then both custom
+      boards.
 - [x] Test firmware: ESB 2 Mbps, 1 ms fake reports, ACK payloads, stats,
       P0.17 timing pin.
 - [x] Report timing from hardware TIMER3 (exact 1 kHz; ESB uses TIMER2).
@@ -264,8 +268,8 @@ USB modes, in order; one active at a time.
 	      serial from `DEVICEID`; board's CDC-at-boot off.
 	- [x] `CONFIG_XBX_USB_CONSOLE`: CDC ACM console as a composite function, on
 	      in `build-unsigned.sh`, off in `build-signed.sh`.
-	- [x] HID interface + report descriptor; check with `lsusb -v`, `evtest`,
-	      SDL `testcontroller`. evtest: every control maps as designed.
+	- [x] HID interface + report descriptor; check with `lsusb -v`,
+	      `evtest`. evtest: every control maps as designed.
 	- [x] Radio → HID: button remap, D-pad → hat, Y inversion; latest-wins
 	      submit; neutral report on link loss (1000 ms). evtest: ~1000
 	      updates/s, neutral report 0.999 s after unplugging.
@@ -274,13 +278,14 @@ USB modes, in order; one active at a time.
 	      `/dev/hidrawN`, watch `rumble[…] led` on the controller. OUT
 	      endpoint must exceed the report size (else reports merge).
 	- [x] Steam: detected, correct layout, Steam Input works (breadboard
-	      input). No rumble: needs PID (step 3).
+	      input). Rumble: step 3 (PID).
 	- [x] Finalize the descriptor in `protocol.md`.
 2. [ ] **XInput, 1–4 players** as an **Xbox 360 Wireless Receiver** (4
        interfaces, in-band connect/disconnect; after GP2040-CE / `xpad`): 8-bit
        triggers, 2 motors, no Share. pid.codes IDs: `xpad` binds any `0x1209`
        interface of the receiver type (FF/5D/81). Windows untested: check
-       whether its driver binds the receiver type with our IDs.
+       whether its driver binds the receiver type with our IDs. Slot 0 done;
+       slots 1–3 with M2b.
 	- [x] Mode strap (P0.06 to GND = XInput, PID `0x0002`) and XInput USB
 	      class: 4 interfaces, interrupt IN/OUT 32 bytes at 1 ms, presence
 	      packets and presence-query replies. Test: `xpad` binds all 4,
@@ -306,11 +311,15 @@ USB modes, in order; one active at a time.
 	      duration, summing), SDL `SDL_JoystickRumble`.
 	- [x] PID section in `protocol.md`.
 4. [ ] **Mode switching:** physical switch on the dongle PCB, read once at
-       boot before USB starts (breadboard: jumper, see step 2).
+       boot before USB starts (Pro Micro: jumper, see step 2; PCA10059: a
+       jumper on a spare pad, or its button held at plug-in).
 5. [x] Open-source license + `LICENSE` file (MIT / CERN-OHL-S-2.0 /
        CC-BY-4.0, REUSE compliant).
-6. [ ] USB IDs: pid.codes test VID/PID `0x1209:0x0001` for now; apply for our
-       own PID once the repo is public.
+6. [ ] USB IDs: pid.codes test PIDs `0x0001`–`0x0004` for now (dongle HID /
+       XInput, controller HID / XInput: one per interface set, since Windows
+       and SDL/Steam cache drivers and mappings per VID:PID). Apply for our
+       own once the repo is public; decide first whether MCUboot serial
+       recovery needs one too.
 
 ### Controller
 - [ ] Power state machine: hold pin 9 early → PCAL6416 setup → run;
@@ -383,6 +392,8 @@ constants (deadzone, drift window, settle time) on the real TMR sticks.
 - [x] `sysbuild-signed.conf` + `build-signed.sh`; dongle build verified.
 - [x] Image version from `VERSION` (`0.1.0+0`).
 - [x] **Back up both keys offline.**
+- [ ] Controller signed build (needs an MCUboot-capable board;
+      `release.conf` checked with an unsigned build).
 - [ ] Update method: MCUboot serial recovery over USB (`mcumgr`/`smpmgr`).
 - [ ] Downgrade protection.
 - [ ] Release: lock APPROTECT.
@@ -427,20 +438,19 @@ Games rarely drive the trigger motors, and XInput can't (2 motors only).
   motors when the host sends only 2 values. Configurable strength.
 - **Local trigger effects:** click when a trigger crosses a threshold, buzz at a
   trigger stop; generated on the controller, pairs with hair-trigger mode.
-- **4-value HID output report** for our own tools (and maybe Steam later).
+- **4-value output report:** exists (HID vendor report: heavy, light, LT,
+  RT); games and Steam don't use it.
 
 ### GIP dongle mode
 Optional third USB mode speaking Microsoft's protocol ([[docs/gip]]). Gains:
 impulse triggers in Windows games that use them, native Share, 10-bit triggers.
 Feasible (no auth on PC via the opt-out GUID; GP2040-CE as reference), but
 metadata needs Microsoft's compiler, and on Linux `xpad` drops trigger rumble.
-- [ ] **Test first:** genuine Series controller over USB, SDL `testcontroller`
-      trigger rumble, with and without Steam, on Linux. No buzz → GIP isn't
-      worth it on Linux.
+- [ ] **Test first:** genuine Series controller over USB, SDL trigger rumble
+      (`SDL_JoystickRumbleTriggers`), with and without Steam, on Linux. No
+      buzz → GIP isn't worth it on Linux.
 - [ ] Get the "gipdocs" download (metadata compiler, gamepad JSON template).
 - [ ] Decide VID/PID (Microsoft's for `xpad` auto-binding, or bind manually).
-
----
 
 ### Calibration program
 Small OS-agnostic host tool (Python + `hidapi`, or similar): live stick and
@@ -449,6 +459,8 @@ trigger view, guided calibration, deadzone / curve / trigger-stop settings.
       controller's wired USB first; via the dongle needs a reliable radio
       command channel.
 - [ ] Command set, shared with the on-device routine's stored data.
+
+---
 
 ## Open questions
 
