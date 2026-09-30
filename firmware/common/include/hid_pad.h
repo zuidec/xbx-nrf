@@ -1,11 +1,12 @@
 /*
- * Dongle HID gamepad (1 player). Report layout: docs/protocol.md,
- * "USB HID mode". Newest state wins: updates replace any report the host
- * hasn't collected yet.
+ * HID gamepad (1 player): the dongle's HID mode and the controller's wired
+ * mode. Report layout: docs/protocol.md, "USB HID mode". Newest state wins:
+ * updates replace any report the host hasn't collected yet. The app's
+ * devicetree provides the hid_dev_0 node (usb.overlay).
  */
 
-#ifndef XBX_DONGLE_HID_PAD_H_
-#define XBX_DONGLE_HID_PAD_H_
+#ifndef XBX_HID_PAD_H_
+#define XBX_HID_PAD_H_
 
 #include <stdint.h>
 
@@ -56,4 +57,4 @@ struct xbx_input_report;
  */
 void hid_pad_from_radio(const struct xbx_input_report *in, struct hid_pad_state *out);
 
-#endif /* XBX_DONGLE_HID_PAD_H_ */
+#endif /* XBX_HID_PAD_H_ */

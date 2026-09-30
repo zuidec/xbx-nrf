@@ -1,7 +1,7 @@
 /*
  * HID PID effect table, report handling and effect engine (see hid_pid.h).
- * Reports arrive in the USB stack's thread and the engine runs in the bridge
- * thread; a spinlock guards the table.
+ * Reports arrive in the USB stack's thread and the engine runs in another
+ * (the dongle's bridge thread); a spinlock guards the table.
  *
  * The motors can't play a waveform, so a sine is just its strength over time:
  * magnitude with the envelope applied, scaled by effect and device gain.

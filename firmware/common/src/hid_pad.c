@@ -1,5 +1,5 @@
 /*
- * Dongle HID gamepad on Zephyr's usbd_hid class.
+ * HID gamepad on Zephyr's usbd_hid class (see hid_pad.h).
  *
  * The class sends reports zero-copy, so the buffer being sent (tx_report) stays
  * untouched until input_report_done; newer states wait in `pending`, replacing

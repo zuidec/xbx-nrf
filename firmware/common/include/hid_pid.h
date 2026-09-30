@@ -6,8 +6,8 @@
  * every global it relies on and leaves Unit and Unit Exponent at 0.
  */
 
-#ifndef XBX_DONGLE_HID_PID_H_
-#define XBX_DONGLE_HID_PID_H_
+#ifndef XBX_HID_PID_H_
+#define XBX_HID_PID_H_
 
 #include <stdint.h>
 
@@ -236,4 +236,4 @@ void hid_pid_stop_all(void);
  */
 uint8_t hid_pid_strength(uint32_t now_ms);
 
-#endif /* XBX_DONGLE_HID_PID_H_ */
+#endif /* XBX_HID_PID_H_ */
