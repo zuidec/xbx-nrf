@@ -341,8 +341,10 @@ USB modes, in order; one active at a time.
 	      gamepad + PID + CDC console (development builds).
 	- [x] Wired switch: enumerated → radio off, input → HID, rumble (PID /
 	      vendor report) → local motors; unplugged → radio again.
-	- [ ] Mode at plug-in, 8BitDo-style: X held → XInput, B held →
-	      HID; remembered in flash until changed.
+	- [x] Mode at plug-in, 8BitDo-style: X held → XInput, B held →
+	      HID; remembered in flash until changed. Read at boot for now;
+	      plugged in while running needs a USB restart (power state
+	      machine).
 	- [ ] Wired XInput (test PID `0x0004`): wired 360 interface (FF/5D/01),
 	      20-byte report, rumble `00 08 …`, LED `01 03 …`, `xpad`'s vendor
 	      "magic" request.

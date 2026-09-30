@@ -13,6 +13,9 @@ struct xbx_input_report;
 /* Configure the pins, enable VCC and calibrate the stick centre (stick at rest). */
 int input_init(void);
 
+/* XBX_BTN_* bits held for the whole of ~20 ms; call after input_init(). */
+uint16_t input_held_at_boot(void);
+
 /* Scan buttons and stick into the report's input fields; call every 1 ms. */
 void input_read(struct xbx_input_report *report);
 
