@@ -339,7 +339,7 @@ USB modes, in order; one active at a time.
 	      (dongle unchanged).
 	- [x] Controller USB device "XBX-NRF Gamepad", test PID `0x0003`: HID
 	      gamepad + PID + CDC console (development builds).
-	- [ ] Wired switch: enumerated → radio off, input → HID, rumble (PID /
+	- [x] Wired switch: enumerated → radio off, input → HID, rumble (PID /
 	      vendor report) → local motors; unplugged → radio again.
 	- [ ] Mode at plug-in, 8BitDo-style: X held → XInput, B held →
 	      HID; remembered in flash until changed.

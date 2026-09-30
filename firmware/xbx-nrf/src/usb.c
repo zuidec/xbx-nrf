@@ -39,10 +39,37 @@ USBD_DESC_CONFIG_DEFINE(xbx_fs_cfg_desc, "FS Configuration");
 USBD_CONFIGURATION_DEFINE(xbx_fs_config, 0 /* bus powered, no remote wakeup */,
 			  XBX_USB_MAX_POWER, &xbx_fs_cfg_desc);
 
+static atomic_t configured;
+static atomic_t suspended;
+
 static void usb_msg_cb(struct usbd_context *const ctx, const struct usbd_msg *const msg)
 {
 	ARG_UNUSED(ctx);
 	LOG_INF("USB: %s", usbd_msg_type_string(msg->type));
+
+	switch (msg->type) {
+	case USBD_MSG_CONFIGURATION:
+		atomic_set(&configured, msg->status != 0); /* status: configuration value */
+		break;
+	case USBD_MSG_SUSPEND:
+		atomic_set(&suspended, 1);
+		break;
+	case USBD_MSG_RESUME:
+		atomic_set(&suspended, 0);
+		break;
+	case USBD_MSG_RESET:
+	case USBD_MSG_VBUS_REMOVED:
+		atomic_set(&configured, 0);
+		atomic_set(&suspended, 0);
+		break;
+	default:
+		break;
+	}
+}
+
+bool usb_host_active(void)
+{
+	return atomic_get(&configured) && !atomic_get(&suspended);
 }
 
 static int usb_setup(void)
