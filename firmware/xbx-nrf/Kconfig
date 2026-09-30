@@ -1,0 +1,25 @@
+menu "xbx-nrf controller"
+
+config XBX_FAKE_INPUT
+	bool "Send a test pattern instead of real input"
+	help
+	  Sticks sweep, A toggles every 500 ms and the triggers ramp. Needs no
+	  input hardware (link tests).
+
+config XBX_LSTICK_INVERT_X
+	bool "Invert the left stick X axis"
+	depends on !XBX_FAKE_INPUT
+	help
+	  Report convention: right = positive. Set if the stick reads the
+	  wrong way round.
+
+config XBX_LSTICK_INVERT_Y
+	bool "Invert the left stick Y axis"
+	depends on !XBX_FAKE_INPUT
+	help
+	  Report convention: up = positive. Set if the stick reads the wrong
+	  way round.
+
+endmenu
+
+source "Kconfig.zephyr"
