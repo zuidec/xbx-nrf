@@ -285,7 +285,7 @@ USB modes, in order; one active at a time.
 	      disconnect after the link timeout. Test: `evtest`, Steam.
 	- [x] Output: rumble → heavy/light separately, LED pattern → Guide
 	      LED, power-off command. Test: `fftest`, `sdl-rumble` low/high.
-	- [ ] XInput section in `protocol.md`.
+	- [x] XInput section in `protocol.md`.
 3. [x] **HID PID force feedback** (HID mode game rumble via `hid-pidff`).
        Sine only: the kernel emulates `FF_RUMBLE` as a sine (⅔ strong +
        ⅓ weak), so SDL/Steam rumble works but as one blended strength;
