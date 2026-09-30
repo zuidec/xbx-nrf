@@ -285,10 +285,10 @@ USB modes, in order; one active at a time.
 	- [ ] PID descriptor (sine + envelope, required reports), effect table,
 	      block load / pool / free, device control, gain. Test: no
 	      `hid-pidff` errors in `dmesg`, `fftest` uploads a sine.
-	- [ ] Engine: active effects → motor strength every 1 ms (magnitude ×
+	- [x] Engine: active effects → motor strength every 1 ms (magnitude ×
 	      effect gain × device gain; duration, delay, loops), max with the
-	      vendor report, both motors. Test: `fftest`, SDL
-	      `testcontroller`, Steam.
+	      vendor report, both motors. Tested: `fftest` (gain, delay,
+	      duration, summing), SDL `SDL_JoystickRumble`.
 	- [ ] PID section in `protocol.md`.
 4. [ ] **Mode switching** at plug-in, stored in flash.
 5. [x] Open-source license + `LICENSE` file (MIT / CERN-OHL-S-2.0 /

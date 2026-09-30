@@ -1,7 +1,10 @@
 /*
- * HID PID effect table and report handling (see hid_pid.h). Reports arrive in
- * the USB stack's thread; the table is guarded by a spinlock so the effect
- * engine can read it from another context.
+ * HID PID effect table, report handling and effect engine (see hid_pid.h).
+ * Reports arrive in the USB stack's thread and the engine runs in the bridge
+ * thread; a spinlock guards the table.
+ *
+ * The motors can't play a waveform, so a sine is just its strength over time:
+ * magnitude with the envelope applied, scaled by effect and device gain.
  */
 
 #include <zephyr/kernel.h>
@@ -17,6 +20,8 @@ LOG_MODULE_REGISTER(hid_pid, LOG_LEVEL_INF);
 
 /* nominal bytes per effect, only reported to the host */
 #define EFFECT_BYTES 32
+
+#define DURATION_INFINITE 0xFFFF
 
 /* Report layouts: must match HID_PID_DESC field by field */
 struct set_effect_report {
@@ -232,9 +237,14 @@ static void device_control(uint8_t control)
 	case DC_STOP_ALL:
 		stop_all();
 		break;
-	case DC_RESET:
+	case DC_RESET: {
+		/* hid-pidff resets before the first upload, after setting the gain */
+		uint8_t gain = pid.device_gain;
+
 		reset_locked();
+		pid.device_gain = gain;
 		break;
+	}
 	case DC_PAUSE:
 		pid.paused = true;
 		break;
@@ -341,6 +351,61 @@ bad_len:
 	k_spin_unlock(&lock, key);
 	LOG_WRN("PID report 0x%02x: bad length %u", buf[0], len);
 	return -EINVAL;
+}
+
+void hid_pid_stop_all(void)
+{
+	k_spinlock_key_t key = k_spin_lock(&lock);
+
+	stop_all();
+	k_spin_unlock(&lock, key);
+}
+
+/* magnitude with the envelope applied, t ms into the current play */
+static int32_t envelope_level(const struct pid_effect *e, uint32_t t)
+{
+	int32_t mag = e->magnitude;
+
+	if (t < e->attack_ms) {
+		return e->attack_level + (mag - e->attack_level) * (int32_t)t / e->attack_ms;
+	}
+	if (e->duration_ms != DURATION_INFINITE && e->fade_ms) {
+		uint32_t left = e->duration_ms - t;
+
+		if (left < e->fade_ms) {
+			return e->fade_level + (mag - e->fade_level) * (int32_t)left / e->fade_ms;
+		}
+	}
+	return mag;
+}
+
+uint8_t hid_pid_strength(uint32_t now_ms)
+{
+	k_spinlock_key_t key = k_spin_lock(&lock);
+	uint32_t sum = 0;
+
+	for (int i = 0; i < HID_PID_MAX_EFFECTS; i++) {
+		struct pid_effect *e = &pid.effects[i];
+		uint32_t t = now_ms - e->start_ms;
+
+		if (!e->allocated || !e->playing || t < e->start_delay_ms) {
+			continue;
+		}
+		t -= e->start_delay_ms;
+		if (e->duration_ms != DURATION_INFINITE) {
+			if (t >= (uint32_t)e->duration_ms * e->loops) {
+				e->playing = false; /* all loops done (or duration 0) */
+				continue;
+			}
+			t %= e->duration_ms;
+		}
+		sum += (uint32_t)envelope_level(e, t) * e->gain * pid.device_gain / (255 * 255);
+	}
+	if (!pid.actuators_enabled || pid.paused) {
+		sum = 0;
+	}
+	k_spin_unlock(&lock, key);
+	return MIN(sum, 255);
 }
 
 int hid_pid_set_feature(uint8_t id, const uint8_t *buf, uint16_t len)
