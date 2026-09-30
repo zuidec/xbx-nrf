@@ -1,7 +1,7 @@
 /*
  * Controller USB device for wired mode: identity (pid.codes test IDs),
- * strings, serial number, and its functions (HID gamepad with PID; console in
- * development builds).
+ * strings, serial number, and its functions: the HID gamepad with PID or the
+ * wired XInput pad (chosen at boot); console in development builds.
  */
 
 #ifndef XBX_CTRL_USB_H_

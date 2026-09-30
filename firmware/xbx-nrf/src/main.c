@@ -3,10 +3,13 @@
  *
  * Sends an input report every 1 ms over ESB (PTX) and prints link statistics
  * once per second. The dongle replies with an output report in the ACK
- * payload. Wired mode (CONFIG_XBX_WIRED): while a PC has the USB device
- * configured, reports go to the USB HID gamepad instead and the radio pauses;
- * rumble then comes from the PC (PID effects, vendor report). Input: the breadboard pins (input.c), or a test pattern with
+ * payload. Input: the breadboard pins (input.c), or a test pattern with
  * CONFIG_XBX_FAKE_INPUT.
+ *
+ * Wired mode (CONFIG_XBX_WIRED): while a PC has the USB device configured,
+ * reports go to USB instead and the radio pauses: the HID gamepad, or the
+ * wired XInput pad (mode chosen at boot, usb.c). Rumble then comes from the
+ * PC (HID: PID effects and vendor report; XInput: xpad's rumble command).
  */
 
 #include <zephyr/kernel.h>
@@ -22,6 +25,7 @@
 #include "hid_pad.h"
 #include "hid_pid.h"
 #include "input.h"
+#include "xinput_wired.h"
 #include "protocol.h"
 #include "usb.h"
 
@@ -209,6 +213,16 @@ static void host_output(const uint8_t rumble[4], uint8_t led)
 	k_spin_unlock(&host_lock, key);
 }
 
+/* wired XInput: 2 motors */
+static void xinput_rumble(uint8_t heavy, uint8_t light)
+{
+	k_spinlock_key_t key = k_spin_lock(&host_lock);
+
+	host_rumble[XBX_RUMBLE_HEAVY] = heavy;
+	host_rumble[XBX_RUMBLE_LIGHT] = light;
+	k_spin_unlock(&host_lock, key);
+}
+
 /* heavy/light for the motors: from the dongle, or wired from the PC (larger of
  * the vendor report and the PID strength, as on the dongle)
  */
@@ -298,10 +312,14 @@ static void tx_thread(void *p1, void *p2, void *p3)
 #endif
 
 		if (wired) {
-			struct hid_pad_state state;
+			if (usb_mode_get() == USB_MODE_XINPUT) {
+				xinput_wired_update(report);
+			} else {
+				struct hid_pad_state state;
 
-			hid_pad_from_radio(report, &state);
-			hid_pad_update(&state);
+				hid_pad_from_radio(report, &state);
+				hid_pad_update(&state);
+			}
 			last_input = *report;
 			continue;
 		}
@@ -366,6 +384,7 @@ int main(void)
 		return 0;
 	}
 	hid_pad_set_output_cb(host_output);
+	xinput_wired_set_rumble_cb(xinput_rumble);
 	err = usb_start();
 	if (err) {
 		LOG_ERR("USB start failed: %d", err);
