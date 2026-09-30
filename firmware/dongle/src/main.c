@@ -1,10 +1,11 @@
 /*
  * xbx-nrf dongle firmware.
  *
- * M1 link test: the radio (radio.c) receives input reports and answers with
- * output reports in the ACK payload; main prints link statistics once per
- * second. The bridge (bridge.c) forwards each report to the USB HID gamepad
- * (usb.c, hid_pad.c); the console carries the logs in development builds.
+ * The radio (radio.c) receives input reports and answers with output reports
+ * in the ACK payload; main prints link statistics once per second. The bridge
+ * (bridge.c) forwards each report to USB (usb.c): the HID gamepad (hid_pad.c,
+ * hid_pid.c) or the XInput receiver (xinput.c), chosen by the mode strap. The
+ * console carries the logs in development builds.
  */
 
 #include <zephyr/kernel.h>
