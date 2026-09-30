@@ -355,6 +355,11 @@ int main(void)
 	}
 #endif
 
+#if defined(CONFIG_XBX_FAKE_INPUT)
+	usb_mode_init(0);
+#else
+	usb_mode_init(input_held_at_boot());
+#endif
 	err = hid_pad_init();
 	if (err) {
 		LOG_ERR("HID init failed: %d", err);

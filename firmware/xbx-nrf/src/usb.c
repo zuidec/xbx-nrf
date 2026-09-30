@@ -7,10 +7,14 @@
 
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/settings/settings.h>
 #include <zephyr/usb/usbd.h>
+
+#include <string.h>
 
 #include <app_version.h>
 
+#include "protocol.h"
 #include "usb.h"
 
 LOG_MODULE_REGISTER(usb, LOG_LEVEL_INF);
@@ -38,6 +42,69 @@ USBD_DESC_SERIAL_NUMBER_DEFINE(xbx_sn); /* chip DEVICEID via hwinfo */
 USBD_DESC_CONFIG_DEFINE(xbx_fs_cfg_desc, "FS Configuration");
 USBD_CONFIGURATION_DEFINE(xbx_fs_config, 0 /* bus powered, no remote wakeup */,
 			  XBX_USB_MAX_POWER, &xbx_fs_cfg_desc);
+
+static enum usb_mode mode = USB_MODE_HID;
+static bool mode_stored;
+
+static int mode_setting(const char *name, size_t len, settings_read_cb read_cb, void *cb_arg)
+{
+	uint8_t value;
+
+	if (strcmp(name, "mode") != 0 || len != sizeof(value)) {
+		return -ENOENT;
+	}
+	if (read_cb(cb_arg, &value, sizeof(value)) == sizeof(value) &&
+	    value <= USB_MODE_XINPUT) {
+		mode = value;
+		mode_stored = true;
+	}
+	return 0;
+}
+
+SETTINGS_STATIC_HANDLER_DEFINE(usb, "usb", NULL, mode_setting, NULL, NULL);
+
+void usb_mode_init(uint16_t held)
+{
+	const char *why = "default";
+	enum usb_mode chosen;
+	int err;
+
+	/* both may have run already (calibration); repeating them is harmless */
+	err = settings_subsys_init();
+	if (!err) {
+		err = settings_load_subtree("usb");
+	}
+	if (err) {
+		LOG_WRN("mode storage unavailable: %d", err);
+	}
+	if (mode_stored) {
+		why = "stored";
+	}
+
+	chosen = mode;
+	if (held & XBX_BTN_X) {
+		chosen = USB_MODE_XINPUT;
+		why = "X held";
+	} else if (held & XBX_BTN_B) {
+		chosen = USB_MODE_HID;
+		why = "B held";
+	}
+	if (chosen != mode || (!mode_stored && chosen != USB_MODE_HID)) {
+		uint8_t value = chosen;
+
+		err = settings_save_one("usb/mode", &value, sizeof(value));
+		if (err) {
+			LOG_WRN("mode not stored: %d", err);
+		}
+	}
+	mode = chosen;
+	LOG_INF("wired mode: %s (%s)", mode == USB_MODE_XINPUT ? "XInput" : "HID", why);
+}
+
+enum usb_mode usb_mode_get(void)
+{
+	return mode;
+}
 
 static atomic_t configured;
 static atomic_t suspended;
@@ -89,6 +156,9 @@ static int usb_setup(void)
 		return err;
 	}
 
+	if (mode == USB_MODE_XINPUT) {
+		LOG_WRN("wired XInput not implemented yet: using HID");
+	}
 	err = usbd_register_class(&xbx_usbd, "hid_0", USBD_SPEED_FS, 1);
 	if (err) {
 		return err;

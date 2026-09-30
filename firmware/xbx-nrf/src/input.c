@@ -494,6 +494,26 @@ int input_init(void)
 	return stick_init();
 }
 
+#define BOOT_HOLD_SAMPLES 20 /* 1 ms apart: longer than any bounce */
+
+uint16_t input_held_at_boot(void)
+{
+	uint32_t held = UINT32_MAX;
+
+	for (int n = 0; n < BOOT_HOLD_SAMPLES; n++) {
+		uint32_t now = 0;
+
+		for (size_t i = 0; i < ARRAY_SIZE(pins); i++) {
+			if (gpio_pin_get_dt(&pins[i].gpio) > 0) {
+				now |= pins[i].bit;
+			}
+		}
+		held &= now;
+		k_msleep(1);
+	}
+	return held & 0xFFFF;
+}
+
 static void buttons_scan(void)
 {
 	for (size_t i = 0; i < ARRAY_SIZE(pins); i++) {
