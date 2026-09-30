@@ -339,7 +339,7 @@ Framework now on the breadboard (raw ADC counts, board-independent); tune the
 constants (deadzone, drift window, settle time) on the real TMR sticks.
 - [x] Calibration data in flash (Zephyr settings on the storage partition):
       per axis min / centre / max and direction.
-- [ ] On-device routine: calibration button → move sticks and triggers
+- [x] On-device routine: calibration button → move sticks and triggers
       through their full range → press again → saved. Breadboard: a button
       combo stands in (all header pins are used).
 - [ ] Radial inner deadzone, outer saturation (full deflection = ±32767).
