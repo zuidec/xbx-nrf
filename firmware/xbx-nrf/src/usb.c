@@ -21,7 +21,8 @@ LOG_MODULE_REGISTER(usb, LOG_LEVEL_INF);
 
 /* pid.codes VID with a test PID (development only; see docs/protocol.md) */
 #define XBX_USB_VID       0x1209
-#define XBX_USB_PID_HID   0x0003
+#define XBX_USB_PID_HID    0x0003
+#define XBX_USB_PID_XINPUT 0x0004
 #define XBX_USB_MAX_POWER 250 /* 2 mA units: 500 mA, for charging later */
 
 /* bcdDevice from the app VERSION file: 0.3.0 -> 0x0030 */
@@ -156,10 +157,15 @@ static int usb_setup(void)
 		return err;
 	}
 
+	/* first, so the gamepad is interface 0 (xpad's vendor request targets it) */
 	if (mode == USB_MODE_XINPUT) {
-		LOG_WRN("wired XInput not implemented yet: using HID");
+		err = usbd_register_class(&xbx_usbd, "xinput_wired", USBD_SPEED_FS, 1);
+		if (!err) {
+			err = usbd_device_set_pid(&xbx_usbd, XBX_USB_PID_XINPUT);
+		}
+	} else {
+		err = usbd_register_class(&xbx_usbd, "hid_0", USBD_SPEED_FS, 1);
 	}
-	err = usbd_register_class(&xbx_usbd, "hid_0", USBD_SPEED_FS, 1);
 	if (err) {
 		return err;
 	}
@@ -172,6 +178,9 @@ static int usb_setup(void)
 		/* CDC uses an interface association: Misc / IAD device class */
 		usbd_device_set_code_triple(&xbx_usbd, USBD_SPEED_FS, USB_BCC_MISCELLANEOUS, 0x02,
 					    0x01);
+	} else if (mode == USB_MODE_XINPUT) {
+		/* vendor-specific device, as a real wired 360 pad reports */
+		usbd_device_set_code_triple(&xbx_usbd, USBD_SPEED_FS, USB_BCC_VENDOR, 0xFF, 0xFF);
 	} else {
 		usbd_device_set_code_triple(&xbx_usbd, USBD_SPEED_FS, 0, 0, 0);
 	}

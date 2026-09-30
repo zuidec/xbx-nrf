@@ -345,7 +345,7 @@ USB modes, in order; one active at a time.
 	      HID; remembered in flash until changed. Read at boot for now;
 	      plugged in while running needs a USB restart (power state
 	      machine).
-	- [ ] Wired XInput (test PID `0x0004`): wired 360 interface (FF/5D/01),
+	- [x] Wired XInput (test PID `0x0004`): wired 360 interface (FF/5D/01),
 	      20-byte report, rumble `00 08 …`, LED `01 03 …`, `xpad`'s vendor
 	      "magic" request.
 	- [ ] Windows: HID PID rumble (Windows' PID driver likely also wants a
