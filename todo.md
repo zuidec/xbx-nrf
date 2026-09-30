@@ -283,7 +283,7 @@ USB modes, in order; one active at a time.
 	      no gamepad until a controller connects.
 	- [x] Slot 0 bridge: radio → 360 report, connect on link up,
 	      disconnect after the link timeout. Test: `evtest`, Steam.
-	- [ ] Output: rumble → heavy/light separately, LED pattern → Guide
+	- [x] Output: rumble → heavy/light separately, LED pattern → Guide
 	      LED, power-off command. Test: `fftest`, `sdl-rumble` low/high.
 	- [ ] XInput section in `protocol.md`.
 3. [x] **HID PID force feedback** (HID mode game rumble via `hid-pidff`).

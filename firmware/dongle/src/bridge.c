@@ -5,9 +5,10 @@
  * XInput slot 0, per the USB mode; link up/down is a connect/disconnect in
  * XInput mode and a neutral report in HID mode.
  *
- * Also the rumble mixer: with each radio report (1 kHz while linked) the PID
- * engine's strength is combined with the vendor output report, the larger
- * value wins, and the result goes into the next ACK payloads.
+ * Also the rumble mixer: with each radio report (1 kHz while linked) the host
+ * output (HID vendor report, or xpad's rumble and LED commands) is combined
+ * with the PID engine's strength, the larger value wins, and the result goes
+ * into the next ACK payloads.
  */
 
 #include <zephyr/kernel.h>
@@ -36,31 +37,64 @@ LOG_MODULE_REGISTER(bridge, LOG_LEVEL_INF);
 static K_THREAD_STACK_DEFINE(bridge_stack, BRIDGE_STACK_SIZE);
 static struct k_thread bridge_thread_data;
 
-/* last vendor output report (hid_pad output callback, USB thread) */
-static uint8_t vendor_rumble[4];
-static uint8_t vendor_led;
-static struct k_spinlock vendor_lock;
+/* last host output: HID vendor report or XInput commands (USB thread) */
+static uint8_t host_rumble[4];
+static uint8_t host_led;
+static struct k_spinlock host_lock;
 
-static void vendor_output(const uint8_t rumble[4], uint8_t led)
+static void host_output(const uint8_t rumble[4], uint8_t led)
 {
-	k_spinlock_key_t key = k_spin_lock(&vendor_lock);
+	k_spinlock_key_t key = k_spin_lock(&host_lock);
 
-	memcpy(vendor_rumble, rumble, sizeof(vendor_rumble));
-	vendor_led = led;
-	k_spin_unlock(&vendor_lock, key);
+	memcpy(host_rumble, rumble, sizeof(host_rumble));
+	host_led = led;
+	k_spin_unlock(&host_lock, key);
 }
 
-/* PID strength drives both main motors; the trigger motors are vendor-only */
+/* XInput: 2 motors, slot 0 only until multiple controllers (M2b) */
+static void xinput_rumble(uint8_t slot, uint8_t heavy, uint8_t light)
+{
+	k_spinlock_key_t key;
+
+	if (slot != 0) {
+		return;
+	}
+	key = k_spin_lock(&host_lock);
+	host_rumble[XBX_RUMBLE_HEAVY] = heavy;
+	host_rumble[XBX_RUMBLE_LIGHT] = light;
+	k_spin_unlock(&host_lock, key);
+}
+
+/* the Guide LED has no player number: any pattern but 0 (off) is on */
+static void xinput_led(uint8_t slot, uint8_t pattern)
+{
+	k_spinlock_key_t key;
+
+	if (slot != 0) {
+		return;
+	}
+	key = k_spin_lock(&host_lock);
+	host_led = pattern ? 0xFF : 0;
+	k_spin_unlock(&host_lock, key);
+}
+
+static const struct xinput_callbacks xinput_cbs = {
+	.rumble = xinput_rumble,
+	.led = xinput_led,
+	/* power_off: logged by xinput.c; forwarding needs the power state machine */
+};
+
+/* PID strength drives both main motors; the trigger motors are host-only */
 static void output_update(void)
 {
 	uint8_t pid = hid_pid_strength(k_uptime_get_32());
 	uint8_t rumble[4];
 	uint8_t led;
-	k_spinlock_key_t key = k_spin_lock(&vendor_lock);
+	k_spinlock_key_t key = k_spin_lock(&host_lock);
 
-	memcpy(rumble, vendor_rumble, sizeof(rumble));
-	led = vendor_led;
-	k_spin_unlock(&vendor_lock, key);
+	memcpy(rumble, host_rumble, sizeof(rumble));
+	led = host_led;
+	k_spin_unlock(&host_lock, key);
 
 	rumble[XBX_RUMBLE_HEAVY] = MAX(rumble[XBX_RUMBLE_HEAVY], pid);
 	rumble[XBX_RUMBLE_LIGHT] = MAX(rumble[XBX_RUMBLE_LIGHT], pid);
@@ -101,7 +135,7 @@ static void bridge_thread(void *p1, void *p2, void *p3)
 				hid_pad_update(&neutral);
 			}
 			/* don't resume stale rumble when the controller reconnects */
-			vendor_output(off, 0);
+			host_output(off, 0);
 			hid_pid_stop_all();
 			radio_set_output(off, 0);
 			link_up = false;
@@ -113,7 +147,8 @@ static void bridge_thread(void *p1, void *p2, void *p3)
 
 void bridge_start(void)
 {
-	hid_pad_set_output_cb(vendor_output);
+	hid_pad_set_output_cb(host_output);
+	xinput_set_callbacks(&xinput_cbs);
 	k_thread_create(&bridge_thread_data, bridge_stack, K_THREAD_STACK_SIZEOF(bridge_stack),
 			bridge_thread, NULL, NULL, NULL, BRIDGE_PRIORITY, 0, K_NO_WAIT);
 	k_thread_name_set(&bridge_thread_data, "bridge");
