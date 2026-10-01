@@ -48,7 +48,7 @@ to the button expander, and Guide / Pair / power-hold signals.
 
 | Doc | Covers |
 |---|---|
-| [docs/hardware.md](docs/hardware.md) | Top board power, J3 pinout, antennas |
+| [docs/hardware.md](docs/hardware.md) | Top board power, J3 pinout, antennas, dongle pin map |
 | [docs/pcal6416.md](docs/pcal6416.md) | Button expander: button map, registers |
 | [docs/a3910.md](docs/a3910.md) | Rumble drivers: wiring, logic table |
 

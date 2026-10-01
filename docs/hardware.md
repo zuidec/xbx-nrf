@@ -1,7 +1,7 @@
 ---
-title: Hardware (stock top board & J3)
+title: Hardware (stock top board, J3, dongle board)
 created: 2026-09-29
-updated: 2026-09-29
+updated: 2026-10-01
 tags:
   - xbx-nrf
   - reference
@@ -10,9 +10,10 @@ aliases:
   - hardware
   - J3
   - top board
+  - dongle board
 ---
 
-# Hardware: stock top board & J3
+# Hardware: stock top board, J3, dongle board
 
 The stock **top board** and the **J3** connector our bottom board plugs into.
 Related: [[docs/pcal6416|PCAL6416 (buttons)]], [[docs/a3910|A3910 (rumble)]],
@@ -67,3 +68,22 @@ Two feeds on the top board (`ANT` via J5/J6, `ANT1` via J8), each with a
 matching network; the stock SoC board reaches them through coax connectors J1,
 J2. We'll reuse the 2.4 GHz one, after verification (required before ordering
 the PCB; [[todo#MCU / radio]]).
+
+## Dongle board
+
+KiCad: `pcb/xbx-nrf-dongle/`. Raytac MDBT50Q-U1MV2 (u.FL), normal voltage
+mode: LDS3985M33R LDO from VBUS → VDD + VDDH (3.3 V); VBUS also to the module
+for USB. 32.768 kHz crystal (FC-135, 7 pF) with 9 pF caps on XL1/XL2.
+
+| Signal | Pin | Notes |
+|---|---|---|
+| MODE_SW | P1.11 | **Low = HID, high = XInput**; 10 kΩ to each rail, read once at boot (no pull) |
+| PAIR_SW | P1.12 | Button to GND; internal pull-up |
+| PAIR_LED (blue) | P0.02 | Active low, 180 Ω (high drive) |
+| P1_LED…P4_LED (green) | P1.13, P1.14, P1.15, P0.03 | Active low, 1 kΩ |
+| PWR_LED (red) | P0.29 | JP1 to GPIO: active low; JP1 to GND: always on |
+| DBG_TX / DBG_RX | P0.21 / P0.20 | JST-SH UART, Raspberry Pi pinout |
+| SWDIO / SWCLK | — | JST-SH SWD, Raspberry Pi pinout; NRST and VDD on test pads |
+| TIMING | P0.17 | Test pad (scope) |
+| SWO | P1.00 | Test pad |
+| Spare | P0.04, P0.06, P0.26, P0.27, P0.30 (AIN6), P0.31 (AIN7) | Test pads |
