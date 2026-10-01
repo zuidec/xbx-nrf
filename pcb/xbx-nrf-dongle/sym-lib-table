@@ -1,0 +1,5 @@
+(sym_lib_table
+	(version 7)
+	(lib (name "usbc-16p-receptacle-amphenol") (type "KiCad") (uri "${KIPRJMOD}/lib/USB_C_Receptacle_16P_Amphenol_10155435-00011LF/USB_C_Receptacle_16P_Amphenol_10155435-00011LF.kicad_sym") (options "") (descr ""))
+	(lib (name "sw-spdt-horizontal") (type "KiCad") (uri "${KIPRJMOD}/lib/JS102011SAQN/JS102011SAQN.kicad_sym") (options "") (descr ""))
+)

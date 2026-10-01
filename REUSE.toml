@@ -16,13 +16,17 @@ precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 zuidec"
 SPDX-License-Identifier = "CERN-OHL-S-2.0"
 
-# SnapMagic stick symbol, footprint and 3D model (overrides the hardware rule)
+# SnapMagic parts: symbols, footprints, 3D models (override the hardware rule)
 [[annotations]]
-path = "pcb/xbx-nrf/lib/RKJXV122400R/**"
+path = [
+  "pcb/xbx-nrf/lib/RKJXV122400R/**",
+  "pcb/xbx-nrf-dongle/lib/USB_C_Receptacle_16P_Amphenol_10155435-00011LF/**",
+  "pcb/xbx-nrf-dongle/lib/JS102011SAQN/**",
+]
 precedence = "override"
 SPDX-FileCopyrightText = [
   "SnapMagic (SnapEDA) and the original authors",
-  "2026 zuidec (modifications, see ATTRIBUTION.md)",
+  "2026 zuidec (modifications, see ATTRIBUTION.md in each folder)",
 ]
 SPDX-License-Identifier = "CC-BY-SA-4.0"
 
