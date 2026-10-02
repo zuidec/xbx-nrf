@@ -164,7 +164,7 @@
         "min_text_height": 0.8,
         "min_text_thickness": 0.08,
         "min_through_hole_diameter": 0.3,
-        "min_track_width": 0.2,
+        "min_track_width": 0.1,
         "min_via_annular_width": 0.1,
         "min_via_diameter": 0.5,
         "solder_mask_to_copper_clearance": 0.0,
@@ -216,8 +216,10 @@
       ],
       "track_widths": [
         0.0,
+        0.15,
         0.2,
         0.3,
+        0.4,
         0.5
       ],
       "tuning_pattern_settings": {
@@ -720,7 +722,7 @@
         "uuid": "69b03ca9-99a6-4927-a520-e99d5a5bc650"
       }
     ],
-    "used_designators": "U1-3,SW1-3,TP1-17,R1-11,JP1,J1-3,H1-3,D1-6,C1-8,Y1,#PWR1-30,#FLG1-2",
+    "used_designators": "",
     "variants": []
   },
   "sheets": [

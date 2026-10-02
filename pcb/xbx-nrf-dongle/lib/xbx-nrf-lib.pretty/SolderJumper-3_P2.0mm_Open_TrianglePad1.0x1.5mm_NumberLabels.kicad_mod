@@ -1,0 +1,239 @@
+(footprint "SolderJumper-3_P2.0mm_Open_TrianglePad1.0x1.5mm_NumberLabels"
+	(version 20260206)
+	(generator "pcbnew")
+	(generator_version "10.0")
+	(layer "F.Cu")
+	(descr "SMD Solder Jumper, 1x1.5mm Triangular Pads, 0.3mm gap, open, labeled with numbers")
+	(tags "solder jumper open")
+	(property "Reference" "JP1"
+		(at 0.725 -1.775 0)
+		(layer "F.SilkS")
+		(uuid "f870131e-a7d8-4b1d-aa2e-2c665711fe7f")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "SolderJumper_3_Open"
+		(at 0.725 1.925 0)
+		(layer "F.Fab")
+		(uuid "2fb0aef1-b63b-4b6f-95d3-42919d72b594")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "0a4a086b-568e-4e36-a248-c0f75bde4f03")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" "Solder Jumper, 3-pole, open"
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "1b2837d6-598d-4bc7-9824-2757e1c294b2")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property ki_fp_filters "SolderJumper*Open*")
+	(sheetname "/")
+	(sheetfile "xbx-nrf-dongle.kicad_sch")
+	(zone_connect 1)
+	(attr exclude_from_bom allow_soldermask_bridges)
+	(duplicate_pad_numbers_are_jumpers no)
+	(fp_rect
+		(start -2.5 -0.75)
+		(end 2.5 0.75)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(fill yes)
+		(layer "F.Mask")
+		(uuid "1f40a23e-5bb3-481e-ac75-22c4b4b77945")
+	)
+	(fp_line
+		(start -2.8 -1.05)
+		(end 2.8 -1.05)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "6021f9c3-930d-49be-9d81-4f2d9fe8f96d")
+	)
+	(fp_line
+		(start -2.8 1)
+		(end -2.8 -1.05)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "7c00b0f0-2c39-4aca-90d2-db0112095451")
+	)
+	(fp_line
+		(start 2.8 -1.05)
+		(end 2.8 0.975)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "99532a9f-867f-4030-bd3c-9e87e4b855aa")
+	)
+	(fp_line
+		(start 2.8 1)
+		(end -2.8 1)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "94c20c45-c774-4051-856b-a4ebd50a6950")
+	)
+	(fp_line
+		(start -2.98 -1.27)
+		(end -2.98 1.25)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "698b3138-87f0-4892-afe1-6c38164130bb")
+	)
+	(fp_line
+		(start -2.98 -1.27)
+		(end 3 -1.27)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "cfa64cc6-00f9-4762-bd35-17a0b4e9d7db")
+	)
+	(fp_line
+		(start 3 1.25)
+		(end -2.98 1.25)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "ae2386fe-a48b-4ebe-aa1f-78fef1b6d202")
+	)
+	(fp_line
+		(start 3 1.25)
+		(end 3 -1.27)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "301f52b9-ebc1-4cd2-aaf6-6b9809197295")
+	)
+	(fp_text user "1"
+		(at -3.35 0 0)
+		(layer "F.SilkS")
+		(uuid "d08a599b-7ecb-4ef1-bc64-14a9a5648cbe")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(fp_text user "3"
+		(at 3.4 0 0)
+		(layer "F.SilkS")
+		(uuid "f12428aa-cc00-4591-b39b-8f799fcc3ef7")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "1" smd custom
+		(at -2 0)
+		(size 0.3 0.3)
+		(layers "F.Cu" "F.Mask")
+		(zone_connect 2)
+		(thermal_bridge_angle 45)
+		(options
+			(clearance outline)
+			(anchor rect)
+		)
+		(primitives
+			(gr_poly
+				(pts
+					(xy 1 0) (xy 0.5 0.75) (xy -0.5 0.75) (xy -0.5 -0.75) (xy 0.5 -0.75)
+				)
+				(width 0)
+				(fill yes)
+			)
+		)
+		(uuid "b2da5996-f828-4e03-88a2-5c53c5eeab81")
+	)
+	(pad "2" smd custom
+		(at 0 0)
+		(size 0.3 0.3)
+		(layers "F.Cu")
+		(zone_connect 2)
+		(thermal_bridge_angle 45)
+		(options
+			(clearance outline)
+			(anchor rect)
+		)
+		(primitives
+			(gr_poly
+				(pts
+					(xy 0.7 0) (xy 1.2 0.75) (xy -1.2 0.75) (xy -0.7 0) (xy -1.2 -0.75) (xy 1.2 -0.75)
+				)
+				(width 0)
+				(fill yes)
+			)
+		)
+		(uuid "cb607308-4b9f-47f5-a0d1-dd4cab480c0d")
+	)
+	(pad "3" smd custom
+		(at 2 0 180)
+		(size 0.3 0.3)
+		(layers "F.Cu" "F.Mask")
+		(zone_connect 2)
+		(thermal_bridge_angle 45)
+		(options
+			(clearance outline)
+			(anchor rect)
+		)
+		(primitives
+			(gr_poly
+				(pts
+					(xy 1 0) (xy 0.5 0.75) (xy -0.5 0.75) (xy -0.5 -0.75) (xy 0.5 -0.75)
+				)
+				(width 0)
+				(fill yes)
+			)
+		)
+		(uuid "7e7ab942-cc2f-42ec-89a8-641476b33e21")
+	)
+	(embedded_fonts no)
+)

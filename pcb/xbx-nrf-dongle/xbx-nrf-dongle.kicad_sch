@@ -5061,6 +5061,10 @@
 		(uuid "5077c7a4-ae93-493b-9cca-781d5cc5218c")
 	)
 	(no_connect
+		(at 91.44 115.57)
+		(uuid "547579fe-dda0-4467-9c1a-fcb0b6410661")
+	)
+	(no_connect
 		(at 91.44 128.27)
 		(uuid "576d3214-6de8-4c00-a853-d718a0ba682a")
 	)
@@ -5077,10 +5081,6 @@
 		(uuid "7115676c-5d95-446e-a79a-2978f59e0c89")
 	)
 	(no_connect
-		(at 132.08 143.51)
-		(uuid "74e7d4bf-3bf6-44b4-9d70-8c05e4b90269")
-	)
-	(no_connect
 		(at 24.13 45.72)
 		(uuid "7c161d23-03a9-4bd6-ac86-40c93761e510")
 	)
@@ -5095,6 +5095,10 @@
 	(no_connect
 		(at 91.44 143.51)
 		(uuid "a2d8d58a-17a1-4c67-a01d-dbe2b70f66fd")
+	)
+	(no_connect
+		(at 91.44 102.87)
+		(uuid "ad9f6252-e356-43e8-aff9-b9e5f7af0882")
 	)
 	(no_connect
 		(at 132.08 115.57)
@@ -5125,12 +5129,12 @@
 		(uuid "beecbafb-745f-4ac3-9299-070955050af7")
 	)
 	(no_connect
-		(at 207.01 34.29)
-		(uuid "d0717ae4-28bb-4acd-8761-48c849aa6b0f")
+		(at 91.44 166.37)
+		(uuid "c8ad1427-3c78-4190-9b06-9264daadd368")
 	)
 	(no_connect
-		(at 132.08 110.49)
-		(uuid "e9d6b4c7-4cb7-4bfc-a21e-9179f1b72cdb")
+		(at 207.01 34.29)
+		(uuid "d0717ae4-28bb-4acd-8761-48c849aa6b0f")
 	)
 	(no_connect
 		(at 91.44 158.75)
@@ -5139,10 +5143,6 @@
 	(no_connect
 		(at 132.08 135.89)
 		(uuid "f129de9f-e831-47b8-99a5-0eaba5927a46")
-	)
-	(no_connect
-		(at 132.08 168.91)
-		(uuid "f39d99f4-d795-43ea-807a-b77ae76d31d8")
 	)
 	(no_connect
 		(at 132.08 163.83)
@@ -5408,6 +5408,16 @@
 	)
 	(wire
 		(pts
+			(xy 132.08 110.49) (xy 142.24 110.49)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "26cbeba5-8b68-4e36-9743-2ae647ef0dd6")
+	)
+	(wire
+		(pts
 			(xy 132.08 100.33) (xy 149.86 100.33)
 		)
 		(stroke
@@ -5415,16 +5425,6 @@
 			(type default)
 		)
 		(uuid "297fee92-9299-42f6-b29a-a6944df0a267")
-	)
-	(wire
-		(pts
-			(xy 81.28 115.57) (xy 91.44 115.57)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "2d15536e-4954-4c17-bc59-8faa0787ee47")
 	)
 	(wire
 		(pts
@@ -5758,6 +5758,16 @@
 	)
 	(wire
 		(pts
+			(xy 132.08 168.91) (xy 143.51 168.91)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "517ba9f4-53ce-4df7-9bc1-66dcc8ec0ac7")
+	)
+	(wire
+		(pts
 			(xy 265.43 64.77) (xy 281.94 64.77)
 		)
 		(stroke
@@ -6008,16 +6018,6 @@
 	)
 	(wire
 		(pts
-			(xy 80.01 166.37) (xy 91.44 166.37)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "75d4e4ec-94fa-4b62-a6f5-5e805ea2be47")
-	)
-	(wire
-		(pts
 			(xy 140.97 24.13) (xy 148.59 24.13)
 		)
 		(stroke
@@ -6055,16 +6055,6 @@
 			(type default)
 		)
 		(uuid "78b19435-6738-4578-9cc6-cad2a8a2e7ad")
-	)
-	(wire
-		(pts
-			(xy 80.01 102.87) (xy 91.44 102.87)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "79b9e2fc-0baa-4af4-a6b7-6a4cbda07787")
 	)
 	(wire
 		(pts
@@ -6618,6 +6608,16 @@
 	)
 	(wire
 		(pts
+			(xy 132.08 143.51) (xy 142.24 143.51)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d8404864-228d-4807-95f2-e9637e7e83d0")
+	)
+	(wire
+		(pts
 			(xy 35.56 78.74) (xy 26.67 78.74)
 		)
 		(stroke
@@ -6976,6 +6976,16 @@
 		)
 		(uuid "379dfe4d-9af7-49f6-884f-2abab3d16341")
 	)
+	(label "MODE_SW"
+		(at 143.51 168.91 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "44a2bc3a-2a59-4c40-88f5-57e5d838bd63")
+	)
 	(label "SWO"
 		(at 264.16 48.26 90)
 		(effects
@@ -7035,6 +7045,16 @@
 			(justify left bottom)
 		)
 		(uuid "58fde452-cf06-4e11-ad65-79e19488903b")
+	)
+	(label "PWR_LED"
+		(at 142.24 143.51 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "5c9d4757-3a2c-4ef5-b76e-db8853e5ed6b")
 	)
 	(label "D+"
 		(at 86.36 138.43 0)
@@ -7166,16 +7186,6 @@
 		)
 		(uuid "9c5309fb-36c4-4915-949d-2101210c4ca1")
 	)
-	(label "PAIR_LED"
-		(at 80.01 102.87 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "a071bfc3-a304-409b-8fc6-388adefdb332")
-	)
 	(label "MODE_SW"
 		(at 191.77 38.1 90)
 		(effects
@@ -7246,6 +7256,16 @@
 		)
 		(uuid "c0f69fa3-6d35-4bcf-b99b-37956f3ba771")
 	)
+	(label "PAIR_LED"
+		(at 142.24 110.49 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "c447e219-f6f2-41ef-83aa-226d5cd15b3f")
+	)
 	(label "SWO"
 		(at 138.43 161.29 180)
 		(effects
@@ -7296,16 +7316,6 @@
 		)
 		(uuid "cf9a8dac-72b0-46c2-afea-95a8b0545d41")
 	)
-	(label "PWR_LED"
-		(at 81.28 115.57 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "cfbfe238-9706-410c-9fad-c899b035c8a5")
-	)
 	(label "P0.26"
 		(at 27.94 123.19 90)
 		(effects
@@ -7325,16 +7335,6 @@
 			(justify left bottom)
 		)
 		(uuid "e3159fcd-2a05-4e8d-ae48-99d220110c8f")
-	)
-	(label "MODE_SW"
-		(at 80.01 166.37 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "e32cee6a-6217-4dae-9d1c-98bc9b788b54")
 	)
 	(label "P3_LED"
 		(at 260.35 97.79 180)
@@ -7518,7 +7518,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_1.0x1.0mm"
+		(property "Footprint" "xbx-nrf-lib:TestPoint_Pad_1.0x1.0mm-NoSilkscreen"
 			(at 22.86 73.66 0)
 			(hide yes)
 			(show_name no)
@@ -7823,7 +7823,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "10k"
+		(property "Value" "1k"
 			(at 209.55 26.6699 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7996,7 +7996,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_1.0x1.0mm"
+		(property "Footprint" "xbx-nrf-lib:TestPoint_Pad_1.0x1.0mm-NoSilkscreen"
 			(at 44.45 115.57 0)
 			(hide yes)
 			(show_name no)
@@ -8336,7 +8336,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Crystal:Crystal_SMD_3215-2Pin_3.2x1.5mm"
+		(property "Footprint" "xbx-nrf-lib:Crystal_SMD_3215-2Pin_3.2x1.5mm"
 			(at 154.94 101.6 0)
 			(hide yes)
 			(show_name no)
@@ -9071,7 +9071,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_1.0x1.0mm"
+		(property "Footprint" "xbx-nrf-lib:TestPoint_Pad_1.0x1.0mm-NoSilkscreen"
 			(at 40.64 82.55 0)
 			(hide yes)
 			(show_name no)
@@ -9150,7 +9150,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_1.0x1.0mm"
+		(property "Footprint" "xbx-nrf-lib:TestPoint_Pad_1.0x1.0mm-NoSilkscreen"
 			(at 31.75 82.55 0)
 			(hide yes)
 			(show_name no)
@@ -9311,7 +9311,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_1.0x1.0mm"
+		(property "Footprint" "xbx-nrf-lib:TestPoint_Pad_1.0x1.0mm-NoSilkscreen"
 			(at 22.86 82.55 0)
 			(hide yes)
 			(show_name no)
@@ -9468,7 +9468,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Jumper:SolderJumper-3_P2.0mm_Open_TrianglePad1.0x1.5mm_NumberLabels"
+		(property "Footprint" "xbx-nrf-lib:SolderJumper-3_P2.0mm_Open_TrianglePad1.0x1.5mm_NumberLabels"
 			(at 252.73 111.76 0)
 			(hide yes)
 			(show_name no)
@@ -9494,28 +9494,6 @@
 			(at 265.43 111.76 0)
 			(hide yes)
 			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property private "KLC_S5.1" "This is a generic symbol, it has fp-filter, but no default footprint"
-			(at 270.51 111.76 0)
-			(hide yes)
-			(show_name yes)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property private "KLC_S3.3" "Graphical-Symbol: thickness is 6mm, fill is background"
-			(at 273.05 111.76 0)
-			(hide yes)
-			(show_name yes)
 			(do_not_autoplace no)
 			(effects
 				(font
@@ -9814,7 +9792,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_1.0x1.0mm"
+		(property "Footprint" "xbx-nrf-lib:TestPoint_Pad_1.0x1.0mm-NoSilkscreen"
 			(at 33.02 115.57 0)
 			(hide yes)
 			(show_name no)
@@ -9974,7 +9952,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_1.5x1.5mm"
+		(property "Footprint" "xbx-nrf-lib:TestPoint_Pad_1.5x1.5mm-NoSilkscreen"
 			(at 278.13 39.37 0)
 			(hide yes)
 			(show_name no)
@@ -10131,7 +10109,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_1.0x1.0mm"
+		(property "Footprint" "xbx-nrf-lib:TestPoint_Pad_1.0x1.0mm-NoSilkscreen"
 			(at 33.02 104.14 0)
 			(hide yes)
 			(show_name no)
@@ -10288,7 +10266,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_1.0x1.0mm"
+		(property "Footprint" "xbx-nrf-lib:TestPoint_Pad_1.0x1.0mm-NoSilkscreen"
 			(at 44.45 104.14 0)
 			(hide yes)
 			(show_name no)
@@ -10698,7 +10676,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_1.0x1.0mm"
+		(property "Footprint" "xbx-nrf-lib:TestPoint_Pad_1.0x1.0mm-NoSilkscreen"
 			(at 31.75 73.66 0)
 			(hide yes)
 			(show_name no)
@@ -10777,7 +10755,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_1.5x1.5mm"
+		(property "Footprint" "xbx-nrf-lib:TestPoint_Pad_1.5x1.5mm-NoSilkscreen"
 			(at 259.08 39.37 0)
 			(hide yes)
 			(show_name no)
@@ -10941,7 +10919,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_1.0x1.0mm"
+		(property "Footprint" "xbx-nrf-lib:TestPoint_Pad_1.0x1.0mm-NoSilkscreen"
 			(at 22.86 90.17 0)
 			(hide yes)
 			(show_name no)
@@ -11096,7 +11074,7 @@
 				)
 			)
 		)
-		(property "Footprint" "usbc-16p-receptacle-amphenol:USB_C_Receptacle_16P_Amphenol_10155435-00011LF"
+		(property "Footprint" "xbx-nrf-lib:USB_C_Receptacle_16P_Amphenol_10155435-00011LF"
 			(at 41.91 43.18 0)
 			(hide yes)
 			(show_name no)
@@ -12237,7 +12215,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_1.5x1.5mm"
+		(property "Footprint" "xbx-nrf-lib:TestPoint_Pad_1.5x1.5mm-NoSilkscreen"
 			(at 269.24 39.37 0)
 			(hide yes)
 			(show_name no)
@@ -12868,7 +12846,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_1.0x1.0mm"
+		(property "Footprint" "xbx-nrf-lib:TestPoint_Pad_1.0x1.0mm-NoSilkscreen"
 			(at 40.64 73.66 0)
 			(hide yes)
 			(show_name no)
@@ -13024,7 +13002,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_1.0x1.0mm"
+		(property "Footprint" "xbx-nrf-lib:TestPoint_Pad_1.0x1.0mm-NoSilkscreen"
 			(at 21.59 104.14 0)
 			(hide yes)
 			(show_name no)
@@ -13179,7 +13157,7 @@
 				)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_1.5x1.5mm"
+		(property "Footprint" "xbx-nrf-lib:TestPoint_Pad_1.5x1.5mm-NoSilkscreen"
 			(at 256.54 16.51 0)
 			(hide yes)
 			(show_name no)
@@ -13336,7 +13314,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_1.0x1.0mm"
+		(property "Footprint" "xbx-nrf-lib:TestPoint_Pad_1.0x1.0mm-NoSilkscreen"
 			(at 21.59 115.57 0)
 			(hide yes)
 			(show_name no)
@@ -13680,7 +13658,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "RF_Module:Raytac_MDBT50Q"
+		(property "Footprint" "xbx-nrf-lib:Raytac_MDBT50Q"
 			(at 111.76 140.97 0)
 			(hide yes)
 			(show_name no)
