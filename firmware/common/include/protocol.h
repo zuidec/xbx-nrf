@@ -12,14 +12,20 @@
 
 #define XBX_PROTOCOL_VERSION 1 /* v1: 16-bit input report sequence number */
 
-/* Fixed link parameters for M1 (pairing / channel hopping come later).
+/* Fixed link parameters until pairing / channel hopping.
  * Channel 76 = 2476 MHz: above Wi-Fi channel 11 and clear of BLE
  * advertising channel 39 (2480 MHz).
  */
 #define XBX_RF_CHANNEL     76
 #define XBX_BASE_ADDR_0    {0x58, 0x42, 0x58, 0x31} /* "XBX1" */
 #define XBX_BASE_ADDR_1    {0xC2, 0xC2, 0xC2, 0xC2}
-#define XBX_ADDR_PREFIXES  {0xE7}
+
+/* One pipe per controller: pipes 1..XBX_CTRL_PIPES on base address 1, with
+ * fixed test prefixes until pairing assigns random ones. Pipe 0 (base address
+ * 0) is kept for pairing. Controller pipe n = player n (XInput slot n - 1).
+ */
+#define XBX_CTRL_PIPES     4
+#define XBX_ADDR_PREFIXES  {0xE7, 0xC3, 0xC4, 0xC5, 0xC6} /* pipes 0..4 */
 #define XBX_REPORT_PERIOD_US 1000
 /* Radio TX power in dBm, both ends (the dongle's ACKs too). The nRF52840 maximum is +8.
  * Fixed for now; see todo.md for dynamic power adjustment.

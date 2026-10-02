@@ -1,14 +1,18 @@
 /*
- * Radio → USB bridge. The radio interrupt only stores the newest report and
- * wakes this thread; converting and submitting happens here, in thread
- * context, as the USB stack requires. Reports go to the HID gamepad or to
- * XInput slot 0, per the USB mode; link up/down is a connect/disconnect in
- * XInput mode and a neutral report in HID mode.
+ * Radio → USB bridge. The radio interrupt only stores the newest report per
+ * controller and wakes this thread; converting and submitting happens here, in
+ * thread context, as the USB stack requires.
+ *
+ * XInput mode: each radio link is its own receiver slot (player), connected on
+ * its first report and disconnected on link loss. HID mode is single-player:
+ * the first controller to link up drives the gamepad until it's lost, others
+ * are ignored meanwhile; link loss sends a neutral report.
  *
  * Also the rumble mixer: with each radio report (1 kHz while linked) the host
- * output (HID vendor report, or xpad's rumble and LED commands) is combined
- * with the PID engine's strength, the larger value wins, and the result goes
- * into the next ACK payloads.
+ * output for that player (HID vendor report, or xpad's rumble and LED
+ * commands) is combined with the PID engine's strength (HID player only), the
+ * larger value wins, and the result goes into that controller's next ACK
+ * payloads.
  */
 
 #include <zephyr/kernel.h>
@@ -28,8 +32,12 @@
 
 LOG_MODULE_REGISTER(bridge, LOG_LEVEL_INF);
 
+BUILD_ASSERT(RADIO_LINKS <= XINPUT_SLOTS, "one XInput slot per radio link");
+
 /* No report for this long = link lost: release everything (docs/protocol.md) */
 #define LINK_TIMEOUT_MS 1000
+/* wake at least this often to notice lost links while others are quiet */
+#define POLL_MS 100
 
 #define BRIDGE_STACK_SIZE 1024
 #define BRIDGE_PRIORITY   K_PRIO_COOP(2)
@@ -37,31 +45,42 @@ LOG_MODULE_REGISTER(bridge, LOG_LEVEL_INF);
 static K_THREAD_STACK_DEFINE(bridge_stack, BRIDGE_STACK_SIZE);
 static struct k_thread bridge_thread_data;
 
-/* last host output: HID vendor report or XInput commands (USB thread) */
-static uint8_t host_rumble[4];
-static uint8_t host_led;
-static struct k_spinlock host_lock;
+struct player {
+	bool up;
+	uint32_t last_ms; /* uptime of the last report */
+	/* last host output for this player (USB thread) */
+	uint8_t host_rumble[4];
+	uint8_t host_led;
+};
 
+static struct player players[RADIO_LINKS];
+static struct k_spinlock host_lock;
+static bool xinput_mode;
+static int hid_link = -1; /* HID mode: the link driving the gamepad, -1 = none */
+
+/* HID vendor output report: for whichever controller drives the gamepad */
 static void host_output(const uint8_t rumble[4], uint8_t led)
 {
 	k_spinlock_key_t key = k_spin_lock(&host_lock);
 
-	memcpy(host_rumble, rumble, sizeof(host_rumble));
-	host_led = led;
+	if (hid_link >= 0) {
+		memcpy(players[hid_link].host_rumble, rumble, 4);
+		players[hid_link].host_led = led;
+	}
 	k_spin_unlock(&host_lock, key);
 }
 
-/* XInput: 2 motors, slot 0 only until multiple controllers (M2b) */
+/* XInput: 2 motors */
 static void xinput_rumble(uint8_t slot, uint8_t heavy, uint8_t light)
 {
 	k_spinlock_key_t key;
 
-	if (slot != 0) {
+	if (slot >= RADIO_LINKS) {
 		return;
 	}
 	key = k_spin_lock(&host_lock);
-	host_rumble[XBX_RUMBLE_HEAVY] = heavy;
-	host_rumble[XBX_RUMBLE_LIGHT] = light;
+	players[slot].host_rumble[XBX_RUMBLE_HEAVY] = heavy;
+	players[slot].host_rumble[XBX_RUMBLE_LIGHT] = light;
 	k_spin_unlock(&host_lock, key);
 }
 
@@ -70,11 +89,11 @@ static void xinput_led(uint8_t slot, uint8_t pattern)
 {
 	k_spinlock_key_t key;
 
-	if (slot != 0) {
+	if (slot >= RADIO_LINKS) {
 		return;
 	}
 	key = k_spin_lock(&host_lock);
-	host_led = pattern ? 0xFF : 0;
+	players[slot].host_led = pattern ? 0xFF : 0;
 	k_spin_unlock(&host_lock, key);
 }
 
@@ -84,63 +103,102 @@ static const struct xinput_callbacks xinput_cbs = {
 	/* power_off: logged by xinput.c; forwarding needs the power state machine */
 };
 
-/* PID strength drives both main motors; the trigger motors are host-only */
-static void output_update(void)
+/* PID strength drives both main motors of the HID player; trigger motors are host-only */
+static void output_update(uint8_t link)
 {
-	uint8_t pid = hid_pid_strength(k_uptime_get_32());
 	uint8_t rumble[4];
 	uint8_t led;
 	k_spinlock_key_t key = k_spin_lock(&host_lock);
 
-	memcpy(rumble, host_rumble, sizeof(rumble));
-	led = host_led;
+	memcpy(rumble, players[link].host_rumble, sizeof(rumble));
+	led = players[link].host_led;
 	k_spin_unlock(&host_lock, key);
 
-	rumble[XBX_RUMBLE_HEAVY] = MAX(rumble[XBX_RUMBLE_HEAVY], pid);
-	rumble[XBX_RUMBLE_LIGHT] = MAX(rumble[XBX_RUMBLE_LIGHT], pid);
-	radio_set_output(rumble, led);
+	if (!xinput_mode && link == hid_link) {
+		uint8_t pid = hid_pid_strength(k_uptime_get_32());
+
+		rumble[XBX_RUMBLE_HEAVY] = MAX(rumble[XBX_RUMBLE_HEAVY], pid);
+		rumble[XBX_RUMBLE_LIGHT] = MAX(rumble[XBX_RUMBLE_LIGHT], pid);
+	}
+	radio_set_output(link, rumble, led);
+}
+
+static void link_report(uint8_t link, uint32_t now)
+{
+	struct player *p = &players[link];
+	struct xbx_input_report in;
+
+	p->last_ms = now;
+	if (!p->up) {
+		p->up = true;
+		LOG_INF("player %u: link up", link + 1);
+		if (xinput_mode) {
+			/* presence first: the host adds the gamepad */
+			xinput_set_connected(link, true);
+		}
+	}
+	if (!xinput_mode && hid_link < 0) {
+		hid_link = link;
+		LOG_INF("player %u: drives the HID gamepad", link + 1);
+	}
+
+	radio_get_last_input(link, &in);
+	if (xinput_mode) {
+		xinput_update(link, &in);
+	} else if (link == hid_link) {
+		struct hid_pad_state state;
+
+		hid_pad_from_radio(&in, &state);
+		hid_pad_update(&state);
+	}
+	output_update(link);
+}
+
+static void link_lost(uint8_t link)
+{
+	static const uint8_t off[4];
+	struct player *p = &players[link];
+	k_spinlock_key_t key;
+
+	p->up = false;
+	if (xinput_mode) {
+		xinput_set_connected(link, false);
+	} else if (link == hid_link) {
+		const struct hid_pad_state neutral = {.hat = HID_PAD_HAT_CENTERED};
+
+		hid_pad_update(&neutral);
+		hid_pid_stop_all();
+	}
+
+	/* don't resume stale rumble when the controller reconnects */
+	key = k_spin_lock(&host_lock);
+	memset(p->host_rumble, 0, sizeof(p->host_rumble));
+	p->host_led = 0;
+	if (link == hid_link) {
+		hid_link = -1; /* the next controller to report takes over */
+	}
+	k_spin_unlock(&host_lock, key);
+	radio_set_output(link, off, 0);
+
+	LOG_INF("player %u: link lost, %s", link + 1,
+		xinput_mode ? "slot disconnected" : "rumble off");
 }
 
 static void bridge_thread(void *p1, void *p2, void *p3)
 {
-	const struct hid_pad_state neutral = {.hat = HID_PAD_HAT_CENTERED};
-	const bool xinput = usb_mode_get() == USB_MODE_XINPUT;
-	struct xbx_input_report in;
-	struct hid_pad_state state;
-	bool link_up = false;
+	xinput_mode = usb_mode_get() == USB_MODE_XINPUT;
 
 	while (true) {
-		if (radio_wait_input(&in, K_MSEC(LINK_TIMEOUT_MS)) == 0) {
-			if (!link_up) {
-				link_up = true;
-				LOG_INF("link up");
-				if (xinput) {
-					/* presence first: the host adds the gamepad */
-					xinput_set_connected(0, true);
-				}
-			}
-			if (xinput) {
-				xinput_update(0, &in);
-			} else {
-				hid_pad_from_radio(&in, &state);
-				hid_pad_update(&state);
-			}
-			output_update();
-		} else if (link_up) {
-			static const uint8_t off[4];
+		uint32_t fresh = radio_wait_input(K_MSEC(POLL_MS));
+		uint32_t now = k_uptime_get_32();
 
-			if (xinput) {
-				xinput_set_connected(0, false);
-			} else {
-				hid_pad_update(&neutral);
+		for (uint8_t link = 0; link < RADIO_LINKS; link++) {
+			if (fresh & BIT(link)) {
+				link_report(link, now);
+			} else if (players[link].up &&
+				   now - players[link].last_ms >= LINK_TIMEOUT_MS) {
+				link_lost(link);
 			}
-			/* don't resume stale rumble when the controller reconnects */
-			host_output(off, 0);
-			hid_pid_stop_all();
-			radio_set_output(off, 0);
-			link_up = false;
-			LOG_INF("link lost: %s, rumble off",
-				xinput ? "slot 0 disconnected" : "neutral report sent");
 		}
 	}
 }

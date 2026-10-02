@@ -32,7 +32,7 @@ Source of truth: `firmware/common/include/protocol.h`. **Version 1**
 | Protocol | Nordic ESB, dynamic payload length, selective auto-ACK |
 | Bit rate | 2 Mbps, fast ramp-up |
 | Channel | 76 (2476 MHz), fixed for now (`XBX_RF_CHANNEL`) |
-| Address | base 0 `58 42 58 31` ("XBX1"), prefix `E7`, pipe 0 (fixed until pairing) |
+| Address | One pipe per controller: pipes 1–4 on base 1 `C2 C2 C2 C2`, prefixes `C3`–`C6`; controller pipe = player (`CONFIG_XBX_TEST_PIPE`, fixed until pairing). Pipe 0 (base 0 "XBX1", prefix `E7`) is closed, kept for pairing |
 | TX power | +8 dBm, both ends (`XBX_TX_POWER_DBM`) |
 | Roles | Controller = PTX, dongle = PRX |
 | Report rate | 1000 Hz from hardware TIMER3 (`XBX_REPORT_PERIOD_US`) |
@@ -40,8 +40,14 @@ Source of truth: `firmware/common/include/protocol.h`. **Version 1**
 | Max payload | 32 bytes (`CONFIG_ESB_MAX_PAYLOAD_LENGTH`) |
 
 Every 1 ms the controller sends an **input report**. The dongle's ESB ACK
-carries the **output report** queued for it (one is always kept queued), so
-rumble/LED data costs no extra transmissions. All fields are little-endian.
+carries the **output report** queued for that controller (one is always kept
+queued per pipe), so rumble/LED data costs no extra transmissions. All fields
+are little-endian.
+
+Controllers aren't time-synchronised yet, so two or more on one dongle collide
+now and then ([[#Time slots (TDMA)]] fixes that). The address change from pipe
+0 to pipes 1–4 needs both ends reflashed; the version stays 1 until the report
+format changes.
 
 ### Input report (controller → dongle), 23 bytes
 

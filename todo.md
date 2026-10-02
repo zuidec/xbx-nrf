@@ -266,6 +266,14 @@ Code: `firmware/{xbx-nrf,dongle}/src/main.c`,
 Design: [[docs/protocol#Pairing & multiple controllers (planned, protocol v2)]].
 Up to 7 paired (least recently connected replaced), 4 connected; 1 kHz for
 1–2, 500 Hz for 3–4.
+- [x] Step 1: fixed test pipes 1–4 (`CONFIG_XBX_TEST_PIPE`), per-pipe stats
+      and ACK payloads on the dongle, pipe n = XInput slot n − 1; HID mode
+      follows the first controller. Fake input: circling sticks, random
+      buttons. Two Pro Micros: both received, slots connect/disconnect
+      independently. Without TDMA one controller starves: ~40 of 1000
+      reports/s get through (avg attempts 1.97), its slot flaps. The phase
+      doesn't drift (crystals), so it stays starved; the retry collides too.
+      Rumble routing: test after TDMA.
 - [ ] Per-dongle random address; pipe 0 = pairing, pipes 1–7 = controllers;
       pairing table in flash (settings).
 - [ ] Pairing mode (Pair hold / dongle button / unpaired at plug-in), channel
