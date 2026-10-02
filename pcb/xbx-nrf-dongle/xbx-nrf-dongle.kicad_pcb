@@ -10,7 +10,7 @@
 	(title_block
 		(title "XBX-NRF Gamepad Dongle PCB Layout")
 		(date "2026-10-02")
-		(rev "1")
+		(rev "${REV}")
 	)
 	(layers
 		(0 "F.Cu" signal)
@@ -83,7 +83,6 @@
 			(dielectric_constraints no)
 		)
 		(pad_to_mask_clearance 0)
-		(solder_mask_min_width 0.1)
 		(allow_soldermask_bridges_in_footprints no)
 		(tenting
 			(front yes)
@@ -136,6 +135,7 @@
 			(outputdirectory "")
 		)
 	)
+	(property "REV" "1.1")
 	(footprint "xbx-nrf-lib:TestPoint_Pad_1.0x1.0mm-NoSilkscreen"
 		(layer "F.Cu")
 		(uuid "09715f33-d54f-4204-8693-e3e19d61a9e8")
@@ -11162,6 +11162,19 @@
 			(justify left bottom mirror)
 		)
 	)
+	(gr_text "XBX-NRF Gamepad Dongle\nRev ${REV}\nhttps://github.com/zuidec/xbx-nrf"
+		(at 102.4 42.55 90)
+		(layer "B.SilkS")
+		(uuid "eee8b7ec-c502-4c6f-872a-335700c6d2ba")
+		(effects
+			(font
+				(size 1.5 1.5)
+				(thickness 0.3)
+				(bold yes)
+			)
+			(justify left bottom mirror)
+		)
+	)
 	(gr_text "ANTENNA ZONE"
 		(at 126.831804 66.472865 90)
 		(layer "Cmts.User")
@@ -11322,44 +11335,6 @@
 			(at 83.406804 29.447865 0)
 			(layer "Dwgs.User")
 			(uuid "efc5f231-4587-4aec-83a9-4a2db7ee808f")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-			)
-		)
-	)
-	(dimension
-		(type orthogonal)
-		(layer "Dwgs.User")
-		(uuid "f2e49a8f-ffd7-4fe1-9442-c8cc90533182")
-		(pts
-			(xy 79.88 100.3) (xy 80.155 95.3)
-		)
-		(height -0.155)
-		(orientation 1)
-		(format
-			(prefix "")
-			(suffix "")
-			(units 3)
-			(units_format 0)
-			(precision 4)
-			(suppress_zeroes yes)
-		)
-		(style
-			(thickness 0.1)
-			(arrow_length 1.27)
-			(text_position_mode 0)
-			(arrow_direction outward)
-			(extension_height 0.58642)
-			(extension_offset 0.5)
-			(keep_text_aligned yes)
-		)
-		(gr_text "5"
-			(at 78.575 97.8 90)
-			(layer "Dwgs.User")
-			(uuid "f2e49a8f-ffd7-4fe1-9442-c8cc90533182")
 			(effects
 				(font
 					(size 1 1)

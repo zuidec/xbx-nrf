@@ -53,6 +53,8 @@ production/
 *-job.gbrjob
 *-bom.csv
 *-pos.csv
+# Fabrication Toolkit plugin settings (per user)
+fabrication-toolkit-options.json
 
 # --- FreeCAD -------------------------------------------------------------------
 *.FCBak
