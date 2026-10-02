@@ -7,7 +7,7 @@
 	(title_block
 		(title "XBX-NRF Gamepad Dongle Schematic")
 		(date "2026-10-02")
-		(rev "1")
+		(rev "${REV}")
 	)
 	(lib_symbols
 		(symbol "Connector:TestPoint_Square"
