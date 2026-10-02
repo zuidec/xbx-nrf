@@ -27,7 +27,7 @@ Related: [[docs/building]], [[docs/signing]], [[todo#5. Firmware]].
 | Pro Micro nRF52840 (nice!nano clone) | Controller prototype, dongle stand-in | nice!nano UF2 bootloader ✅ | `promicro_nrf52840/nrf52840/uf2` |
 | Nordic nRF52840 Dongle (PCA10059) | Dongle (off-the-shelf option) | Nordic USB DFU bootloader | `nrf52840dongle/nrf52840` |
 | Custom bottom board | Controller | None; SWD only | TBD |
-| Custom dongle board | Dongle | None; SWD only (JST-SH) | TBD |
+| Custom dongle board | Dongle | None; SWD only (J1, JST-SH) | `xbx_dongle/nrf52840` |
 
 | Debug probe | Notes |
 |---|---|
@@ -54,7 +54,9 @@ An official ST-Link won't connect without the target 3.3 V on its sense pin.
 - **Pro Micro:** SWDIO/SWCLK pads on the underside (check the clone's
   silkscreen).
 - **PCA10059:** pads on the underside (*nRF52840 Dongle User Guide*).
-- **Custom board:** SWD connector or Tag-Connect footprint
+- **Custom dongle:** J1 (JST-SH, Raspberry Pi Debug Probe cable). `west flash`
+  defaults to OpenOCD with CMSIS-DAP (the Pi probe).
+- **Custom controller board:** SWD connector or Tag-Connect footprint
   ([[todo#MCU / radio]]).
 
 > [!warning] SWD flashing erases the bootloader

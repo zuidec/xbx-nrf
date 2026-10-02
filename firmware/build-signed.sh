@@ -63,7 +63,8 @@ if [ -f "$app_dir/release.conf" ]; then
 	echo "conf:  $app_dir/release.conf"
 fi
 
-west build --pristine -b "$board" -d "$build_dir" "$app_dir" "$@" -- \
+# BOARD_ROOT: our boards in firmware/boards/ (sysbuild ignores the app folder)
+BOARD_ROOT="$script_dir" west build --pristine -b "$board" -d "$build_dir" "$app_dir" "$@" -- \
 	-DSB_CONF_FILE="$app_dir/sysbuild-signed.conf" \
 	-DSB_CONFIG_BOOT_SIGNATURE_KEY_FILE="\"$key\"" \
 	"${release_conf[@]}"

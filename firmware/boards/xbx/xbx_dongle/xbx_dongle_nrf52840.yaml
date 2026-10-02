@@ -1,0 +1,13 @@
+identifier: xbx_dongle/nrf52840
+name: xbx-nrf dongle
+type: mcu
+arch: arm
+ram: 256
+flash: 1024
+toolchain:
+  - zephyr
+supported:
+  - adc
+  - gpio
+  - usbd
+  - watchdog

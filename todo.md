@@ -201,14 +201,18 @@ Locked decisions: [README](README.md). Not yet locked:
 	      output: decoupling per the module's high-voltage-mode reference.
 	- [ ] USB-C (CC: 5.1 kΩ to GND each), ESD diodes at the connector,
 	      VBUS ≤ 10 µF.
-	- [ ] u.FL → pigtail (MHF1) → (RP-)SMA bulkhead, 2–3 dBi dipole; base
-	      station on a USB cable rather than a stick.
+	- [ ] Antenna: Kyocera AVX **1003893FT-AA10L0050** (FPC, 87 %, 50 mm
+	      cable, u.FL) flat on the lid, over no PCB copper; flat puck on a
+	      USB cable, USB at the rear. Backup: Taoglas CBD01.07.0100C cable
+	      dipole along the front wall (straight, ≥ 15 mm from metal).
+	      Compare both with the dongle's rx/lost/RSSI stats.
 	- [ ] USB mode switch read at boot ([[#Dongle]] step 4), pair button,
 	      status LED (sized for the VDD chosen below); avoid P0.09/P0.10
 	      (NFC) and P0.18 (reset).
 	- [ ] SWD pads (TC2030 footprint): first flash over SWD.
-	- [ ] Firmware: own board definition based on `nrf52840dongle`,
-	      including REGOUT0 → 3.0 V (GPIOs run at 1.8 V otherwise).
+	- [x] Firmware: board `xbx_dongle/nrf52840` (`firmware/boards/xbx/`),
+	      pins from the Rev1 schematic. Normal voltage mode (3.3 V LDO), so
+	      no REGOUT0 change.
 	- [ ] Order 5–6 modules in one DigiKey Marketplace order ($25 flat
 	      shipping), shared with the controller.
 
@@ -234,8 +238,8 @@ Code: `firmware/{xbx-nrf,dongle}/src/main.c`,
 
 - [ ] **Update the default boards in `build-unsigned.sh`** as hardware moves
       on: dongle → PCA10059 done; controller → custom board when it exists.
-      Custom dongle board: its own board definition, PCA10059 stays
-      supported.
+      Custom dongle board: `xbx_dongle/nrf52840` becomes the default once
+      Rev1 works; PCA10059 stays supported.
 - [x] Test firmware: ESB 2 Mbps, 1 ms fake reports, ACK payloads, stats,
       P0.17 timing pin.
 - [x] Report timing from hardware TIMER3 (exact 1 kHz; ESB uses TIMER2).

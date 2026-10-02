@@ -80,19 +80,26 @@ off-the-shelf [[#nRF52840 Dongle (PCA10059)]].
 KiCad: `pcb/xbx-nrf-dongle/`. Raytac MDBT50Q-U1MV2 (u.FL), normal voltage
 mode: LDS3985M33R LDO from VBUS → VDD + VDDH (3.3 V); VBUS also to the module
 for USB. 32.768 kHz crystal (FC-135, 7 pF) with 9 pF caps on XL1/XL2.
+Antenna: Kyocera AVX 1003893FT-AA10L0050 (FPC, u.FL, 50 mm cable) flat on the
+enclosure lid, away from the PCB; backup Taoglas CBD01.07.0100C.
+
+Board target `xbx_dongle/nrf52840` (`firmware/boards/xbx/xbx_dongle/`);
+flashing over J1 (SWD). Pins from the Rev1 schematic:
 
 | Signal | Pin | Notes |
 |---|---|---|
-| MODE_SW | P1.11 | **Low = HID, high = XInput**; 10 kΩ to each rail, read once at boot (no pull) |
-| PAIR_SW | P1.12 | Button to GND; internal pull-up |
-| PAIR_LED (blue) | P0.02 | Active low, 180 Ω (high drive) |
-| P1_LED…P4_LED (green) | P1.13, P1.14, P1.15, P0.03 | Active low, 1 kΩ |
-| PWR_LED (red) | P0.29 | JP1 to GPIO: active low; JP1 to GND: always on |
-| DBG_TX / DBG_RX | P0.21 / P0.20 | JST-SH UART, Raspberry Pi pinout |
-| SWDIO / SWCLK | — | JST-SH SWD, Raspberry Pi pinout; NRST and VDD on test pads |
-| TIMING | P0.17 | Test pad (scope) |
-| SWO | P1.00 | Test pad |
-| Spare | P0.04, P0.06, P0.26, P0.27, P0.30 (AIN6), P0.31 (AIN7) | Test pads |
+| MODE_SW | P1.09 | SW3, read once at boot: **low = XInput** (1 kΩ to GND), **high = HID** (open, internal pull-up) |
+| PAIR_SW | P1.12 | SW2 to GND; internal pull-up |
+| PAIR_LED (blue) | P0.08 | D1, active low, 180 Ω, high drive |
+| P1_LED…P4_LED (green) | P1.13, P1.14, P1.15, P0.03 | D2–D5, active low, 1 kΩ |
+| PWR_LED (red) | P0.22 | D6, 1 kΩ, via JP1 (open by default): 3–2 = GPIO, active low; 1–2 = GND, always on |
+| DBG_RX / DBG_TX | P0.20 / P0.21 | J3 UART (JST-SH, Raspberry Pi pinout); console for MCUboot and samples (the app logs over USB) |
+| SWCLK / SWDIO | — | J1 SWD (JST-SH, Raspberry Pi pinout) |
+| NRST | P0.18 | SW1 reset button, TP1 |
+| TIMING | P0.17 | TP4 (scope) |
+| SWO | P1.00 | TP3 |
+| Spare | P0.04, P0.06, P0.26, P0.27, P0.30 (AIN6), P0.31 (AIN7) | TP14–TP17, TP12, TP13 |
+| Power | — | +3V3: TP2, TP8–TP10; VBUS: TP11; GND: TP5–TP7 |
 
 ### nRF52840 Dongle (PCA10059)
 

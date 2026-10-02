@@ -1,0 +1,20 @@
+/*
+ * xbx-nrf dongle (custom board, boards/xbx/xbx_dongle/). The board's console
+ * is the J3 UART; the app moves it to a USB serial function, as on the other
+ * dongle boards.
+ */
+
+#include <../boards/common/usb/cdc_acm_serial.dtsi>
+
+/ {
+	zephyr,user {
+		/* scope timing pin (TP4): pulses on every received report */
+		timing-gpios = <&gpio0 17 GPIO_ACTIVE_HIGH>;
+
+		/*
+		 * USB mode, read at boot: SW3 to GND via 1 kΩ = XInput, open
+		 * (internal pull-up) = HID
+		 */
+		mode-gpios = <&gpio1 9 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+	};
+};

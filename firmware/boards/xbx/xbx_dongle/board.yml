@@ -1,0 +1,5 @@
+board:
+  name: xbx_dongle
+  full_name: xbx-nrf dongle
+  socs:
+  - name: nrf52840

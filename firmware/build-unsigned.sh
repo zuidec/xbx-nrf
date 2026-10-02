@@ -43,7 +43,8 @@ echo "app:   $app"
 echo "board: ${board:-(from arguments)}"
 echo "out:   $app_dir/build"
 
-west build ${board:+-b "$board"} -d "$app_dir/build" "$app_dir" "$@"
+# BOARD_ROOT: our boards in firmware/boards/ (sysbuild ignores the app folder)
+BOARD_ROOT="$script_dir" west build ${board:+-b "$board"} -d "$app_dir/build" "$app_dir" "$@"
 
 echo
 echo "images:"
