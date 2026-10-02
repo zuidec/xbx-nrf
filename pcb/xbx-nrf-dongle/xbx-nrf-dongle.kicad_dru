@@ -1,0 +1,113 @@
+(version 1)
+# JLCPCB manufacturing limits: 2- and 4+-layer boards, 1 oz copper, routed
+# outline. Source: https://jlcpcb.com/capabilities/pcb-capabilities (read
+# 2026-10-02). JLC changes these; re-check before ordering.
+#
+# Hard limits only (DRC errors); preferred everyday sizes go in Board Setup
+# (net classes and pre-defined track/via sizes), not here.
+#
+# One file for both stack-ups: rules can't test the layer count, so outer
+# layers use the 2-layer limits (on 4+ layers JLC allows 0.09 mm track and
+# spacing, and a 0.15 mm PTH ring: slightly stricter than needed, never
+# looser). Inner-layer rules apply only where inner layers exist. When rules
+# overlap, the later one wins, so the inner-layer rules come last.
+
+# --- Copper ---------------------------------------------------------------
+
+(rule "JLC: track width"
+	(condition "A.Type == 'Track'")
+	(constraint track_width (min 0.1mm)))
+
+(rule "JLC: copper clearance"
+	(constraint clearance (min 0.1mm)))
+
+(rule "JLC: copper to board edge"
+	(constraint edge_clearance (min 0.2mm)))
+
+# --- Vias -------------------------------------------------------------------
+# 0.15 mm holes are possible but cost extra; 0.2 mm is JLC's preferred minimum.
+
+(rule "JLC: via hole"
+	(condition "A.Type == 'Via'")
+	(constraint hole_size (min 0.2mm)))
+
+(rule "JLC: via diameter"
+	(condition "A.Type == 'Via'")
+	(constraint via_diameter (min 0.25mm)))
+
+(rule "JLC: via annular ring"
+	(condition "A.Type == 'Via'")
+	(constraint annular_width (min 0.05mm)))
+
+(rule "JLC: via hole to copper"
+	(condition "A.Type == 'Via'")
+	(constraint hole_clearance (min 0.2mm)))
+
+# --- Plated holes (pads) ----------------------------------------------------
+
+(rule "JLC: plated hole size"
+	(condition "A.Type == 'Pad' && A.isPlated()")
+	(constraint hole_size (min 0.15mm) (max 6.3mm)))
+
+(rule "JLC: plated annular ring"
+	(condition "A.Type == 'Pad' && A.isPlated()")
+	(constraint annular_width (min 0.18mm)))
+
+(rule "JLC: plated hole to copper"
+	(condition "A.Type == 'Pad' && A.isPlated()")
+	(constraint hole_clearance (min 0.28mm)))
+
+# --- Unplated holes ---------------------------------------------------------
+
+(rule "JLC: unplated hole size"
+	(condition "A.Type == 'Pad' && !A.isPlated()")
+	(constraint hole_size (min 0.5mm)))
+
+(rule "JLC: unplated hole to copper"
+	(condition "A.Type == 'Pad' && !A.isPlated()")
+	(constraint hole_clearance (min 0.2mm)))
+
+# --- Hole spacing (edge to edge) --------------------------------------------
+
+(rule "JLC: hole to hole, pads"
+	(constraint hole_to_hole (min 0.45mm)))
+
+(rule "JLC: hole to hole, via to via"
+	(condition "A.Type == 'Via' && B.Type == 'Via'")
+	(constraint hole_to_hole (min 0.2mm)))
+
+# --- Silkscreen -------------------------------------------------------------
+
+(rule "JLC: silkscreen text"
+	(condition "A.Layer == 'F.Silkscreen' || A.Layer == 'B.Silkscreen'")
+	(constraint text_height (min 1.0mm))
+	(constraint text_thickness (min 0.15mm)))
+
+(rule "JLC: silkscreen to pads"
+	(condition "A.Type == 'Pad' || B.Type == 'Pad'")
+	(constraint silk_clearance (min 0.15mm)))
+
+# --- Inner layers (4+ layer boards) -----------------------------------------
+
+(rule "JLC: inner track width"
+	(layer inner)
+	(condition "A.Type == 'Track'")
+	(constraint track_width (min 0.09mm)))
+
+(rule "JLC: inner copper clearance"
+	(layer inner)
+	(constraint clearance (min 0.09mm)))
+
+(rule "JLC: inner copper to board edge"
+	(layer inner)
+	(constraint edge_clearance (min 0.2mm)))
+
+(rule "JLC: via hole to inner copper"
+	(layer inner)
+	(condition "A.Type == 'Via'")
+	(constraint hole_clearance (min 0.2mm)))
+
+(rule "JLC: plated hole to inner copper"
+	(layer inner)
+	(condition "A.Type == 'Pad' && A.isPlated()")
+	(constraint hole_clearance (min 0.3mm)))

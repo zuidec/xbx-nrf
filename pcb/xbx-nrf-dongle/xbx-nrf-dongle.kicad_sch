@@ -9,231 +9,6 @@
 		(rev "1")
 	)
 	(lib_symbols
-		(symbol "Connector:Conn_01x03_Socket"
-			(pin_names
-				(offset 1.016)
-				(hide yes)
-			)
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(in_pos_files yes)
-			(duplicate_pin_numbers_are_jumpers no)
-			(property "Reference" "J"
-				(at 0 5.08 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Value" "Conn_01x03_Socket"
-				(at 0 -5.08 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Datasheet" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Description" "Generic connector, single row, 01x03, script generated"
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "ki_locked" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "ki_keywords" "connector"
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "ki_fp_filters" "Connector*:*_1x??_*"
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(symbol "Conn_01x03_Socket_1_1"
-				(polyline
-					(pts
-						(xy -1.27 2.54) (xy -0.508 2.54)
-					)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -1.27 0) (xy -0.508 0)
-					)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -1.27 -2.54) (xy -0.508 -2.54)
-					)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(arc
-					(start 0 2.032)
-					(mid -0.5058 2.54)
-					(end 0 3.048)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(arc
-					(start 0 -0.508)
-					(mid -0.5058 0)
-					(end 0 0.508)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(arc
-					(start 0 -3.048)
-					(mid -0.5058 -2.54)
-					(end 0 -2.032)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(pin passive line
-					(at -5.08 2.54 0)
-					(length 3.81)
-					(name "Pin_1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -5.08 0 0)
-					(length 3.81)
-					(name "Pin_2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -5.08 -2.54 0)
-					(length 3.81)
-					(name "Pin_3"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "3"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
-			(embedded_fonts no)
-		)
 		(symbol "Connector:TestPoint_Square"
 			(pin_numbers
 				(hide yes)
@@ -347,6 +122,232 @@
 						)
 					)
 					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "Connector_Generic_MountingPin:Conn_01x03_MountingPin"
+			(pin_names
+				(offset 1.016)
+				(hide yes)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "J"
+				(at 0 5.08 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "Conn_01x03_MountingPin"
+				(at 1.27 -5.08 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "Generic connectable mounting pin connector, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_keywords" "connector"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_fp_filters" "Connector*:*_1x??-1MP*"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "Conn_01x03_MountingPin_1_1"
+				(rectangle
+					(start -1.27 3.81)
+					(end 1.27 -3.81)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+				(rectangle
+					(start -1.27 2.667)
+					(end 0 2.413)
+					(stroke
+						(width 0.1524)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(rectangle
+					(start -1.27 0.127)
+					(end 0 -0.127)
+					(stroke
+						(width 0.1524)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(rectangle
+					(start -1.27 -2.413)
+					(end 0 -2.667)
+					(stroke
+						(width 0.1524)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -1.016 -4.572) (xy 1.016 -4.572)
+					)
+					(stroke
+						(width 0.1524)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(text "Mounting"
+					(at 0 -4.191 0)
+					(effects
+						(font
+							(size 0.381 0.381)
+						)
+					)
+				)
+				(pin passive line
+					(at -5.08 2.54 0)
+					(length 3.81)
+					(name "Pin_1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -5.08 0 0)
+					(length 3.81)
+					(name "Pin_2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -5.08 -2.54 0)
+					(length 3.81)
+					(name "Pin_3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 0 -7.62 90)
+					(length 3.048)
+					(name "MountPin"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "MP"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -4972,6 +4973,12 @@
 		(uuid "570f8c61-dda6-4137-9ec1-7a8252fe36c7")
 	)
 	(junction
+		(at 245.11 45.72)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "632c2d4c-bdab-4b6e-bd42-15de8cef3491")
+	)
+	(junction
 		(at 26.67 78.74)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -4988,6 +4995,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "80f45c49-4f49-48e8-93de-afb01cd6f9e6")
+	)
+	(junction
+		(at 245.11 27.94)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "80fb20dd-8715-4123-9a5f-e05f422b5aee")
 	)
 	(junction
 		(at 140.97 24.13)
@@ -5477,7 +5490,7 @@
 	)
 	(wire
 		(pts
-			(xy 232.41 43.18) (xy 240.03 43.18)
+			(xy 232.41 48.26) (xy 240.03 48.26)
 		)
 		(stroke
 			(width 0)
@@ -5837,6 +5850,16 @@
 	)
 	(wire
 		(pts
+			(xy 245.11 17.78) (xy 245.11 27.94)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "640ba800-0d2d-41eb-9d57-3d47f147f76c")
+	)
+	(wire
+		(pts
 			(xy 113.03 24.13) (xy 115.57 24.13)
 		)
 		(stroke
@@ -5844,6 +5867,16 @@
 			(type default)
 		)
 		(uuid "66f851cf-557d-4e8a-9dfc-85058bd8f42b")
+	)
+	(wire
+		(pts
+			(xy 227.33 35.56) (xy 245.11 35.56)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "67078bcd-3bf9-439e-901f-2b2e5c03d10a")
 	)
 	(wire
 		(pts
@@ -5924,6 +5957,16 @@
 			(type default)
 		)
 		(uuid "6db04c7e-dd3b-4bbc-9ed4-7baebd17860c")
+	)
+	(wire
+		(pts
+			(xy 227.33 17.78) (xy 245.11 17.78)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6dcd8525-0458-4f50-983e-23e61e2b4735")
 	)
 	(wire
 		(pts
@@ -6077,7 +6120,7 @@
 	)
 	(wire
 		(pts
-			(xy 232.41 38.1) (xy 240.03 38.1)
+			(xy 232.41 43.18) (xy 240.03 43.18)
 		)
 		(stroke
 			(width 0)
@@ -6337,6 +6380,16 @@
 	)
 	(wire
 		(pts
+			(xy 227.33 38.1) (xy 227.33 35.56)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a754fc73-d2be-4cd2-b89c-198ba7f00ba5")
+	)
+	(wire
+		(pts
 			(xy 86.36 138.43) (xy 91.44 138.43)
 		)
 		(stroke
@@ -6427,7 +6480,7 @@
 	)
 	(wire
 		(pts
-			(xy 232.41 40.64) (xy 245.11 40.64)
+			(xy 232.41 45.72) (xy 245.11 45.72)
 		)
 		(stroke
 			(width 0)
@@ -6647,6 +6700,16 @@
 	)
 	(wire
 		(pts
+			(xy 227.33 20.32) (xy 227.33 17.78)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "dfdb6f1e-36a4-4b0e-8a74-9711602268dc")
+	)
+	(wire
+		(pts
 			(xy 17.78 87.63) (xy 26.67 87.63)
 		)
 		(stroke
@@ -6787,6 +6850,16 @@
 	)
 	(wire
 		(pts
+			(xy 245.11 35.56) (xy 245.11 45.72)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "fbb1852a-6fbb-4a1b-93a3-6b3eddd9322d")
+	)
+	(wire
+		(pts
 			(xy 151.13 104.14) (xy 154.94 104.14)
 		)
 		(stroke
@@ -6915,7 +6988,7 @@
 		)
 		(uuid "2b07bc41-9253-482f-83c6-4b0231b799e7")
 	)
-	(label "D-_EXT"
+	(label "EXT_D-"
 		(at 69.85 40.64 180)
 		(effects
 			(font
@@ -6945,7 +7018,7 @@
 		)
 		(uuid "49830340-862a-4a27-b0e2-1dd5ba119a54")
 	)
-	(label "D+_EXT"
+	(label "EXT_D+"
 		(at 69.85 43.18 180)
 		(effects
 			(font
@@ -6985,7 +7058,7 @@
 		)
 		(uuid "57f2dfde-ebf1-4f09-a703-57c2c3e02ab2")
 	)
-	(label "D-_EXT"
+	(label "EXT_D-"
 		(at 16.51 43.18 0)
 		(effects
 			(font
@@ -7015,7 +7088,7 @@
 		)
 		(uuid "663ce49f-9fa5-4367-8e30-160f2d46ca03")
 	)
-	(label "D+_EXT"
+	(label "EXT_D+"
 		(at 16.51 40.64 0)
 		(effects
 			(font
@@ -7026,7 +7099,7 @@
 		(uuid "6f2142e5-fbf2-4290-bffc-7e26bc7eb250")
 	)
 	(label "DBG_RX"
-		(at 240.03 43.18 180)
+		(at 240.03 48.26 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -7096,7 +7169,7 @@
 		(uuid "9536e205-2ad7-4006-b6e6-d27e3d7ae19d")
 	)
 	(label "DBG_TX"
-		(at 240.03 38.1 180)
+		(at 240.03 43.18 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -7175,7 +7248,7 @@
 		)
 		(uuid "bca54c9f-5610-4f00-a314-cae06488e665")
 	)
-	(label "D+_EXT"
+	(label "EXT_D+"
 		(at 72.39 43.18 0)
 		(effects
 			(font
@@ -7335,7 +7408,7 @@
 		)
 		(uuid "fb91fd65-4269-4c21-a8c7-687a49d66f78")
 	)
-	(label "D-_EXT"
+	(label "EXT_D-"
 		(at 72.39 45.72 0)
 		(effects
 			(font
@@ -7467,7 +7540,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_2.0x2.0mm"
+		(property "Footprint" "TestPoint:TestPoint_Pad_1.0x1.0mm"
 			(at 22.86 73.66 0)
 			(hide yes)
 			(show_name no)
@@ -8104,7 +8177,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_2.0x2.0mm"
+		(property "Footprint" "TestPoint:TestPoint_Pad_1.0x1.0mm"
 			(at 44.45 115.57 0)
 			(hide yes)
 			(show_name no)
@@ -9101,7 +9174,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_2.0x2.0mm"
+		(property "Footprint" "TestPoint:TestPoint_Pad_1.0x1.0mm"
 			(at 40.64 82.55 0)
 			(hide yes)
 			(show_name no)
@@ -9180,7 +9253,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_2.0x2.0mm"
+		(property "Footprint" "TestPoint:TestPoint_Pad_1.0x1.0mm"
 			(at 31.75 82.55 0)
 			(hide yes)
 			(show_name no)
@@ -9341,7 +9414,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_2.0x2.0mm"
+		(property "Footprint" "TestPoint:TestPoint_Pad_1.0x1.0mm"
 			(at 22.86 82.55 0)
 			(hide yes)
 			(show_name no)
@@ -9661,7 +9734,6 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "4a7ba481-a470-4814-b879-ae3029cbfaba")
 		(property "Reference" "#PWR07"
 			(at 245.11 34.29 0)
@@ -9675,7 +9747,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 245.11 33.02 0)
+			(at 245.11 32.512 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -9845,7 +9917,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_2.0x2.0mm"
+		(property "Footprint" "TestPoint:TestPoint_Pad_1.0x1.0mm"
 			(at 33.02 115.57 0)
 			(hide yes)
 			(show_name no)
@@ -10005,7 +10077,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_2.0x2.0mm"
+		(property "Footprint" "TestPoint:TestPoint_Pad_1.5x1.5mm"
 			(at 278.13 39.37 0)
 			(hide yes)
 			(show_name no)
@@ -10162,7 +10234,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_2.0x2.0mm"
+		(property "Footprint" "TestPoint:TestPoint_Pad_1.0x1.0mm"
 			(at 33.02 104.14 0)
 			(hide yes)
 			(show_name no)
@@ -10319,7 +10391,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_2.0x2.0mm"
+		(property "Footprint" "TestPoint:TestPoint_Pad_1.0x1.0mm"
 			(at 44.45 104.14 0)
 			(hide yes)
 			(show_name no)
@@ -10807,7 +10879,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_2.0x2.0mm"
+		(property "Footprint" "TestPoint:TestPoint_Pad_1.0x1.0mm"
 			(at 31.75 73.66 0)
 			(hide yes)
 			(show_name no)
@@ -10886,7 +10958,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_2.0x2.0mm"
+		(property "Footprint" "TestPoint:TestPoint_Pad_1.5x1.5mm"
 			(at 259.08 39.37 0)
 			(hide yes)
 			(show_name no)
@@ -10932,7 +11004,7 @@
 		)
 	)
 	(symbol
-		(lib_id "Connector:Conn_01x03_Socket")
+		(lib_id "Connector_Generic_MountingPin:Conn_01x03_MountingPin")
 		(at 227.33 27.94 180)
 		(unit 1)
 		(body_style 1)
@@ -10984,7 +11056,7 @@
 				)
 			)
 		)
-		(property "Description" "Generic connector, single row, 01x03, script generated"
+		(property "Description" "Generic connectable mounting pin connector, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)"
 			(at 227.33 27.94 0)
 			(hide yes)
 			(show_name no)
@@ -11003,6 +11075,9 @@
 		)
 		(pin "1"
 			(uuid "45d4b332-ab4d-43af-9fcc-bf6df7552dec")
+		)
+		(pin "MP"
+			(uuid "b5e7b582-b159-461a-b1d6-fd6f679a2f9c")
 		)
 		(instances
 			(project "xbx-nrf-dongle"
@@ -11047,7 +11122,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_2.0x2.0mm"
+		(property "Footprint" "TestPoint:TestPoint_Pad_1.0x1.0mm"
 			(at 22.86 90.17 0)
 			(hide yes)
 			(show_name no)
@@ -12303,8 +12378,8 @@
 		)
 	)
 	(symbol
-		(lib_id "Connector:Conn_01x03_Socket")
-		(at 227.33 40.64 180)
+		(lib_id "Connector_Generic_MountingPin:Conn_01x03_MountingPin")
+		(at 227.33 45.72 180)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -12314,7 +12389,7 @@
 		(dnp no)
 		(uuid "ae83c04a-56ad-4de0-938b-976666340f0e")
 		(property "Reference" "J2"
-			(at 230.632 32.512 0)
+			(at 230.632 37.592 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -12324,7 +12399,7 @@
 			)
 		)
 		(property "Value" "UART"
-			(at 230.632 35.052 0)
+			(at 230.632 40.132 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -12334,7 +12409,7 @@
 			)
 		)
 		(property "Footprint" "Connector_JST:JST_SH_SM03B-SRSS-TB_1x03-1MP_P1.00mm_Horizontal"
-			(at 227.33 40.64 0)
+			(at 227.33 45.72 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12345,7 +12420,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 227.33 40.64 0)
+			(at 227.33 45.72 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12355,8 +12430,8 @@
 				)
 			)
 		)
-		(property "Description" "Generic connector, single row, 01x03, script generated"
-			(at 227.33 40.64 0)
+		(property "Description" "Generic connectable mounting pin connector, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 227.33 45.72 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12374,6 +12449,9 @@
 		)
 		(pin "1"
 			(uuid "f80423be-9a8b-4d4c-9097-394109c8ee9b")
+		)
+		(pin "MP"
+			(uuid "a5bfd63f-ec7c-484d-9047-798a7a0a919c")
 		)
 		(instances
 			(project "xbx-nrf-dongle"
@@ -12500,7 +12578,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_2.0x2.0mm"
+		(property "Footprint" "TestPoint:TestPoint_Pad_1.5x1.5mm"
 			(at 269.24 39.37 0)
 			(hide yes)
 			(show_name no)
@@ -13131,7 +13209,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_2.0x2.0mm"
+		(property "Footprint" "TestPoint:TestPoint_Pad_1.0x1.0mm"
 			(at 40.64 73.66 0)
 			(hide yes)
 			(show_name no)
@@ -13287,7 +13365,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_2.0x2.0mm"
+		(property "Footprint" "TestPoint:TestPoint_Pad_1.0x1.0mm"
 			(at 21.59 104.14 0)
 			(hide yes)
 			(show_name no)
@@ -13442,7 +13520,7 @@
 				)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_2.0x2.0mm"
+		(property "Footprint" "TestPoint:TestPoint_Pad_1.5x1.5mm"
 			(at 256.54 16.51 0)
 			(hide yes)
 			(show_name no)
@@ -13599,7 +13677,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_2.0x2.0mm"
+		(property "Footprint" "TestPoint:TestPoint_Pad_1.0x1.0mm"
 			(at 21.59 115.57 0)
 			(hide yes)
 			(show_name no)
@@ -14989,7 +15067,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 245.11 40.64 0)
+		(at 245.11 45.72 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -15000,7 +15078,7 @@
 		(fields_autoplaced yes)
 		(uuid "fd1841d5-5950-4683-952a-034e102aef37")
 		(property "Reference" "#PWR014"
-			(at 245.11 46.99 0)
+			(at 245.11 52.07 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15011,7 +15089,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 245.11 45.72 0)
+			(at 245.11 50.8 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -15021,7 +15099,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 245.11 40.64 0)
+			(at 245.11 45.72 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15032,7 +15110,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 245.11 40.64 0)
+			(at 245.11 45.72 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15043,7 +15121,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 245.11 40.64 0)
+			(at 245.11 45.72 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
