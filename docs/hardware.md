@@ -71,6 +71,12 @@ the PCB; [[todo#MCU / radio]]).
 
 ## Dongle board
 
+Two hardware options, chosen by the build's board target (each has its own
+overlay in `firmware/dongle/boards/`): the custom board below, or the
+off-the-shelf [[#nRF52840 Dongle (PCA10059)]].
+
+### Custom board
+
 KiCad: `pcb/xbx-nrf-dongle/`. Raytac MDBT50Q-U1MV2 (u.FL), normal voltage
 mode: LDS3985M33R LDO from VBUS → VDD + VDDH (3.3 V); VBUS also to the module
 for USB. 32.768 kHz crystal (FC-135, 7 pF) with 9 pF caps on XL1/XL2.
@@ -87,3 +93,18 @@ for USB. 32.768 kHz crystal (FC-135, 7 pF) with 9 pF caps on XL1/XL2.
 | TIMING | P0.17 | Test pad (scope) |
 | SWO | P1.00 | Test pad |
 | Spare | P0.04, P0.06, P0.26, P0.27, P0.30 (AIN6), P0.31 (AIN7) | Test pads |
+
+### nRF52840 Dongle (PCA10059)
+
+Nordic's USB dongle, for anyone not building the custom board. Board target
+`nrf52840dongle/nrf52840` (the build default); flashing over its USB
+bootloader: [[docs/flashing#nRF52840 Dongle (PCA10059) — USB DFU (no probe)]].
+Runs from VDDH (USB), GPIOs at 3.0 V (set by Zephyr's board code).
+
+| Signal | Pin | Notes |
+|---|---|---|
+| MODE_SW | P0.29 (edge pad) | Add a switch to GND: **closed = XInput, open = HID**; internal pull-up |
+| PAIR_SW | P1.06 | On-board SW1 |
+| LED (green) | P0.06 | On-board LED1, active low |
+| RGB LED | P0.08 (R), P1.09 (G), P0.12 (B) | On-board LED2, active low |
+| Reset | P0.18 | On-board side button (also enters the USB bootloader) |

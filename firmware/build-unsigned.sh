@@ -6,7 +6,7 @@
 #   e.g. firmware/build-unsigned.sh xbx-nrf -p      # pristine rebuild
 #
 # Each app has a default board below. Pass -b <board> to override it.
-# TODO: update the boards once the real hardware exists (see todo.md, Firmware).
+# TODO: controller → custom board once it exists (see todo.md, Firmware).
 
 set -euo pipefail
 
@@ -21,7 +21,7 @@ shift
 
 case "$app" in
 xbx-nrf) board="promicro_nrf52840/nrf52840/uf2" ;; # prototype; later: custom bottom board
-dongle)  board="promicro_nrf52840/nrf52840/uf2" ;; # stand-in; later: nrf52840dongle/nrf52840
+dongle)  board="nrf52840dongle/nrf52840" ;; # PCA10059; Pro Micro: -b promicro_nrf52840/nrf52840/uf2
 *) usage ;;
 esac
 
