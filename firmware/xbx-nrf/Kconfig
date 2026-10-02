@@ -2,10 +2,11 @@ menu "xbx-nrf controller"
 
 config XBX_WIRED
 	bool "Wired mode: be a USB gamepad while a PC has the device configured"
-	default y
+	default y if !XBX_FAKE_INPUT
 	help
 	  The radio pauses while wired; a charger alone doesn't count. Turn off
-	  to test the wireless link with the USB console attached.
+	  to test the wireless link with the USB console attached (off by
+	  default with the fake input, which is for link tests).
 
 config XBX_USB_CONSOLE
 	bool "USB serial console as a composite function"
@@ -14,11 +15,20 @@ config XBX_USB_CONSOLE
 	  Adds the CDC ACM serial port (log console) next to the wired-mode
 	  gamepad on the controller's USB device. On for development builds.
 
+config XBX_TEST_PIPE
+	int "Radio pipe (player number) until pairing exists"
+	range 1 4
+	default 1
+	help
+	  Each controller near one dongle needs its own pipe; the dongle maps
+	  pipe n to player n (XInput slot n - 1). Replaced by pairing.
+
 config XBX_FAKE_INPUT
 	bool "Send a test pattern instead of real input"
 	help
-	  Sticks sweep, A toggles every 500 ms and the triggers ramp. Needs no
-	  input hardware (link tests).
+	  Sticks circle slowly, triggers ramp, and random buttons are pressed
+	  and released at random intervals (seeded from the chip ID, so two
+	  controllers differ). Needs no input hardware (link tests).
 
 config XBX_LSTICK_INVERT_X
 	bool "Invert the left stick X axis"

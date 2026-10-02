@@ -1,11 +1,13 @@
 /*
  * xbx-nrf dongle firmware.
  *
- * The radio (radio.c) receives input reports and answers with output reports
- * in the ACK payload; main prints link statistics once per second. The bridge
- * (bridge.c) forwards each report to USB (usb.c): the HID gamepad (hid_pad.c,
- * hid_pid.c) or the XInput receiver (xinput.c), chosen by the mode strap. The
- * console carries the logs in development builds.
+ * The radio (radio.c) receives input reports from up to 4 controllers, one
+ * pipe each, and answers with output reports in the ACK payload; main prints
+ * link statistics per controller once per second. The bridge (bridge.c)
+ * forwards the reports to USB (usb.c): the HID gamepad (hid_pad.c, hid_pid.c,
+ * single-player) or the XInput receiver (xinput.c, one slot per controller),
+ * chosen by the mode strap. The console carries the logs in development
+ * builds.
  */
 
 #include <zephyr/kernel.h>
@@ -54,22 +56,32 @@ int main(void)
 
 	while (true) {
 		struct radio_stats now;
-		struct xbx_input_report in;
 
 		k_sleep(K_SECONDS(1));
-
 		radio_get_stats(&now);
-		radio_get_last_input(&in);
 
-		uint32_t received = now.received - prev.received;
-		int32_t rssi = received ? (now.rssi_sum - prev.rssi_sum) / (int32_t)received : 0;
+		/* one line per controller heard this second */
+		for (uint8_t link = 0; link < RADIO_LINKS; link++) {
+			const struct radio_link_stats *n = &now.link[link];
+			const struct radio_link_stats *p = &prev.link[link];
+			uint32_t received = n->received - p->received;
+			struct xbx_input_report in;
 
-		/* ESB reports RSSI as a positive magnitude in dBm */
-		LOG_INF("rx %u/s  lost %u  bad %u  ack-full %u  rssi -%d dBm  | btn %04x "
-			"L(%d,%d) R(%d,%d) LT %u RT %u",
-			received, now.lost - prev.lost, now.bad - prev.bad,
-			now.ack_queue_full - prev.ack_queue_full, rssi, in.buttons, in.lx, in.ly,
-			in.rx, in.ry, in.lt, in.rt);
+			if (received == 0) {
+				continue;
+			}
+			radio_get_last_input(link, &in);
+			/* ESB reports RSSI as a positive magnitude in dBm */
+			LOG_INF("P%u rx %u/s  lost %u  rssi -%d dBm  | btn %04x L(%d,%d) R(%d,%d) "
+				"LT %u RT %u",
+				link + 1, received, n->lost - p->lost,
+				(n->rssi_sum - p->rssi_sum) / (int32_t)received, in.buttons, in.lx,
+				in.ly, in.rx, in.ry, in.lt, in.rt);
+		}
+		if (now.bad != prev.bad || now.ack_queue_full != prev.ack_queue_full) {
+			LOG_WRN("bad %u  ack-full %u", now.bad - prev.bad,
+				now.ack_queue_full - prev.ack_queue_full);
+		}
 		prev = now;
 	}
 	return 0;

@@ -1,6 +1,7 @@
 /*
- * Dongle radio: ESB receiver (PRX). Counts lost reports from sequence gaps and
- * keeps one output report queued as the ACK payload for the next packet.
+ * Dongle radio: ESB receiver (PRX), one pipe per controller. Counts lost
+ * reports from sequence gaps and keeps one output report queued per pipe as
+ * the ACK payload for that controller's next packet.
  */
 
 #include <zephyr/kernel.h>
@@ -19,14 +20,25 @@ static const struct gpio_dt_spec timing_pin = GPIO_DT_SPEC_GET(ZEPHYR_USER, timi
 #define HAS_TIMING_PIN 0
 #endif
 
-static struct radio_stats stats;
-static struct xbx_input_report last_input;
-static bool have_seq;
-static uint16_t expected_seq;
-static uint8_t output_seq;
-static uint8_t out_rumble[4];
-static uint8_t out_led;
+/* controller pipes 1..RADIO_LINKS */
+#define LINK_PIPE(link) ((link) + 1)
+#define PIPE_LINK(pipe) ((pipe) - 1)
+#define CTRL_PIPE_MASK  (BIT_MASK(RADIO_LINKS) << 1)
 
+struct link {
+	struct xbx_input_report last_input;
+	bool have_seq;
+	uint16_t expected_seq;
+	uint8_t output_seq;
+	uint8_t out_rumble[4];
+	uint8_t out_led;
+};
+
+static struct radio_stats stats;
+static struct link links[RADIO_LINKS];
+
+/* links with a report not yet returned by radio_wait_input() */
+static atomic_t fresh;
 /* given on every valid report; max 1 so the waiter always gets the newest */
 static K_SEM_DEFINE(input_sem, 0, 1);
 
@@ -37,11 +49,12 @@ static void timing_pin_set(int value)
 #endif
 }
 
-/* Keep one output report queued as the ACK payload for the next received packet. */
-static void queue_ack_payload(void)
+/* Keep one output report queued as the ACK payload for the link's next packet. */
+static void queue_ack_payload(uint8_t link)
 {
+	struct link *l = &links[link];
 	struct esb_payload ack = {
-		.pipe = 0,
+		.pipe = LINK_PIPE(link),
 		.length = sizeof(struct xbx_output_report),
 	};
 	struct xbx_output_report *out = (struct xbx_output_report *)ack.data;
@@ -53,37 +66,42 @@ static void queue_ack_payload(void)
 
 	memset(out, 0, sizeof(*out));
 	out->type = XBX_MSG_OUTPUT;
-	out->seq = output_seq++;
-	memcpy(out->rumble, out_rumble, sizeof(out->rumble));
-	out->led = out_led;
+	out->seq = l->output_seq++;
+	memcpy(out->rumble, l->out_rumble, sizeof(out->rumble));
+	out->led = l->out_led;
 
 	esb_write_payload(&ack);
 }
 
-static void handle_input(const struct esb_payload *rx)
+/* Returns true if the report was valid. */
+static bool handle_input(uint8_t link, const struct esb_payload *rx)
 {
 	const struct xbx_input_report *in = (const struct xbx_input_report *)rx->data;
+	struct radio_link_stats *ls = &stats.link[link];
+	struct link *l = &links[link];
 
 	if (rx->length != sizeof(struct xbx_input_report) || in->type != XBX_MSG_INPUT) {
 		stats.bad++;
-		return;
+		return false;
 	}
 
-	if (have_seq) {
-		uint16_t gap = (uint16_t)(in->seq - expected_seq);
+	if (l->have_seq) {
+		uint16_t gap = (uint16_t)(in->seq - l->expected_seq);
 
 		/* a huge gap means the controller restarted (sequence back near 0), not ~65k losses */
 		if (gap < 0x8000) {
-			stats.lost += gap;
+			ls->lost += gap;
 		}
 	}
-	expected_seq = in->seq + 1;
-	have_seq = true;
+	l->expected_seq = in->seq + 1;
+	l->have_seq = true;
 
-	stats.received++;
-	stats.rssi_sum += rx->rssi;
-	memcpy(&last_input, in, sizeof(last_input));
+	ls->received++;
+	ls->rssi_sum += rx->rssi;
+	memcpy(&l->last_input, in, sizeof(l->last_input));
+	atomic_or(&fresh, BIT(link));
 	k_sem_give(&input_sem);
+	return true;
 }
 
 static void radio_event_handler(struct esb_evt const *event)
@@ -96,8 +114,15 @@ static void radio_event_handler(struct esb_evt const *event)
 
 	timing_pin_set(1);
 	while (esb_read_rx_payload(&rx) == 0) {
-		handle_input(&rx);
-		queue_ack_payload();
+		if (!(BIT(rx.pipe) & CTRL_PIPE_MASK)) {
+			stats.bad++;
+			continue;
+		}
+		uint8_t link = PIPE_LINK(rx.pipe);
+
+		if (handle_input(link, &rx)) {
+			queue_ack_payload(link);
+		}
 	}
 	timing_pin_set(0);
 }
@@ -109,6 +134,8 @@ static int radio_init(void)
 	static const uint8_t prefixes[] = XBX_ADDR_PREFIXES;
 	struct esb_config config = ESB_DEFAULT_CONFIG;
 	int err;
+
+	BUILD_ASSERT(ARRAY_SIZE(prefixes) == RADIO_LINKS + 1, "one prefix per pipe 0..RADIO_LINKS");
 
 	config.mode = ESB_MODE_PRX;
 	config.protocol = ESB_PROTOCOL_ESB_DPL;
@@ -134,6 +161,11 @@ static int radio_init(void)
 	if (err) {
 		return err;
 	}
+	/* pipe 0 stays closed until pairing exists */
+	err = esb_enable_pipes(CTRL_PIPE_MASK);
+	if (err) {
+		return err;
+	}
 	return esb_set_rf_channel(XBX_RF_CHANNEL);
 }
 
@@ -152,7 +184,9 @@ int radio_start(void)
 		return err;
 	}
 
-	queue_ack_payload();
+	for (uint8_t link = 0; link < RADIO_LINKS; link++) {
+		queue_ack_payload(link);
+	}
 
 	return esb_start_rx();
 }
@@ -165,30 +199,35 @@ void radio_get_stats(struct radio_stats *out)
 	irq_unlock(key);
 }
 
-void radio_get_last_input(struct xbx_input_report *out)
+void radio_get_last_input(uint8_t link, struct xbx_input_report *out)
 {
-	unsigned int key = irq_lock();
+	unsigned int key;
 
-	*out = last_input;
+	if (link >= RADIO_LINKS) {
+		return;
+	}
+	key = irq_lock();
+	*out = links[link].last_input;
 	irq_unlock(key);
 }
 
-int radio_wait_input(struct xbx_input_report *out, k_timeout_t timeout)
+uint32_t radio_wait_input(k_timeout_t timeout)
 {
-	int err = k_sem_take(&input_sem, timeout);
-
-	if (err) {
-		return err;
+	if (k_sem_take(&input_sem, timeout) != 0) {
+		return 0;
 	}
-	radio_get_last_input(out);
-	return 0;
+	return (uint32_t)atomic_clear(&fresh);
 }
 
-void radio_set_output(const uint8_t rumble[4], uint8_t led)
+void radio_set_output(uint8_t link, const uint8_t rumble[4], uint8_t led)
 {
-	unsigned int key = irq_lock();
+	unsigned int key;
 
-	memcpy(out_rumble, rumble, sizeof(out_rumble));
-	out_led = led;
+	if (link >= RADIO_LINKS) {
+		return;
+	}
+	key = irq_lock();
+	memcpy(links[link].out_rumble, rumble, sizeof(links[link].out_rumble));
+	links[link].out_led = led;
 	irq_unlock(key);
 }

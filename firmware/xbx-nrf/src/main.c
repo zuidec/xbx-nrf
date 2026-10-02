@@ -4,7 +4,8 @@
  * Sends an input report every 1 ms over ESB (PTX) and prints link statistics
  * once per second. The dongle replies with an output report in the ACK
  * payload. Input: the breadboard pins (input.c), or a test pattern with
- * CONFIG_XBX_FAKE_INPUT.
+ * CONFIG_XBX_FAKE_INPUT. The radio pipe (player number) is fixed by
+ * CONFIG_XBX_TEST_PIPE until pairing exists.
  *
  * Wired mode (CONFIG_XBX_WIRED): while a PC has the USB device configured,
  * reports go to USB instead and the radio pauses: the HID gamepad, or the
@@ -15,9 +16,11 @@
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/counter.h>
 #include <zephyr/drivers/gpio.h>
+#include <zephyr/drivers/hwinfo.h>
 #include <zephyr/logging/log.h>
 #include <esb.h>
 
+#include <math.h>
 #include <string.h>
 
 #include <app_version.h>
@@ -152,18 +155,88 @@ static int radio_init(void)
 }
 
 #if defined(CONFIG_XBX_FAKE_INPUT)
-/* Test pattern: sticks sweep slowly, A toggles every 500 ms, triggers ramp. */
+/* Test pattern timing, in 1 ms ticks */
+#define FAKE_LSTICK_PERIOD 4000 /* one circle, clockwise */
+#define FAKE_RSTICK_PERIOD 6000 /* counter-clockwise */
+#define FAKE_TRIGGER_PERIOD 2000 /* up and down */
+#define FAKE_STICK_RADIUS  30000
+#define FAKE_GAP_MIN       200 /* between presses */
+#define FAKE_GAP_MAX       800
+#define FAKE_HOLD_MIN      50
+#define FAKE_HOLD_MAX      300
+#define FAKE_TWO_PI        6.2831853f
+
+/* No Guide, View or Menu: they open overlays or pause games on the PC. */
+static const uint16_t fake_buttons[] = {
+	XBX_BTN_A, XBX_BTN_B, XBX_BTN_X, XBX_BTN_Y, XBX_BTN_LB, XBX_BTN_RB,
+	XBX_BTN_DPAD_UP, XBX_BTN_DPAD_DOWN, XBX_BTN_DPAD_LEFT, XBX_BTN_DPAD_RIGHT,
+	XBX_BTN_LS, XBX_BTN_RS,
+};
+
+static uint32_t fake_rng;
+
+/* xorshift32: plenty for a test pattern */
+static uint32_t fake_random(uint32_t min, uint32_t max)
+{
+	fake_rng ^= fake_rng << 13;
+	fake_rng ^= fake_rng >> 17;
+	fake_rng ^= fake_rng << 5;
+	return min + fake_rng % (max - min + 1);
+}
+
+static void fake_input_init(void)
+{
+	uint32_t id[2] = {0};
+
+	hwinfo_get_device_id((uint8_t *)id, sizeof(id));
+	fake_rng = (id[0] ^ id[1]) | 1; /* xorshift needs a non-zero state */
+}
+
+static int16_t fake_axis(float turn, bool cosine)
+{
+	float angle = FAKE_TWO_PI * turn;
+
+	return (int16_t)(FAKE_STICK_RADIUS * (cosine ? cosf(angle) : sinf(angle)));
+}
+
+static uint16_t fake_trigger(uint32_t tick)
+{
+	uint32_t t = tick % FAKE_TRIGGER_PERIOD;
+	uint32_t half = FAKE_TRIGGER_PERIOD / 2;
+
+	return (uint16_t)((t < half ? t : FAKE_TRIGGER_PERIOD - t) * 1023u / half);
+}
+
+/*
+ * Test pattern: sticks circle (left clockwise, right counter-clockwise),
+ * triggers ramp in opposite phase, and one random button at a time is pressed
+ * for 50..300 ms with 200..800 ms between presses.
+ */
 static void fill_fake_input(struct xbx_input_report *report, uint32_t tick)
 {
-	int16_t sweep = (int16_t)((tick * 64u) & 0xFFFF);
+	static uint32_t next_tick;
+	static uint16_t held;
+	float lturn = (float)(tick % FAKE_LSTICK_PERIOD) / FAKE_LSTICK_PERIOD;
+	float rturn = (float)(tick % FAKE_RSTICK_PERIOD) / FAKE_RSTICK_PERIOD;
 
-	report->buttons = ((tick / 500u) & 1u) ? XBX_BTN_A : 0;
-	report->lx = sweep;
-	report->ly = -sweep;
-	report->rx = sweep / 2;
-	report->ry = -sweep / 2;
-	report->lt = (tick >> 2) & 0x3FF;
-	report->rt = 0x3FF - ((tick >> 2) & 0x3FF);
+	if ((int32_t)(tick - next_tick) >= 0) {
+		if (held) {
+			held = 0;
+			next_tick = tick + fake_random(FAKE_GAP_MIN, FAKE_GAP_MAX);
+		} else {
+			held = fake_buttons[fake_random(0, ARRAY_SIZE(fake_buttons) - 1)];
+			next_tick = tick + fake_random(FAKE_HOLD_MIN, FAKE_HOLD_MAX);
+		}
+	}
+
+	report->buttons = held;
+	/* up = positive: clockwise from the top is (sin, cos) */
+	report->lx = fake_axis(lturn, false);
+	report->ly = fake_axis(lturn, true);
+	report->rx = fake_axis(-rturn, false);
+	report->ry = fake_axis(-rturn, true);
+	report->lt = fake_trigger(tick);
+	report->rt = 1023 - report->lt;
 }
 #endif
 
@@ -280,7 +353,7 @@ static void rumble_leds_update(void)
 static void tx_thread(void *p1, void *p2, void *p3)
 {
 	struct esb_payload tx = {
-		.pipe = 0,
+		.pipe = CONFIG_XBX_TEST_PIPE,
 		.noack = false,
 		.length = sizeof(struct xbx_input_report),
 	};
@@ -355,9 +428,10 @@ int main(void)
 	struct link_stats prev = {0};
 	int err;
 
-	LOG_INF("xbx-nrf controller v%s (%s), protocol v%d, channel %d, tx %d dBm",
+	LOG_INF("xbx-nrf controller v%s (%s), protocol v%d, channel %d, pipe %d, tx %d dBm%s",
 		APP_VERSION_STRING, STRINGIFY(APP_BUILD_VERSION), XBX_PROTOCOL_VERSION, XBX_RF_CHANNEL,
-		XBX_TX_POWER_DBM);
+		CONFIG_XBX_TEST_PIPE, XBX_TX_POWER_DBM,
+		IS_ENABLED(CONFIG_XBX_FAKE_INPUT) ? ", fake input" : "");
 
 #if HAS_TIMING_PIN
 	if (gpio_is_ready_dt(&timing_pin)) {
@@ -374,6 +448,7 @@ int main(void)
 #endif
 
 #if defined(CONFIG_XBX_FAKE_INPUT)
+	fake_input_init();
 	usb_mode_init(0);
 #else
 	usb_mode_init(input_held_at_boot());
