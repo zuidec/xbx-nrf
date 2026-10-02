@@ -15,7 +15,7 @@ them in the xbx-nrf dongle design doesn't put the board under CC BY-SA.
 | File | Modified |
 |---|---|
 | `USB_C_Receptacle_16P_Amphenol_10155435-00011LF.kicad_sym` | Renamed from `10155435-00011LF.kicad_sym`; `Footprint` field set to `usbc-16p-receptacle-amphenol:USB_C_Receptacle_16P_Amphenol_10155435-00011LF`; saved in the KiCad 10 format |
-| `USB_C_Receptacle_16P_Amphenol_10155435-00011LF.kicad_mod` | Renamed from `AMPHENOL_10155435-00011LF.kicad_mod`; footprint name set to match the file; 3D model path set to `${KIPRJMOD}/lib/USB_C_Receptacle_16P_Amphenol_10155435-00011LF/USB_C_Receptacle_16P_Amphenol_10155435-00011LF.step` |
+| `USB_C_Receptacle_16P_Amphenol_10155435-00011LF.kicad_mod` | Renamed from `AMPHENOL_10155435-00011LF.kicad_mod`; footprint name set to match the file; 3D model path set to `${KIPRJMOD}/lib/USB_C_Receptacle_16P_Amphenol_10155435-00011LF/USB_C_Receptacle_16P_Amphenol_10155435-00011LF.step`; solder mask expansion of the 12 SMD pads set from 0.102 mm to 0, so mask webs remain between the 0.5 mm-pitch pads (shield pads unchanged) |
 | `USB_C_Receptacle_16P_Amphenol_10155435-00011LF.step` | Renamed from `10155435-00011LF.step` |
 | `how-to-import.htm` | Unmodified (SnapMagic import guide link) |
 
