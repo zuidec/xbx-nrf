@@ -8,7 +8,7 @@ license texts are in LICENSES/. Per-path details are in REUSE.toml
 (https://reuse.software).
 
   Firmware and scripts (firmware/, build scripts, config)   MIT
-  Hardware design (pcb/, references/pcb-cad.*)             CERN-OHL-S-2.0
+  Hardware design (pcb/, mech/)                             CERN-OHL-S-2.0
   Documentation (docs/, *.md)                              CC-BY-4.0
 
 Exceptions (third-party CAD parts; see ATTRIBUTION.md in each folder):

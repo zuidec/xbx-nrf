@@ -1,12 +1,7 @@
 # References
 
-Our own files (in the repo, under the project license):
-
-| File | What |
-|---|---|
-| `pcb-cad.FCStd` | FreeCAD outline sketch of the bottom board |
-| `pcb-cad-pcbSketch.dxf` | DXF export of the outline (for KiCad `Edge.Cuts`) |
-| `pcb-cad-pcb.step` | STEP export |
+Our FreeCAD outline of the stock bottom board is in
+`mech/controller-bottom-board/`.
 
 The stick symbol, footprint and 3D model in `pcb/xbx-nrf/lib/RKJXV122400R/` are
 SnapMagic files under CC BY-SA 4.0 (Design Exception); see the `ATTRIBUTION.md`
