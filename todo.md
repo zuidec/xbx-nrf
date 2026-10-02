@@ -192,7 +192,9 @@ Locked decisions: [README](README.md). Not yet locked:
 
 ## 4. Hardware design — dongle
 
-- [ ] Prototype on the PCA10059 (after the Pro Micro breadboard).
+- [ ] PCA10059: prototype and supported off-the-shelf dongle (overlay with
+      the mode switch on P0.29; build default). Test HID, XInput, rumble on
+      it.
 - [ ] **Custom dongle PCB** (the plan), module **Raytac MDBT50Q-U1MV2**
       (u.FL; 32.768 kHz crystal; USB with VBUS and VDDH):
 	- [ ] Power from USB 5 V on VBUS + VDDH (no LDO); VDD becomes REG0's
@@ -231,8 +233,9 @@ Code: `firmware/{xbx-nrf,dongle}/src/main.c`,
 > channel hopping.
 
 - [ ] **Update the default boards in `build-unsigned.sh`** as hardware moves
-      on: dongle → PCA10059 (`nrf52840dongle/nrf52840`), then both custom
-      boards.
+      on: dongle → PCA10059 done; controller → custom board when it exists.
+      Custom dongle board: its own board definition, PCA10059 stays
+      supported.
 - [x] Test firmware: ESB 2 Mbps, 1 ms fake reports, ACK payloads, stats,
       P0.17 timing pin.
 - [x] Report timing from hardware TIMER3 (exact 1 kHz; ESB uses TIMER2).

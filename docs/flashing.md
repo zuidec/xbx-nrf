@@ -25,8 +25,9 @@ Related: [[docs/building]], [[docs/signing]], [[todo#5. Firmware]].
 | Board | Role | Built-in programming | Board target |
 |---|---|---|---|
 | Pro Micro nRF52840 (nice!nano clone) | Controller prototype, dongle stand-in | nice!nano UF2 bootloader ✅ | `promicro_nrf52840/nrf52840/uf2` |
-| Nordic nRF52840 Dongle (PCA10059) | Dongle | Nordic USB DFU bootloader | `nrf52840dongle/nrf52840` |
+| Nordic nRF52840 Dongle (PCA10059) | Dongle (off-the-shelf option) | Nordic USB DFU bootloader | `nrf52840dongle/nrf52840` |
 | Custom bottom board | Controller | None; SWD only | TBD |
+| Custom dongle board | Dongle | None; SWD only (JST-SH) | TBD |
 
 | Debug probe | Notes |
 |---|---|

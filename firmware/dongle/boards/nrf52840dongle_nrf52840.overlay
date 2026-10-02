@@ -1,0 +1,12 @@
+/*
+ * Nordic nRF52840 Dongle (PCA10059), the dongle prototype. The board already
+ * defines SW1 (P1.06, pair button) and the LEDs (P0.06; RGB on P0.08, P1.09,
+ * P0.12), all active-low; only the mode switch is added here.
+ */
+
+/ {
+	zephyr,user {
+		/* USB mode, read at boot: switch to GND = XInput, open = HID */
+		mode-gpios = <&gpio0 29 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+	};
+};

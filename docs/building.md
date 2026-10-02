@@ -19,10 +19,10 @@ Related: [[docs/flashing|Flashing & debugging]],
 
 ## Apps
 
-| App | Folder | Default board (for now) | Later |
+| App | Folder | Default board | Also supported |
 |---|---|---|---|
-| Controller | `firmware/xbx-nrf` | `promicro_nrf52840/nrf52840/uf2` | Custom board definition |
-| Dongle | `firmware/dongle` | `promicro_nrf52840/nrf52840/uf2` | `nrf52840dongle/nrf52840` |
+| Controller | `firmware/xbx-nrf` | `promicro_nrf52840/nrf52840/uf2` | Later: custom board definition |
+| Dongle | `firmware/dongle` | `nrf52840dongle/nrf52840` (PCA10059, off the shelf) | `promicro_nrf52840/nrf52840/uf2`; later: custom board definition |
 
 Standalone Zephyr apps, outside the SDK folder. Shared code:
 `firmware/common/include/` (e.g. `protocol.h`).
