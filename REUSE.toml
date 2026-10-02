@@ -22,6 +22,7 @@ path = [
   "pcb/xbx-nrf/lib/RKJXV122400R/**",
   "pcb/xbx-nrf-dongle/lib/USB_C_Receptacle_16P_Amphenol_10155435-00011LF/**",
   "pcb/xbx-nrf-dongle/lib/JS102011SAQN/**",
+  "pcb/xbx-nrf-dongle/lib/xbx-nrf-lib.pretty/USB_C_Receptacle_16P_Amphenol_10155435-00011LF.kicad_mod",
 ]
 precedence = "override"
 SPDX-FileCopyrightText = [
@@ -29,6 +30,21 @@ SPDX-FileCopyrightText = [
   "2026 zuidec (modifications, see ATTRIBUTION.md in each folder)",
 ]
 SPDX-License-Identifier = "CC-BY-SA-4.0"
+
+# Footprints copied from KiCad's libraries into the dongle project library
+[[annotations]]
+path = [
+  "pcb/xbx-nrf-dongle/lib/xbx-nrf-lib.pretty/Raytac_MDBT50Q.kicad_mod",
+  "pcb/xbx-nrf-dongle/lib/xbx-nrf-lib.pretty/Crystal_SMD_3215-2Pin_3.2x1.5mm.kicad_mod",
+  "pcb/xbx-nrf-dongle/lib/xbx-nrf-lib.pretty/SolderJumper-3_P2.0mm_Open_TrianglePad1.0x1.5mm_NumberLabels.kicad_mod",
+  "pcb/xbx-nrf-dongle/lib/xbx-nrf-lib.pretty/TestPoint_Pad_*-NoSilkscreen.kicad_mod",
+]
+precedence = "override"
+SPDX-FileCopyrightText = [
+  "KiCad library contributors",
+  "2026 zuidec (modifications, see ATTRIBUTION.md)",
+]
+SPDX-License-Identifier = "CC-BY-SA-4.0 WITH KiCad-libraries-exception"
 
 # Documentation
 [[annotations]]

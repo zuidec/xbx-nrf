@@ -11,11 +11,16 @@ license texts are in LICENSES/. Per-path details are in REUSE.toml
   Hardware design (pcb/, references/pcb-cad.*)             CERN-OHL-S-2.0
   Documentation (docs/, *.md)                              CC-BY-4.0
 
-Exception:
+Exceptions (third-party CAD parts; see ATTRIBUTION.md in each folder):
 
-  pcb/xbx-nrf/lib/RKJXV122400R/  SnapMagic CAD files, CC-BY-SA-4.0 with the
-                                 SnapMagic Design Exception 1.0; see
-                                 ATTRIBUTION.md in that folder.
+  pcb/xbx-nrf/lib/RKJXV122400R/,      SnapMagic CAD files, CC-BY-SA-4.0 with
+  pcb/xbx-nrf-dongle/lib/USB_C_*/,    the SnapMagic Design Exception 1.0.
+  pcb/xbx-nrf-dongle/lib/JS102011SAQN/
+
+  pcb/xbx-nrf-dongle/lib/             Footprints copied from KiCad's
+    xbx-nrf-lib.pretty/               libraries: CC-BY-SA-4.0 WITH
+                                      KiCad-libraries-exception (the USB-C
+                                      footprint there is SnapMagic's, above).
 
 Not included: references/third-party/ (git-ignored) holds third-party documents
 that are not part of this project and not covered by its licenses; see
