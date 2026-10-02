@@ -32,7 +32,9 @@ Locked decisions: [README](README.md). Not yet locked:
   7.7 mA,
   t_PO 50–70 µs), [[references/third-party/A3910-datasheet.pdf]],
   [[references/third-party/PCAL6416A-datasheet.pdf]]
-- Outline: [[references/pcb-cad.FCStd]], [[references/pcb-cad-pcbSketch.dxf]];
+- Outline (stock bottom board, FreeCAD; DXF for KiCad `Edge.Cuts`):
+  [[mech/controller-bottom-board/controller-bottom-board.FCStd]],
+  [[mech/controller-bottom-board/controller-bottom-board-outline.dxf]];
   KiCad: `pcb/xbx-nrf/`
 
 ---

@@ -84,8 +84,11 @@ firmware/
   check-sdk.sh       version check for the build scripts
   build-unsigned.sh  development build
   build-signed.sh    signed release build
-pcb/xbx-nrf/         KiCad project (lib/: symbols, footprints, 3D)
-references/          schematics, scans, datasheets, pinouts, CAD outline
+pcb/xbx-nrf/         KiCad project, controller board (lib/: symbols,
+                     footprints, 3D)
+pcb/xbx-nrf-dongle/  KiCad project, dongle board
+mech/                FreeCAD parts (controller-bottom-board/: board outline)
+references/          schematics, scans, datasheets, pinouts
 todo.md              task list (Obsidian)
 ```
 
