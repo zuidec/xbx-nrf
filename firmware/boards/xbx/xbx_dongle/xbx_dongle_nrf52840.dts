@@ -1,0 +1,122 @@
+/*
+ * xbx-nrf dongle, Rev1 (pcb/xbx-nrf-dongle/). Raytac MDBT50Q-U1MV2 in normal
+ * voltage mode: VDD and VDDH from a 3.3 V LDO, so REG0 is unused. The module
+ * carries the REG1 DC/DC inductors. LEDs sink to their GPIO (active low).
+ */
+
+/dts-v1/;
+#include <nordic/nrf52840_qiaa.dtsi>
+#include <nordic/nrf52840_partition.dtsi>
+#include "xbx_dongle_nrf52840-pinctrl.dtsi"
+#include <zephyr/dt-bindings/input/input-event-codes.h>
+#include <zephyr/dt-bindings/gpio/nordic-nrf-gpio.h>
+
+/ {
+	model = "xbx-nrf dongle";
+	compatible = "xbx-nrf,dongle";
+
+	chosen {
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+		zephyr,code-partition = &slot0_partition;
+		zephyr,console = &uart0;
+		zephyr,shell-uart = &uart0;
+	};
+
+	leds {
+		compatible = "gpio-leds";
+
+		/* blue, 180 Ω: high drive */
+		pair_led: pair_led {
+			gpios = <&gpio0 8 (GPIO_ACTIVE_LOW | NRF_GPIO_DRIVE_H0H1)>;
+			label = "PAIR_LED (blue)";
+		};
+
+		p1_led: p1_led {
+			gpios = <&gpio1 13 GPIO_ACTIVE_LOW>;
+			label = "P1_LED (green)";
+		};
+
+		p2_led: p2_led {
+			gpios = <&gpio1 14 GPIO_ACTIVE_LOW>;
+			label = "P2_LED (green)";
+		};
+
+		p3_led: p3_led {
+			gpios = <&gpio1 15 GPIO_ACTIVE_LOW>;
+			label = "P3_LED (green)";
+		};
+
+		p4_led: p4_led {
+			gpios = <&gpio0 3 GPIO_ACTIVE_LOW>;
+			label = "P4_LED (green)";
+		};
+
+		/* only when JP1 connects D6 to the GPIO; JP1 to GND = always on */
+		pwr_led: pwr_led {
+			gpios = <&gpio0 22 GPIO_ACTIVE_LOW>;
+			label = "PWR_LED (red)";
+		};
+	};
+
+	buttons {
+		compatible = "gpio-keys";
+
+		pair_sw: pair_sw {
+			gpios = <&gpio1 12 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+			label = "PAIR_SW";
+			zephyr,code = <INPUT_KEY_0>;
+		};
+	};
+
+	aliases {
+		sw0 = &pair_sw;
+		led0 = &pair_led;
+		led1 = &p1_led;
+		led2 = &p2_led;
+		led3 = &p3_led;
+		led4 = &p4_led;
+		led5 = &pwr_led;
+		mcuboot-button0 = &pair_sw;
+		mcuboot-led0 = &pair_led;
+		watchdog0 = &wdt0;
+	};
+};
+
+&reg1 {
+	regulator-initial-mode = <NRF5X_REG_MODE_DCDC>;
+};
+
+&uicr {
+	gpio-as-nreset;
+};
+
+&adc {
+	status = "okay";
+};
+
+&gpiote {
+	status = "okay";
+};
+
+&gpio0 {
+	status = "okay";
+};
+
+&gpio1 {
+	status = "okay";
+};
+
+&uart0 {
+	compatible = "nordic,nrf-uarte";
+	status = "okay";
+	current-speed = <115200>;
+	pinctrl-0 = <&uart0_default>;
+	pinctrl-1 = <&uart0_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+zephyr_udc0: &usbd {
+	compatible = "nordic,nrf-usbd";
+	status = "okay";
+};

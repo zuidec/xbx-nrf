@@ -22,10 +22,13 @@ Related: [[docs/flashing|Flashing & debugging]],
 | App | Folder | Default board | Also supported |
 |---|---|---|---|
 | Controller | `firmware/xbx-nrf` | `promicro_nrf52840/nrf52840/uf2` | Later: custom board definition |
-| Dongle | `firmware/dongle` | `nrf52840dongle/nrf52840` (PCA10059, off the shelf) | `promicro_nrf52840/nrf52840/uf2`; later: custom board definition |
+| Dongle | `firmware/dongle` | `nrf52840dongle/nrf52840` (PCA10059, off the shelf) | `xbx_dongle/nrf52840` (custom board), `promicro_nrf52840/nrf52840/uf2` |
 
 Standalone Zephyr apps, outside the SDK folder. Shared code:
-`firmware/common/include/` (e.g. `protocol.h`).
+`firmware/common/include/` (e.g. `protocol.h`). Our own board definitions:
+`firmware/boards/`; both build scripts pass it as `BOARD_ROOT` (sysbuild
+doesn't search the app folder), so plain `west build` needs
+`BOARD_ROOT=firmware/boards` for them.
 
 ## Pinned versions
 
@@ -99,6 +102,7 @@ Name them after the **full** board target, `/` → `_`:
 |---|---|
 | `promicro_nrf52840/nrf52840/uf2` | `promicro_nrf52840_nrf52840_uf2.overlay` |
 | `nrf52840dongle/nrf52840` | `nrf52840dongle_nrf52840.overlay` |
+| `xbx_dongle/nrf52840` | `xbx_dongle_nrf52840.overlay` |
 
 Shorter names are **silently ignored**; look for `-- Found devicetree overlay:`
 in the build log.
