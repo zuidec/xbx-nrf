@@ -5,7 +5,8 @@
 	(uuid "69b03ca9-99a6-4927-a520-e99d5a5bc650")
 	(paper "A4")
 	(title_block
-		(title "XBX-NRF Gamepad Dongle")
+		(title "XBX-NRF Gamepad Dongle Schematic")
+		(date "2026-10-02")
 		(rev "1")
 	)
 	(lib_symbols
