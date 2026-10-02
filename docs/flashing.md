@@ -56,8 +56,7 @@ An official ST-Link won't connect without the target 3.3 V on its sense pin.
 - **PCA10059:** pads on the underside (*nRF52840 Dongle User Guide*).
 - **Custom dongle:** J1 (JST-SH, Raspberry Pi Debug Probe cable). `west flash`
   defaults to OpenOCD with CMSIS-DAP (the Pi probe).
-- **Custom controller board:** SWD connector or Tag-Connect footprint
-  ([[todo#MCU / radio]]).
+- **Custom controller board:** SWD header or pads, TBD ([[todo#MCU / radio]]).
 
 > [!warning] SWD flashing erases the bootloader
 > A full erase or recover wipes the UF2 / Nordic USB bootloader; restore it with

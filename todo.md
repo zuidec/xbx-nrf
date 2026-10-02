@@ -209,7 +209,7 @@ Locked decisions: [README](README.md). Not yet locked:
 	- [ ] USB mode switch read at boot ([[#Dongle]] step 4), pair button,
 	      status LED (sized for the VDD chosen below); avoid P0.09/P0.10
 	      (NFC) and P0.18 (reset).
-	- [ ] SWD pads (TC2030 footprint): first flash over SWD.
+	- [ ] SWD on J1 (JST-SH, Pi pinout): first flash over SWD.
 	- [x] Firmware: board `xbx_dongle/nrf52840` (`firmware/boards/xbx/`),
 	      pins from the Rev1 schematic. Normal voltage mode (3.3 V LDO), so
 	      no REGOUT0 change.
