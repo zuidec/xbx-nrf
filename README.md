@@ -59,9 +59,10 @@ Two Zephyr apps, `firmware/xbx-nrf` (controller) and `firmware/dongle`, on the
 the 1 kHz radio link works.
 
 ```sh
-ncs-shell                                  # SDK toolchain environment
-firmware/build-unsigned.sh xbx-nrf         # development build
-firmware/build-signed.sh dongle <board>    # signed release build
+cd firmware
+./build-unsigned.sh xbx-nrf [-f <device>]  # development build (+ flash)
+ncs-shell                                  # SDK environment + signing keys
+./build-signed.sh dongle <board>           # signed release build
 ```
 
 | Doc | Covers |

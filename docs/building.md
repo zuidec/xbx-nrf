@@ -67,14 +67,29 @@ doesn't search the app folder), so plain `west build` needs
 Development builds: unsigned, no bootloader, into `<app>/build/`.
 
 ```sh
-ncs-shell
-cd ~/Projects/xbx-nrf
-firmware/build-unsigned.sh xbx-nrf       # incremental
-firmware/build-unsigned.sh dongle -p     # pristine
-firmware/build-unsigned.sh dongle -p -b nrf52840dongle/nrf52840
+cd ~/Projects/xbx-nrf/firmware
+./build-unsigned.sh xbx-nrf                  # incremental
+./build-unsigned.sh dongle -p                # pristine
+./build-unsigned.sh dongle -f /dev/ttyACM0   # build, then flash
 ```
 
+- Runs from any folder and shell: outside `ncs-shell` it restarts itself in
+  the pinned toolchain (`nrfutil sdk-manager toolchain launch`).
 - Extra arguments go to `west build`; `-b` overrides the default board.
+- `-f` / `--flash <device>` flashes after a successful build
+  ([[docs/flashing]]):
+
+  | Board | Device |
+  |---|---|
+  | `nrf52840dongle/nrf52840` | DFU bootloader's serial port (press RESET first) |
+  | `*/uf2` (Pro Micro) | UF2 drive: mount point, or block device (`/dev/sdX`, mounted for you) |
+  | Others (custom boards) | `swd`: `west flash` with the board's runner |
+- `BUILD_DIR=<dir>` builds into `<app>/<dir>/` instead, for a second
+  configuration next to the main one. E.g. the fake-input controller on pipe 2:
+  ```sh
+  BUILD_DIR=build-p2 ./build-unsigned.sh xbx-nrf -p -- \
+    -DCONFIG_XBX_FAKE_INPUT=y -DCONFIG_XBX_TEST_PIPE=2
+  ```
 - Default boards live in `build-unsigned.sh`; update them when the real hardware
   exists ([[todo#Link]]).
 - Plain `west build` also works but skips the version check, and needs `-b`
