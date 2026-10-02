@@ -11051,6 +11051,17 @@
 			)
 		)
 	)
+	(gr_text "ONLY BRIDGE\nONE SIDE"
+		(at 94.675 68.375 270)
+		(layer "F.SilkS")
+		(uuid "35d4b349-03b0-476c-b7bb-76d1e6a86cf2")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
 	(gr_text "PAIR"
 		(at 79.775 44.5 0)
 		(layer "F.SilkS")
@@ -11075,10 +11086,10 @@
 			(justify left bottom)
 		)
 	)
-	(gr_text "GPIO"
-		(at 89.5 65.325 0)
+	(gr_text "ON"
+		(at 90.225 73.425 0)
 		(layer "F.SilkS")
-		(uuid "2cdbba75-de01-456d-8247-b3d11c3f4d81")
+		(uuid "3c0dcd85-d395-4e7c-8376-eef4266877ce")
 		(effects
 			(font
 				(size 1.5 1.5)
@@ -11087,10 +11098,10 @@
 			(justify left bottom)
 		)
 	)
-	(gr_text "ON"
-		(at 90.375 73.325 0)
+	(gr_text "IO"
+		(at 90.85 65.25 0)
 		(layer "F.SilkS")
-		(uuid "3c0dcd85-d395-4e7c-8376-eef4266877ce")
+		(uuid "2cdbba75-de01-456d-8247-b3d11c3f4d81")
 		(effects
 			(font
 				(size 1.5 1.5)
