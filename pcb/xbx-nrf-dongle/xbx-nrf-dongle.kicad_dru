@@ -110,3 +110,15 @@
 	(layer inner)
 	(condition "A.Type == 'Pad' && A.isPlated()")
 	(constraint hole_clearance (min 0.3mm)))
+
+# --- Project: xbx-nrf dongle --------------------------------------------------
+# MDBT50Q (U3) is an LGA with staggered pad rows: 0.4 mm between outer-row pads.
+# Narrower track and clearance inside its courtyard only, so inner-row pads can
+# escape between outer ones (0.15 + 2 x 0.12 = 0.39 mm). Last in the file so it
+# wins over the general rules; widen the track to 0.2 mm once clear of the
+# module.
+
+(rule "MDBT50Q fan-out"
+	(condition "A.intersectsCourtyard('U3') || B.intersectsCourtyard('U3')")
+	(constraint clearance (min 0.12mm))
+	(constraint track_width (min 0.15mm) (opt 0.15mm)))

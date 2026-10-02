@@ -2,4 +2,5 @@
 	(version 7)
 	(lib (name "usbc-16p-receptacle-amphenol") (type "KiCad") (uri "${KIPRJMOD}/lib/USB_C_Receptacle_16P_Amphenol_10155435-00011LF") (options "") (descr ""))
 	(lib (name "sw-spdt-horizontal") (type "KiCad") (uri "${KIPRJMOD}/lib/JS102011SAQN") (options "") (descr ""))
+	(lib (name "xbx-nrf-lib") (type "KiCad") (uri "${KIPRJMOD}/lib/xbx-nrf-lib.pretty") (options "") (descr ""))
 )
