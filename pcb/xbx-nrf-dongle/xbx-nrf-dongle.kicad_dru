@@ -6,6 +6,12 @@
 # Hard limits only (DRC errors); preferred everyday sizes go in Board Setup
 # (net classes and pre-defined track/via sizes), not here.
 #
+# Copper clearance is deliberately not here: a clearance rule replaces the
+# net-class clearances (custom rules outrank net classes), for DRC, routing
+# and zone fills alike. Set JLC's floor in Board Setup → Design Rules →
+# Constraints → Minimum clearance: 0.1 mm (JLC inner layers allow 0.09 mm),
+# and keep every net class at or above it.
+#
 # One file for both stack-ups: rules can't test the layer count, so outer
 # layers use the 2-layer limits (on 4+ layers JLC allows 0.09 mm track and
 # spacing, and a 0.15 mm PTH ring: slightly stricter than needed, never
@@ -17,9 +23,6 @@
 (rule "JLC: track width"
 	(condition "A.Type == 'Track'")
 	(constraint track_width (min 0.1mm)))
-
-(rule "JLC: copper clearance"
-	(constraint clearance (min 0.1mm)))
 
 (rule "JLC: copper to board edge"
 	(constraint edge_clearance (min 0.2mm)))
@@ -93,10 +96,6 @@
 	(layer inner)
 	(condition "A.Type == 'Track'")
 	(constraint track_width (min 0.09mm)))
-
-(rule "JLC: inner copper clearance"
-	(layer inner)
-	(constraint clearance (min 0.09mm)))
 
 (rule "JLC: inner copper to board edge"
 	(layer inner)
