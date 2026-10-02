@@ -92,7 +92,7 @@ flashing over J1 (SWD). Pins from the Rev1 schematic:
 | PAIR_SW | P1.12 | SW2 to GND; internal pull-up |
 | PAIR_LED (blue) | P0.08 | D1, active low, 180 Ω, high drive |
 | P1_LED…P4_LED (green) | P1.13, P1.14, P1.15, P0.03 | D2–D5, active low, 1 kΩ |
-| PWR_LED (red) | P0.22 | D6, 1 kΩ, via JP1 (open by default): 3–2 = GPIO, active low; 1–2 = GND, always on |
+| PWR_LED (red) | P0.22 | D6, 1 kΩ, via JP1 (open by default; see the warning below): 2–3 = GPIO, active low; 1–2 = GND, always on |
 | DBG_RX / DBG_TX | P0.20 / P0.21 | J3 UART (JST-SH, Raspberry Pi pinout); console for MCUboot and samples (the app logs over USB) |
 | SWCLK / SWDIO | — | J1 SWD (JST-SH, Raspberry Pi pinout) |
 | NRST | P0.18 | SW1 reset button, TP1 |
@@ -100,6 +100,11 @@ flashing over J1 (SWD). Pins from the Rev1 schematic:
 | SWO | P1.00 | TP3 |
 | Spare | P0.04, P0.06, P0.26, P0.27, P0.30 (AIN6), P0.31 (AIN7) | TP14–TP17, TP12, TP13 |
 | Power | — | +3V3: TP2, TP8–TP10; VBUS: TP11; GND: TP5–TP7 |
+
+> [!warning] JP1: bridge one side only
+> Bridge 2–3 (LED on P0.22) **or** 1–2 (LED always on), never both: that
+> shorts P0.22 to GND, and the GPIO driving high into it can be damaged. The
+> board definition drives the LED pins open-drain (never high) as a backstop.
 
 ### nRF52840 Dongle (PCA10059)
 
