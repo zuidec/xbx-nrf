@@ -171,13 +171,12 @@ app after the SoftDevice area it expects.
 
 1. Short **RST to GND twice** quickly: the LED fades and a `NICENANO` drive
    appears.
-2. Build, then flash:
+2. Build and flash, from `firmware/`, giving the drive's block device (mounted
+   for you) or its mount point:
    ```sh
-   firmware/build-unsigned.sh xbx-nrf
-   cd firmware/xbx-nrf && west flash    # copies zephyr.uf2 to the drive
+   ./build-unsigned.sh xbx-nrf -f /dev/sdX
    ```
-   `west flash` needs the drive mounted (`udisksctl mount -b /dev/sdX`), or copy
-   `build/<app>/zephyr/zephyr.uf2` onto it by hand.
+   Or copy `<app>/build/<app>/zephyr/zephyr.uf2` onto the drive by hand.
 3. The app reboots; logs appear on `/dev/ttyACM*` (USB CDC console).
 
 > [!note] P0.13 = external VCC switch
@@ -187,14 +186,13 @@ app after the SoftDevice area it expects.
 ## nRF52840 Dongle (PCA10059) — USB DFU (no probe)
 
 1. Press the sideways **RESET** button (red LED pulses).
-2. Package and flash:
+2. Find the bootloader's port (`ls -l /dev/serial/by-id/`, "Open DFU
+   Bootloader"), then build and flash from `firmware/`:
    ```sh
-   nrfutil install nrf5sdk-tools
-   nrfutil nrf5sdk-tools pkg generate --hw-version 52 --sd-req=0x00 \
-       --application $HEX --application-version 1 dongle.zip
-   nrfutil nrf5sdk-tools dfu usb-serial -pkg dongle.zip -p /dev/ttyACM0
+   ./build-unsigned.sh dongle -f /dev/ttyACMx
    ```
-   GUI alternative: nRF Connect for Desktop → Programmer.
+   The script packages `<app>/build/dfu.zip` and runs `nrfutil nrf5sdk-tools
+   dfu usb-serial`. GUI alternative: nRF Connect for Desktop → Programmer.
 
 The default board target leaves room for the Nordic bootloader. If SWD erased
 it, build for `nrf52840dongle/nrf52840/bare` instead.

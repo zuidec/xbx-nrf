@@ -2,6 +2,30 @@
 # toolchain match the versions pinned in firmware/ncs-version.
 # Sets ZEPHYR_BASE if it isn't set yet.
 
+# Re-run the calling script inside the pinned toolchain if west isn't from it
+# (e.g. started from a plain shell instead of ncs-shell).
+# Usage: xbx_relaunch_in_toolchain <firmware dir> <script path> "$@"
+xbx_relaunch_in_toolchain() {
+	local fw_dir="$1" script="$2"
+	local NCS_VERSION NCS_TOOLCHAIN_BUNDLE
+	shift 2
+
+	# shellcheck disable=SC1090
+	source "$fw_dir/ncs-version"
+	case "$(command -v west || true)" in
+	*/toolchains/"$NCS_TOOLCHAIN_BUNDLE"/*) return 0 ;;
+	esac
+	if [ -n "${XBX_IN_TOOLCHAIN:-}" ]; then
+		return 0 # already relaunched; xbx_check_sdk reports what's wrong
+	fi
+	if ! command -v nrfutil >/dev/null; then
+		return 0
+	fi
+	echo "sdk:   starting toolchain $NCS_VERSION"
+	exec env XBX_IN_TOOLCHAIN=1 nrfutil sdk-manager toolchain launch \
+		--ncs-version "$NCS_VERSION" -- "$script" "$@"
+}
+
 xbx_check_sdk() {
 	local fw_dir="$1"
 	local pin_file="$fw_dir/ncs-version"
