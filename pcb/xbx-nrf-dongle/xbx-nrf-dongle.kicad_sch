@@ -6867,16 +6867,6 @@
 		)
 		(uuid "ff4a69b3-9048-4ca3-b2c8-230f47a15048")
 	)
-	(label "DBG_TX"
-		(at 140.97 140.97 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "00de1a22-7979-4253-83a8-a2e74dc8f6e5")
-	)
 	(label "XL2"
 		(at 138.43 102.87 0)
 		(effects
@@ -6907,6 +6897,16 @@
 		)
 		(uuid "0c4f3d4f-d29f-4111-b9e9-0a4298fea458")
 	)
+	(label "DBG_RX"
+		(at 240.03 43.18 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "162259f8-5e02-4fa8-b804-253c269e8ed0")
+	)
 	(label "P4_LED"
 		(at 275.59 97.79 180)
 		(effects
@@ -6916,6 +6916,16 @@
 			(justify right bottom)
 		)
 		(uuid "23d1b183-346c-488c-8db7-21849a36af71")
+	)
+	(label "DBG_RX"
+		(at 140.97 140.97 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "24998043-5798-4c23-a9d8-c7ba4374eb13")
 	)
 	(label "P2_LED"
 		(at 275.59 80.01 180)
@@ -7087,7 +7097,7 @@
 		)
 		(uuid "6f2142e5-fbf2-4290-bffc-7e26bc7eb250")
 	)
-	(label "DBG_RX"
+	(label "DBG_TX"
 		(at 240.03 48.26 180)
 		(effects
 			(font
@@ -7095,7 +7105,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "73b7396a-bc46-47fe-858b-1ca42cd18b46")
+		(uuid "708a2952-0578-429c-a11b-2d1240090c21")
 	)
 	(label "P0.27"
 		(at 139.7 156.21 180)
@@ -7156,16 +7166,6 @@
 			(justify left bottom)
 		)
 		(uuid "9536e205-2ad7-4006-b6e6-d27e3d7ae19d")
-	)
-	(label "DBG_TX"
-		(at 240.03 43.18 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "960de774-a8ee-456e-89f8-eb32ca847fcf")
 	)
 	(label "SWCLK"
 		(at 82.55 97.79 0)
@@ -7297,16 +7297,6 @@
 		)
 		(uuid "cbabe681-7034-474a-ab4b-bb1985ad785d")
 	)
-	(label "DBG_RX"
-		(at 140.97 138.43 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "cdc7bd56-cbfb-4137-9066-b8193ed407cf")
-	)
 	(label "D-"
 		(at 86.36 135.89 0)
 		(effects
@@ -7316,6 +7306,16 @@
 			(justify left bottom)
 		)
 		(uuid "cf9a8dac-72b0-46c2-afea-95a8b0545d41")
+	)
+	(label "DBG_TX"
+		(at 140.97 138.43 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "d3fd388a-e59d-40e2-8441-a64a613aaf2f")
 	)
 	(label "P0.26"
 		(at 27.94 123.19 90)
