@@ -29,6 +29,7 @@
 #include <esb.h>
 
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <app_version.h>
@@ -48,6 +49,12 @@ LOG_MODULE_REGISTER(ctrl, LOG_LEVEL_INF);
  */
 #define RETRANSMIT_DELAY_US 450
 #define RETRANSMIT_COUNT    0
+
+/*
+ * Timing errors within this are left alone: mostly the TX thread's wake-up
+ * jitter (~10 us), far inside the ~150 us slot margin.
+ */
+#define SYNC_DEADBAND_US 15
 
 /* Joining (no slot): periods between attempts */
 #define JOIN_GAP_MIN  5
@@ -153,7 +160,7 @@ static void sync_from_ack(const struct xbx_output_report *out)
 	if (frame_us != period_us) {
 		/* frame length changed: follow it; measurements so far are stale */
 		period_pending_us = frame_us;
-	} else if (out->sync_err_us != 0 && !sync_pending && !period_pending_us &&
+	} else if (abs(out->sync_err_us) > SYNC_DEADBAND_US && !sync_pending && !period_pending_us &&
 		   (!sync_valid || (int16_t)(out->sync_seq - sync_after_seq) > 0)) {
 		int32_t max = (int32_t)period_us / 2 - 1; /* every period stays >= half */
 
@@ -219,6 +226,9 @@ static void radio_event_handler(struct esb_evt const *event)
 				stats.acks_with_payload++;
 				atomic_set(&ack_age_ms, 0);
 				sync_from_ack(&last_output);
+				if (last_output.flags & XBX_OUT_FLAG_FULL) {
+					pair_indicate_error();
+				}
 			} else if (pair_active()) {
 				pair_on_ack(rx.data, rx.length);
 			}
@@ -505,7 +515,7 @@ static void rumble_leds_update(void)
 	static bool was_pairing;
 	uint8_t heavy, light;
 
-	if (pair_active()) {
+	if (pair_indicator_busy()) {
 		was_pairing = true;
 		return;
 	}

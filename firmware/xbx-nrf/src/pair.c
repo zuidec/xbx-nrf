@@ -11,6 +11,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/settings/settings.h>
 #include <zephyr/sys/byteorder.h>
+#include <zephyr/sys/reboot.h>
 
 #include <string.h>
 
@@ -19,9 +20,13 @@
 
 LOG_MODULE_REGISTER(pair, LOG_LEVEL_INF);
 
-#define PAIR_HOLD_MS    3000
-#define PAIR_TIMEOUT_MS 30000
-#define BLINK_MS        100 /* fast blink: 5 Hz */
+#define PAIR_HOLD_MS     3000
+#define PAIR_TIMEOUT_MS  30000
+#define FACTORY_RESET_MS 10000 /* Pair held */
+#define OFFER_SETTLE     3     /* offers to collect before confirming */
+#define BLINK_MS         100   /* pairing: fast blink, 5 Hz */
+#define ERROR_BLINK_MS   400   /* error: three slow blinks */
+#define ERROR_MS         (6 * ERROR_BLINK_MS)
 
 #define LINK_VERSION 1
 
@@ -44,6 +49,7 @@ enum pair_state {
 static struct pair_link stored;  /* the link in use; valid if paired */
 static bool paired;
 static struct pair_link offered; /* from the offer, until done */
+static uint8_t offers;           /* matching offers so far (REQUEST) */
 static uint8_t ctrl_id[8];
 static uint8_t nonce[4];
 
@@ -53,10 +59,15 @@ static uint32_t active_ms;       /* time in pairing mode */
 static uint32_t held_ms;         /* Pair held for */
 static bool hold_used;           /* this hold already entered pairing: release first */
 static bool indicator_on;
+static uint32_t error_ms;        /* error blink: time into it, 0 = none */
+static atomic_t error_request;   /* start the error blink (any context) */
+static bool resetting;
 static struct k_spinlock lock;   /* stored, offered, state */
 
 static void save_fn(struct k_work *work);
+static void reset_fn(struct k_work *work);
 static K_WORK_DEFINE(save_work, save_fn);
+static K_WORK_DEFINE(reset_work, reset_fn);
 
 static int pair_settings_set(const char *name, size_t len, settings_read_cb read_cb,
 			     void *cb_arg)
@@ -91,6 +102,16 @@ static void save_fn(struct k_work *work)
 	}
 }
 
+/* Pair held FACTORY_RESET_MS: forget the dongle, restart (unpaired: pairs at boot). */
+static void reset_fn(struct k_work *work)
+{
+	ARG_UNUSED(work);
+	LOG_WRN("factory reset: forgetting the dongle");
+	settings_delete("pair/link");
+	k_msleep(1000); /* indicator solid: done */
+	sys_reboot(SYS_REBOOT_COLD);
+}
+
 static void indicator_set(bool on)
 {
 	indicator_on = on;
@@ -105,14 +126,18 @@ static void pair_start(const char *why)
 	k_spinlock_key_t key = k_spin_lock(&lock);
 
 	sys_put_le32(n, nonce); /* a fresh one per window: tells our offers apart */
+	offers = 0;
 	state = PAIR_REQUEST;
 	active_ms = 0;
 	k_spin_unlock(&lock, key);
 	LOG_INF("pairing mode (%s), %d s", why, PAIR_TIMEOUT_MS / 1000);
 }
 
-static void pair_stop(const char *why)
+static void pair_stop(const char *why, bool error)
 {
+	if (error) {
+		atomic_set(&error_request, 1);
+	}
 	k_spinlock_key_t key = k_spin_lock(&lock);
 
 	state = PAIR_IDLE;
@@ -180,29 +205,59 @@ bool pair_link_changed(struct pair_link *link)
 
 void pair_tick(uint32_t elapsed_ms)
 {
+	if (resetting) {
+		return;
+	}
 	if (gpio_pin_get_dt(&pair_pin) > 0) {
 		held_ms += elapsed_ms;
 		if (held_ms >= PAIR_HOLD_MS && !hold_used) {
 			hold_used = true;
 			pair_start("Pair held");
 		}
+		if (held_ms >= FACTORY_RESET_MS) {
+			resetting = true;
+			indicator_set(true);
+			k_work_submit(&reset_work);
+			return;
+		}
 	} else {
 		held_ms = 0;
 		hold_used = false;
 	}
 
+	if (atomic_cas(&error_request, 1, 0) && state == PAIR_IDLE && !error_ms) {
+		error_ms = 1;
+	}
+
 	if (state == PAIR_IDLE) {
-		if (indicator_on) {
+		if (error_ms) {
+			indicator_set(((error_ms - 1) / ERROR_BLINK_MS) % 2 == 0);
+			error_ms += elapsed_ms;
+			if (error_ms > ERROR_MS) {
+				error_ms = 0;
+				indicator_set(false);
+			}
+		} else if (indicator_on) {
 			indicator_set(false);
 		}
 		return;
 	}
 	active_ms += elapsed_ms;
 	if (active_ms >= PAIR_TIMEOUT_MS) {
-		pair_stop("timeout");
+		pair_stop("timeout", false);
 		return;
 	}
 	indicator_set((active_ms / BLINK_MS) % 2 == 0);
+}
+
+bool pair_indicator_busy(void)
+{
+	return state != PAIR_IDLE || error_ms || resetting || atomic_get(&error_request);
+}
+
+void pair_indicate_error(void)
+{
+	atomic_set(&error_request, 1);
 }
 
 bool pair_active(void)
@@ -253,8 +308,17 @@ void pair_on_ack(const uint8_t *data, size_t len)
 		}
 		if (o->status != XBX_PAIR_OK || o->pipe < 1 || o->pipe > XBX_CTRL_PIPES) {
 			k_spin_unlock(&lock, key);
-			LOG_WRN("pairing refused: status %u", o->status);
-			pair_stop("refused");
+			LOG_WRN("pairing refused: %s",
+				o->status == XBX_PAIR_VERSION_MISMATCH ? "protocol version mismatch"
+				: o->status == XBX_PAIR_ABORTED	       ? "aborted (two controllers)"
+								       : "bad offer");
+			pair_stop("refused", true);
+			return;
+		}
+		if (offers && memcmp(o->dongle_id, offered.dongle_id, 8) != 0) {
+			k_spin_unlock(&lock, key);
+			LOG_WRN("two dongles answered: aborted");
+			pair_stop("two dongles", true);
 			return;
 		}
 		memcpy(offered.dongle_id, o->dongle_id, sizeof(offered.dongle_id));
@@ -262,8 +326,11 @@ void pair_on_ack(const uint8_t *data, size_t len)
 		offered.prefix = o->prefix;
 		offered.pipe = o->pipe;
 		offered.channel = o->channel;
-		state = PAIR_CONFIRM;
-		atomic_set(&link_changed, 1); /* switch to the offered pipe */
+		/* a few more requests first: another dongle pairing nearby would answer too */
+		if (++offers >= OFFER_SETTLE) {
+			state = PAIR_CONFIRM;
+			atomic_set(&link_changed, 1); /* switch to the offered pipe */
+		}
 	} else if (state == PAIR_CONFIRM && len == sizeof(struct xbx_pair_done) &&
 		   data[0] == XBX_MSG_PAIR_DONE) {
 		const struct xbx_pair_done *d = (const struct xbx_pair_done *)data;
@@ -271,7 +338,7 @@ void pair_on_ack(const uint8_t *data, size_t len)
 		if (d->status != XBX_PAIR_OK) {
 			k_spin_unlock(&lock, key);
 			LOG_WRN("pairing failed: status %u", d->status);
-			pair_stop("failed");
+			pair_stop("failed", true);
 			return;
 		}
 		stored = offered;
@@ -279,7 +346,7 @@ void pair_on_ack(const uint8_t *data, size_t len)
 		k_spin_unlock(&lock, key);
 		k_work_submit(&save_work);
 		LOG_INF("paired: pipe %u", offered.pipe);
-		pair_stop("paired");
+		pair_stop("paired", false);
 		return;
 	}
 out:

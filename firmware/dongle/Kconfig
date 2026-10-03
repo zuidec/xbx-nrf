@@ -17,6 +17,15 @@ config XBX_FAST_FRAME_MAX
 	  1000 Hz each); more switch everyone to the 2 ms frame (4 slots,
 	  500 Hz). Set 1 to test the frame switch with two controllers.
 
+config XBX_PAIR_RSSI_MIN
+	int "Weakest pairing request accepted, -dBm"
+	range 20 100
+	default 50
+	help
+	  Pairing requests received weaker than -<this> dBm are ignored, so
+	  only a controller held close to the dongle pairs. Raise it if
+	  pairing at arm's length fails.
+
 endmenu
 
 source "Kconfig.zephyr"

@@ -6,9 +6,13 @@
  * PAIR_TIMEOUT_MS. The pairing indicator (the "heavy" LED, on-board on the
  * Pro Micro) blinks fast meanwhile.
  *
- * Exchange: PAIR_REQ on pipe 0 (the pairing address) until a PAIR_OFFER for
- * our nonce arrives, then PAIR_CONFIRM on the offered pipe until PAIR_DONE;
+ * Exchange: PAIR_REQ on pipe 0 (the pairing address) until OFFER_SETTLE
+ * offers for our nonce arrived, all from one dongle (two dongles pairing
+ * nearby: abort), then PAIR_CONFIRM on the offered pipe until PAIR_DONE;
  * then the link (dongle address, pipe) is stored in settings ("pair/link").
+ *
+ * Errors (refused, aborted, dongle full) blink the indicator slowly three
+ * times. Pair held FACTORY_RESET_MS: forget the link and restart.
  */
 
 #ifndef XBX_PAIR_H_
@@ -46,6 +50,12 @@ void pair_tick(uint32_t elapsed_ms);
 
 /* Pairing mode active: the radio carries pairing messages, not reports. */
 bool pair_active(void);
+
+/* The indicator LED is showing pairing, an error or a reset (not rumble). */
+bool pair_indicator_busy(void);
+
+/* Show the error blink (e.g. the dongle is full); callable from interrupts. */
+void pair_indicate_error(void);
 
 /* While pairing: the next message to send (repeats until answered). */
 bool pair_next_message(struct esb_payload *tx);
