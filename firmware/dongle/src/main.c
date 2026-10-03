@@ -72,11 +72,12 @@ int main(void)
 			}
 			radio_get_last_input(link, &in);
 			/* ESB reports RSSI as a positive magnitude in dBm */
-			LOG_INF("P%u rx %u/s  lost %u  rssi -%d dBm  slot %d err %d us  | btn %04x "
+			LOG_INF("P%u rx %u/s  lost %u  rssi -%d dBm  slot %d/%u err %d us  | btn %04x "
 				"L(%d,%d) R(%d,%d) LT %u RT %u",
 				link + 1, received, n->lost - p->lost,
 				(n->rssi_sum - p->rssi_sum) / (int32_t)received,
-				n->slot == XBX_SLOT_NONE ? -1 : n->slot, n->sync_err_us, in.buttons,
+				n->slot == XBX_SLOT_NONE ? -1 : n->slot, now.frame_slots,
+				n->sync_err_us, in.buttons,
 				in.lx, in.ly, in.rx, in.ry, in.lt, in.rt);
 		}
 		if (now.bad != prev.bad || now.ack_queue_full != prev.ack_queue_full) {

@@ -34,6 +34,9 @@
  */
 #define XBX_SLOT_US        500
 #define XBX_SLOT_NONE      0xFF
+
+/* xbx_output_report.flags */
+#define XBX_OUT_FLAG_FULL  (1u << 0) /* no slot free: retry slowly */
 /* Radio TX power in dBm, both ends (the dongle's ACKs too). The nRF52840 maximum is +8.
  * Fixed for now; see todo.md for dynamic power adjustment.
  */
@@ -82,7 +85,7 @@ struct xbx_output_report {
 	uint8_t seq;
 	uint8_t rumble[4]; /* heavy, light, LT, RT: 0..255 */
 	uint8_t led;       /* Guide LED brightness 0..255 */
-	uint8_t flags;     /* reserved */
+	uint8_t flags;     /* XBX_OUT_FLAG_* */
 	/* time slot (v2) */
 	uint8_t slot;        /* 0.., XBX_SLOT_NONE = no slot (yet) */
 	uint8_t slots;       /* slots per frame; frame = slots * XBX_SLOT_US */

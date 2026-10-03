@@ -5,7 +5,10 @@
  * once per second. The dongle replies with an output report in the ACK
  * payload, which also says how far the report missed this controller's time
  * slot; the report timer shifts by that much (docs/protocol.md, "Time slots
- * (TDMA)"). Input: the breadboard pins (input.c), or a test pattern with
+ * (TDMA)"). The report period follows the dongle's frame: 1 ms, or 2 ms with
+ * 3-4 controllers. Without a slot (joining, or the dongle was lost) it sends
+ * only every 5-15 periods, each time at a random phase, until a gap between
+ * the others' slots gets it an ACK; with the dongle full, once a second. Input: the breadboard pins (input.c), or a test pattern with
  * CONFIG_XBX_FAKE_INPUT. The radio pipe (player number) is fixed by
  * CONFIG_XBX_TEST_PIPE until pairing exists.
  *
@@ -42,8 +45,10 @@ LOG_MODULE_REGISTER(ctrl, LOG_LEVEL_INF);
 #define RETRANSMIT_DELAY_US 450
 #define RETRANSMIT_COUNT    0
 
-/* Largest timer shift per correction: keeps every period >= 500 us */
-#define SYNC_MAX_SHIFT_US (XBX_REPORT_PERIOD_US / 2 - 1)
+/* Joining (no slot): periods between attempts */
+#define JOIN_GAP_MIN  5
+#define JOIN_GAP_MAX  15
+#define JOIN_FULL_MS  1000 /* between attempts while the dongle is full */
 
 /* Report timing comes from a hardware timer: the 32768 Hz system tick can't do an
  * exact 1 ms (k_timer rounds to 33 ticks = 1.007 ms, ~993 reports/s).
@@ -66,6 +71,7 @@ struct link_stats {
 	uint32_t attempts;
 	uint32_t skipped; /* tick arrived while the previous report was still in flight */
 	uint32_t acks_with_payload;
+	uint32_t join_attempts; /* reports sent without a slot */
 };
 
 static struct link_stats stats;
@@ -78,9 +84,11 @@ static volatile uint16_t next_seq; /* seq of the next report sent (tx thread) */
  * are stale and ignored: ACK payloads lag a report or two behind.
  */
 static struct k_spinlock sync_lock;
+static uint32_t period_us = XBX_REPORT_PERIOD_US; /* report period = dongle frame */
+static uint32_t period_pending_us; /* frame length change, 0 = none */
 static bool sync_pending;
-static int32_t sync_shift_us;      /* the pending shift: next period = 1000 - err */
-static bool sync_restore;          /* the last period was shifted: restore 1 ms */
+static int32_t sync_shift_us;      /* the pending shift: next period = period - err */
+static bool sync_restore;          /* the last period was shifted: restore it */
 static bool sync_valid;            /* sync_after_seq is set */
 static uint16_t sync_after_seq;    /* last report sent at the old timing */
 static uint32_t sync_corrections;  /* stats */
@@ -92,9 +100,32 @@ static bool wired;
 static uint8_t host_rumble[4];
 static struct k_spinlock host_lock;
 
-/* No ACK payload for this long (dongle gone, off or out of range): rumble and LED off */
+/*
+ * No ACK payload for this long (dongle gone, off or out of range): rumble and
+ * LED off, and the slot counts as lost (join again).
+ */
 #define OUTPUT_TIMEOUT_MS 100
-static atomic_t ack_age_ms; /* ms since the last ACK payload; the TX loop ticks every 1 ms */
+static atomic_t ack_age_ms; /* ms since the last ACK payload, counted by the TX loop */
+
+static uint32_t rng_state;
+
+/* xorshift32: join timing and the fake input pattern */
+static uint32_t random_range(uint32_t min, uint32_t max)
+{
+	rng_state ^= rng_state << 13;
+	rng_state ^= rng_state >> 17;
+	rng_state ^= rng_state << 5;
+	return min + rng_state % (max - min + 1);
+}
+
+/* Seeded from the chip ID, so controllers differ. */
+static void random_init(void)
+{
+	uint32_t id[2] = {0};
+
+	hwinfo_get_device_id((uint8_t *)id, sizeof(id));
+	rng_state = (id[0] ^ id[1]) | 1; /* xorshift needs a non-zero state */
+}
 
 static K_SEM_DEFINE(tick_sem, 0, 1);
 
@@ -108,16 +139,52 @@ static void timing_pin_set(int value)
 /* Queue a timer shift from the dongle's measurement, unless it's stale. */
 static void sync_from_ack(const struct xbx_output_report *out)
 {
+	uint32_t frame_us = out->slots * XBX_SLOT_US;
 	k_spinlock_key_t key;
 
-	if (out->slot == XBX_SLOT_NONE || out->sync_err_us == 0) {
+	if (out->slot == XBX_SLOT_NONE || frame_us == 0) {
 		return;
 	}
 	key = k_spin_lock(&sync_lock);
-	if (!sync_pending &&
-	    (!sync_valid || (int16_t)(out->sync_seq - sync_after_seq) > 0)) {
-		sync_shift_us = CLAMP(out->sync_err_us, -SYNC_MAX_SHIFT_US, SYNC_MAX_SHIFT_US);
+	if (frame_us != period_us) {
+		/* frame length changed: follow it; measurements so far are stale */
+		period_pending_us = frame_us;
+	} else if (out->sync_err_us != 0 && !sync_pending && !period_pending_us &&
+		   (!sync_valid || (int16_t)(out->sync_seq - sync_after_seq) > 0)) {
+		int32_t max = (int32_t)period_us / 2 - 1; /* every period stays >= half */
+
+		sync_shift_us = CLAMP(out->sync_err_us, -max, max);
 		sync_pending = true;
+	}
+	k_spin_unlock(&sync_lock, key);
+}
+
+/* A slot from the dongle, and ACKs still arriving. */
+static bool slot_held(void)
+{
+	return last_output.slot != XBX_SLOT_NONE && atomic_get(&ack_age_ms) < OUTPUT_TIMEOUT_MS;
+}
+
+/* Joining: queue a random phase shift, so the next attempt lands elsewhere. */
+static void sync_random_shift(void)
+{
+	k_spinlock_key_t key = k_spin_lock(&sync_lock);
+	int32_t max = (int32_t)period_us / 2 - 1;
+
+	if (!sync_pending && !period_pending_us) {
+		sync_shift_us = (int32_t)random_range(0, 2 * max) - max;
+		sync_pending = true;
+	}
+	k_spin_unlock(&sync_lock, key);
+}
+
+/* Report period for wired mode (USB is polled every 1 ms). */
+static void period_request(uint32_t us)
+{
+	k_spinlock_key_t key = k_spin_lock(&sync_lock);
+
+	if (us != period_us) {
+		period_pending_us = us;
 	}
 	k_spin_unlock(&sync_lock, key);
 }
@@ -194,7 +261,7 @@ static int radio_init(void)
 }
 
 #if defined(CONFIG_XBX_FAKE_INPUT)
-/* Test pattern timing, in 1 ms ticks */
+/* Test pattern timing, in ms */
 #define FAKE_LSTICK_PERIOD 4000 /* one circle, clockwise */
 #define FAKE_RSTICK_PERIOD 6000 /* counter-clockwise */
 #define FAKE_TRIGGER_PERIOD 2000 /* up and down */
@@ -212,25 +279,6 @@ static const uint16_t fake_buttons[] = {
 	XBX_BTN_LS, XBX_BTN_RS,
 };
 
-static uint32_t fake_rng;
-
-/* xorshift32: plenty for a test pattern */
-static uint32_t fake_random(uint32_t min, uint32_t max)
-{
-	fake_rng ^= fake_rng << 13;
-	fake_rng ^= fake_rng >> 17;
-	fake_rng ^= fake_rng << 5;
-	return min + fake_rng % (max - min + 1);
-}
-
-static void fake_input_init(void)
-{
-	uint32_t id[2] = {0};
-
-	hwinfo_get_device_id((uint8_t *)id, sizeof(id));
-	fake_rng = (id[0] ^ id[1]) | 1; /* xorshift needs a non-zero state */
-}
-
 static int16_t fake_axis(float turn, bool cosine)
 {
 	float angle = FAKE_TWO_PI * turn;
@@ -238,9 +286,9 @@ static int16_t fake_axis(float turn, bool cosine)
 	return (int16_t)(FAKE_STICK_RADIUS * (cosine ? cosf(angle) : sinf(angle)));
 }
 
-static uint16_t fake_trigger(uint32_t tick)
+static uint16_t fake_trigger(uint32_t ms)
 {
-	uint32_t t = tick % FAKE_TRIGGER_PERIOD;
+	uint32_t t = ms % FAKE_TRIGGER_PERIOD;
 	uint32_t half = FAKE_TRIGGER_PERIOD / 2;
 
 	return (uint16_t)((t < half ? t : FAKE_TRIGGER_PERIOD - t) * 1023u / half);
@@ -251,20 +299,20 @@ static uint16_t fake_trigger(uint32_t tick)
  * triggers ramp in opposite phase, and one random button at a time is pressed
  * for 50..300 ms with 200..800 ms between presses.
  */
-static void fill_fake_input(struct xbx_input_report *report, uint32_t tick)
+static void fill_fake_input(struct xbx_input_report *report, uint32_t ms)
 {
-	static uint32_t next_tick;
+	static uint32_t next_ms;
 	static uint16_t held;
-	float lturn = (float)(tick % FAKE_LSTICK_PERIOD) / FAKE_LSTICK_PERIOD;
-	float rturn = (float)(tick % FAKE_RSTICK_PERIOD) / FAKE_RSTICK_PERIOD;
+	float lturn = (float)(ms % FAKE_LSTICK_PERIOD) / FAKE_LSTICK_PERIOD;
+	float rturn = (float)(ms % FAKE_RSTICK_PERIOD) / FAKE_RSTICK_PERIOD;
 
-	if ((int32_t)(tick - next_tick) >= 0) {
+	if ((int32_t)(ms - next_ms) >= 0) {
 		if (held) {
 			held = 0;
-			next_tick = tick + fake_random(FAKE_GAP_MIN, FAKE_GAP_MAX);
+			next_ms = ms + random_range(FAKE_GAP_MIN, FAKE_GAP_MAX);
 		} else {
-			held = fake_buttons[fake_random(0, ARRAY_SIZE(fake_buttons) - 1)];
-			next_tick = tick + fake_random(FAKE_HOLD_MIN, FAKE_HOLD_MAX);
+			held = fake_buttons[random_range(0, ARRAY_SIZE(fake_buttons) - 1)];
+			next_ms = ms + random_range(FAKE_HOLD_MIN, FAKE_HOLD_MAX);
 		}
 	}
 
@@ -274,7 +322,7 @@ static void fill_fake_input(struct xbx_input_report *report, uint32_t tick)
 	report->ly = fake_axis(lturn, true);
 	report->rx = fake_axis(-rturn, false);
 	report->ry = fake_axis(-rturn, true);
-	report->lt = fake_trigger(tick);
+	report->lt = fake_trigger(ms);
 	report->rt = 1023 - report->lt;
 }
 #endif
@@ -294,24 +342,33 @@ static void report_period_set(const struct device *dev, uint32_t us)
 }
 
 /*
- * Timer ISR, once per period. Applies a pending slot correction to the period
- * that starts now (late = shorter), and restores 1 ms after a shifted one. The
- * report sent for this tick still has the old timing.
+ * Timer ISR, once per period. Applies a pending frame length change, or a
+ * slot correction to the period that starts now (late = shorter), and
+ * restores the period after a shifted one. The report sent for this tick
+ * still has the old timing.
  */
 static void report_tick(const struct device *dev, void *user_data)
 {
 	k_spinlock_key_t key = k_spin_lock(&sync_lock);
 
 	ARG_UNUSED(user_data);
-	if (sync_pending) {
-		report_period_set(dev, XBX_REPORT_PERIOD_US - sync_shift_us);
+	if (period_pending_us) {
+		period_us = period_pending_us;
+		period_pending_us = 0;
+		report_period_set(dev, period_us);
+		sync_after_seq = next_seq;
+		sync_valid = true;
+		sync_pending = false;
+		sync_restore = false;
+	} else if (sync_pending) {
+		report_period_set(dev, period_us - sync_shift_us);
 		sync_after_seq = next_seq;
 		sync_valid = true;
 		sync_pending = false;
 		sync_restore = true;
 		sync_corrections++;
 	} else if (sync_restore) {
-		report_period_set(dev, XBX_REPORT_PERIOD_US);
+		report_period_set(dev, period_us);
 		sync_restore = false;
 	}
 	k_spin_unlock(&sync_lock, key);
@@ -397,10 +454,12 @@ static void wired_update(void)
 	if (wired) {
 		unsigned int key = irq_lock();
 
-		/* dongle values are stale now */
+		/* dongle values are stale now; the slot too (join again after) */
 		memset(last_output.rumble, 0, sizeof(last_output.rumble));
 		last_output.led = 0;
+		last_output.slot = XBX_SLOT_NONE;
 		irq_unlock(key);
+		period_request(XBX_REPORT_PERIOD_US);
 	}
 	LOG_INF("%s", wired ? "wired: USB host active, radio paused" : "wireless: radio resumed");
 }
@@ -430,27 +489,37 @@ static void tx_thread(void *p1, void *p2, void *p3)
 	};
 	struct xbx_input_report *report = (struct xbx_input_report *)tx.data;
 	uint32_t tick = 0;
+	uint32_t ms = 0;        /* uptime in report periods, as ms */
+	uint32_t next_join = 0; /* tick of the next join attempt */
 
 	memset(report, 0, sizeof(*report));
 	report->type = XBX_MSG_INPUT;
 	report->battery = 0xFF;
 
 	while (true) {
+		uint32_t elapsed_ms;
+
 		k_sem_take(&tick_sem, K_FOREVER);
 		tick++;
+		elapsed_ms = period_us / 1000;
+		ms += elapsed_ms;
 
 		wired_update();
 
-		/* fires once per outage: atomic_inc returns the previous value */
-		if (atomic_inc(&ack_age_ms) == OUTPUT_TIMEOUT_MS && !wired) {
+		/* fires once per outage */
+		atomic_val_t age = atomic_add(&ack_age_ms, elapsed_ms);
+
+		if (age < OUTPUT_TIMEOUT_MS && age + elapsed_ms >= OUTPUT_TIMEOUT_MS && !wired) {
 			output_off();
 		}
 
 #if defined(CONFIG_XBX_FAKE_INPUT)
-		fill_fake_input(report, tick);
+		fill_fake_input(report, ms);
 #else
-		/* scan even when skipping, so debounce timing stays per ms */
-		input_read(report);
+		/* every tick, even when not sending; input.c counts one call as 1 ms */
+		for (uint32_t i = 0; i < elapsed_ms; i++) {
+			input_read(report);
+		}
 		rumble_leds_update();
 #endif
 
@@ -465,6 +534,23 @@ static void tx_thread(void *p1, void *p2, void *p3)
 			}
 			last_input = *report;
 			continue;
+		}
+
+		/*
+		 * No slot: send only every JOIN_GAP periods, each at a random phase
+		 * (shifted two ticks ahead, so it's in place for the attempt).
+		 */
+		if (!slot_held()) {
+			if (tick == next_join - 2) {
+				sync_random_shift();
+			}
+			if ((int32_t)(tick - next_join) < 0) {
+				continue;
+			}
+			next_join = tick + ((last_output.flags & XBX_OUT_FLAG_FULL)
+						    ? JOIN_FULL_MS * 1000 / period_us
+						    : random_range(JOIN_GAP_MIN, JOIN_GAP_MAX));
+			stats.join_attempts++;
 		}
 
 		if (atomic_get(&in_flight)) {
@@ -518,8 +604,9 @@ int main(void)
 	}
 #endif
 
+	random_init();
+	last_output.slot = XBX_SLOT_NONE; /* join first */
 #if defined(CONFIG_XBX_FAKE_INPUT)
-	fake_input_init();
 	usb_mode_init(0);
 #else
 	usb_mode_init(input_held_at_boot());
@@ -562,12 +649,14 @@ int main(void)
 		uint32_t corrections = sync_corrections;
 
 		LOG_INF("sent %u/s  ok %u  failed %u  skipped %u  avg attempts %u.%02u  acks %u  "
-			"slot %d err %d us  sync %u/s  rumble[%u %u %u %u] led %u",
+			"slot %d/%u err %d us  sync %u/s  join %u%s  rumble[%u %u %u %u] led %u",
 			sent, ok, failed, now.skipped - prev.skipped,
 			done ? attempts / done : 0, done ? (attempts * 100 / done) % 100 : 0,
 			now.acks_with_payload - prev.acks_with_payload,
-			last_output.slot == XBX_SLOT_NONE ? -1 : last_output.slot,
+			slot_held() ? last_output.slot : -1, period_us / XBX_SLOT_US,
 			last_output.sync_err_us, corrections - prev_corrections,
+			now.join_attempts - prev.join_attempts,
+			(last_output.flags & XBX_OUT_FLAG_FULL) ? " (dongle full)" : "",
 			last_output.rumble[0], last_output.rumble[1], last_output.rumble[2],
 			last_output.rumble[3], last_output.led);
 		prev_corrections = corrections;

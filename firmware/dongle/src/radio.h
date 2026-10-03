@@ -5,7 +5,8 @@
  *
  * Controllers are numbered by link 0..RADIO_LINKS-1 (pipe = link + 1; the
  * XInput slot and player number follow the link). Each linked controller also
- * gets a time slot in the radio frame (RADIO_SLOTS per frame).
+ * gets a time slot in the radio frame: 1 ms (2 slots) while up to
+ * CONFIG_XBX_FAST_FRAME_MAX are connected, else 2 ms (4 slots).
  */
 
 #ifndef XBX_DONGLE_RADIO_H_
@@ -18,7 +19,8 @@
 #include "protocol.h"
 
 #define RADIO_LINKS XBX_CTRL_PIPES
-#define RADIO_SLOTS 2 /* 1 ms frame; the 2 ms frame for 3-4 controllers comes later */
+#define RADIO_SLOTS_FAST 2 /* 1 ms frame: 1000 Hz per controller */
+#define RADIO_SLOTS_MAX  4 /* 2 ms frame: 500 Hz */
 
 struct radio_link_stats {
 	uint32_t received;
@@ -30,6 +32,7 @@ struct radio_link_stats {
 
 struct radio_stats {
 	struct radio_link_stats link[RADIO_LINKS];
+	uint8_t frame_slots; /* slots per frame now */
 	uint32_t bad;        /* wrong length, type or pipe */
 	uint32_t ack_queue_full;
 };

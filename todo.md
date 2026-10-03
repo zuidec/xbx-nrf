@@ -285,9 +285,13 @@ Up to 7 paired (least recently connected replaced), 4 connected; 1 kHz for
       for the starved one), err within ±30 µs (mostly 0/±11: thread
       jitter), weaker link (−48 dBm) loses ~1 % without retries; rumble
       reaches the right controller.
-- [ ] TDMA: 2 ms frame switching for 3–4 controllers. Measured transaction
+- [x] Step 3: join (sparse attempts at random phases), full flag, 2 ms frame
+      for 3–4 controllers and back (slots compacted). Two Pro Micros with
+      `CONFIG_XBX_FAST_FRAME_MAX=1`: switches between 1 kHz and 500 Hz as
+      controllers are plugged and replugged; replugged controllers rejoin.
+      Default build: both at 1 kHz.
+- [ ] TDMA: margin check. Measured transaction
       333–345 µs → ~155 µs margin in a 500 µs slot.
-- [ ] Join / full / drop handling; player number = slot.
 - [ ] USB: 4 players via the XInput mode (Xbox 360 Wireless Receiver); HID
       stays single-player.
 - [ ] Test: 2 controllers at 1 kHz (two Pro Micros + PCA10059), then 4 at 500
