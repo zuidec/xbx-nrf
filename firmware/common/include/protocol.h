@@ -15,11 +15,13 @@
 
 #define XBX_PROTOCOL_VERSION 3 /* v3: pairing, per-dongle addresses */
 
-/* Fixed channel until channel choice / hopping.
- * Channel 76 = 2476 MHz: above Wi-Fi channel 11 and clear of BLE
- * advertising channel 39 (2480 MHz).
+/*
+ * Candidate channels (2400 + n MHz): in the gaps between Wi-Fi channels 1, 6
+ * and 11 and above 11, clear of BLE advertising (2402, 2426, 2480 MHz). The
+ * dongle picks the quietest at first use; pairing controllers try each until
+ * one answers.
  */
-#define XBX_RF_CHANNEL     76
+#define XBX_RF_CHANNELS    {24, 49, 74, 76, 78}
 
 /* Pipe 0: the pairing address, the same on every dongle, open only while it
  * pairs. Pipes 1..XBX_CTRL_PIPES: one per paired controller, on the dongle's

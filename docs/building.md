@@ -137,7 +137,7 @@ app's `CMakeLists.txt` has no effect.
 | **Build ID** | `git describe` (`APP_BUILD_VERSION`) | Automatic |
 
 - Printed at boot, e.g.
-  `xbx-nrf controller v0.1.0 (47bdc2425afb), protocol v1, channel 76, tx 8 dBm`.
+  `xbx-nrf controller v0.4.0 (v0.4.0-12-g47bdc24), protocol v3, tx 8 dBm`.
 - After `git tag v0.1.0` the build ID reads `v0.1.0` (`v0.1.0-3-g<hash>` later).
 - Uncommitted changes don't show in the build ID: commit before flashing
   anything you keep.

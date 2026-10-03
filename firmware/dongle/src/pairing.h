@@ -31,6 +31,9 @@ int pairing_init(void);
 /* The dongle's address; valid after pairing_init(). */
 const struct pairing_addr *pairing_addr(void);
 
+/* The dongle's channel (chosen at first use); valid after pairing_init(). */
+uint8_t pairing_channel(void);
+
 /* Enter pairing mode (restarts the timeout if already in it). */
 void pairing_start(const char *why);
 

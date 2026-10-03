@@ -6,6 +6,9 @@
  * PAIR_TIMEOUT_MS. The pairing indicator (the "heavy" LED, on-board on the
  * Pro Micro) blinks fast meanwhile.
  *
+ * Channel: requests cycle through the candidates (XBX_RF_CHANNELS) until one
+ * is acknowledged, then stay there (moving on after SCAN_MISSES misses).
+ *
  * Exchange: PAIR_REQ on pipe 0 (the pairing address) until OFFER_SETTLE
  * offers for our nonce arrived, all from one dongle (two dongles pairing
  * nearby: abort), then PAIR_CONFIRM on the offered pipe until PAIR_DONE;
@@ -59,6 +62,12 @@ void pair_indicate_error(void);
 
 /* While pairing: the next message to send (repeats until answered). */
 bool pair_next_message(struct esb_payload *tx);
+
+/* While pairing: the channel for the next message. */
+uint8_t pair_channel(void);
+
+/* From the radio interrupt: whether the last pairing message was acknowledged. */
+void pair_on_tx_result(bool acked);
 
 /* From the radio interrupt: an ACK payload while pairing. */
 void pair_on_ack(const uint8_t *data, size_t len);

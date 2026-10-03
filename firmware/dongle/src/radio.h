@@ -53,6 +53,12 @@ void radio_get_last_input(uint8_t link, struct xbx_input_report *input);
  */
 uint32_t radio_wait_input(k_timeout_t timeout);
 
+/*
+ * At first use, before radio_start(): sample the noise on each candidate
+ * channel (XBX_RF_CHANNELS) and pick the quietest. Takes ~0.5 s.
+ */
+int radio_channel_scan(uint8_t *quietest);
+
 /* Pipe 0 (the pairing address) open or closed (thread context). */
 void radio_pairing_open(bool open);
 

@@ -209,12 +209,18 @@ static void radio_event_handler(struct esb_evt const *event)
 		stats.ok++;
 		stats.attempts += event->tx_attempts;
 		timing_pin_set(0);
+		if (pair_active()) {
+			pair_on_tx_result(true);
+		}
 		atomic_set(&in_flight, 0);
 		break;
 	case ESB_EVENT_TX_FAILED:
 		stats.failed++;
 		stats.attempts += event->tx_attempts;
 		timing_pin_set(0);
+		if (pair_active()) {
+			pair_on_tx_result(false);
+		}
 		atomic_set(&in_flight, 0);
 		break;
 	case ESB_EVENT_RX_RECEIVED:
@@ -239,7 +245,23 @@ static void radio_event_handler(struct esb_evt const *event)
 	}
 }
 
-/* Use the dongle's address for the link's pipe (radio idle). */
+static uint8_t radio_channel;
+
+/* Radio channel (radio idle). */
+static int radio_channel_set(uint8_t channel)
+{
+	int err = 0;
+
+	if (channel != radio_channel) {
+		err = esb_set_rf_channel(channel);
+		if (!err) {
+			radio_channel = channel;
+		}
+	}
+	return err;
+}
+
+/* Use the dongle's address and channel for the link's pipe (radio idle). */
 static int radio_apply_link(const struct pair_link *link)
 {
 	int err = esb_set_base_address_1(link->base_addr1);
@@ -247,7 +269,11 @@ static int radio_apply_link(const struct pair_link *link)
 	if (err) {
 		return err;
 	}
-	return esb_update_prefix(link->pipe, link->prefix);
+	err = esb_update_prefix(link->pipe, link->prefix);
+	if (err) {
+		return err;
+	}
+	return radio_channel_set(link->channel);
 }
 
 /*
@@ -292,12 +318,10 @@ static int radio_init(void)
 		return err;
 	}
 	if (pair_link_get(&link)) {
-		err = radio_apply_link(&link);
-		if (err) {
-			return err;
-		}
+		LOG_INF("paired: pipe %u, channel %u", link.pipe, link.channel);
+		return radio_apply_link(&link);
 	}
-	return esb_set_rf_channel(XBX_RF_CHANNEL);
+	return radio_channel_set(pair_channel());
 }
 
 #if defined(CONFIG_XBX_FAKE_INPUT)
@@ -643,6 +667,9 @@ static void tx_thread(void *p1, void *p2, void *p3)
 			if (!pair_next_message(&pair_tx)) {
 				continue;
 			}
+			if (radio_channel_set(pair_channel())) {
+				LOG_ERR("radio channel change failed");
+			}
 			atomic_set(&in_flight, 1);
 			if (esb_write_payload(&pair_tx) == 0) {
 				stats.sent++;
@@ -677,9 +704,8 @@ int main(void)
 	uint32_t prev_corrections = 0;
 	int err;
 
-	LOG_INF("xbx-nrf controller v%s (%s), protocol v%d, channel %d, tx %d dBm%s",
-		APP_VERSION_STRING, STRINGIFY(APP_BUILD_VERSION), XBX_PROTOCOL_VERSION, XBX_RF_CHANNEL,
-		XBX_TX_POWER_DBM,
+	LOG_INF("xbx-nrf controller v%s (%s), protocol v%d, tx %d dBm%s", APP_VERSION_STRING,
+		STRINGIFY(APP_BUILD_VERSION), XBX_PROTOCOL_VERSION, XBX_TX_POWER_DBM,
 		IS_ENABLED(CONFIG_XBX_FAKE_INPUT) ? ", fake input" : "");
 
 #if HAS_TIMING_PIN

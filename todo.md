@@ -256,7 +256,7 @@ Code: `firmware/{xbx-nrf,dongle}/src/main.c`,
 - [ ] Start each transmission from the TIMER3 interrupt (or PPI) instead of a
       woken thread: today's period jitter is up to ~10 µs, which eats TDMA slot
       margin.
-- [ ] Busy Wi-Fi, distance, other channels (`XBX_RF_CHANNEL`).
+- [ ] Busy Wi-Fi, distance, other channels (`XBX_RF_CHANNELS`).
 - [ ] Tune retransmit delay/count (min delay 435 µs → one retry per 1 ms).
 - [ ] Dongle timing pin once usable PCA10059 pads are known.
 - [x] Packet format v1 ([[docs/protocol#Radio (controller ↔ dongle)]]).
@@ -295,7 +295,13 @@ Up to 7 paired (least recently connected replaced), 4 connected; 1 kHz for
       both sides). Timing corrections: ±15 µs dead band. Tested: far away
       ignored, two controllers abort, both resets, sync rate drops. Not
       testable yet: two dongles, dongle full.
-- [ ] Channel choice at first use (quietest of the candidate list).
+- [x] Step 4.4: channel choice. Dongle: at first use samples RSSI on
+      24/49/74/76/78 (100 ms each), keeps the quietest, `pair/chan`
+      (cleared by factory reset; already-paired dongles keep 76).
+      Controller: pairing requests cycle the candidates until one is
+      acknowledged; the link stores the channel. Tested: existing pairings
+      kept 76; after a dongle reset the scan picks a channel and both
+      controllers find it when re-paired and after a power cycle.
 - [x] Step 2, TDMA (protocol v2): 1 ms dongle frame (TIMER3), 2 slots, first
       free slot per link; timing error in ACKs, controller shifts one
       TIMER3 period; no retries. Two Pro Micros: both 971–1001/s (was ~40
