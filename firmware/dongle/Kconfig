@@ -8,6 +8,15 @@ config XBX_USB_CONSOLE
 	  dongle's USB device. On for development builds; release.conf turns it
 	  off.
 
+config XBX_FAST_FRAME_MAX
+	int "Controllers served by the 1 ms frame"
+	range 1 2
+	default 2
+	help
+	  Up to this many connected controllers share the 1 ms frame (2 slots,
+	  1000 Hz each); more switch everyone to the 2 ms frame (4 slots,
+	  500 Hz). Set 1 to test the frame switch with two controllers.
+
 endmenu
 
 source "Kconfig.zephyr"

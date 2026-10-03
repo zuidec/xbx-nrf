@@ -88,7 +88,7 @@ through:
 | 1 | 1 | `seq` | +1 per report queued |
 | 2 | 4 | `rumble[4]` | Heavy, light, LT, RT; 0…255 |
 | 6 | 1 | `led` | Guide LED brightness, 0…255 |
-| 7 | 1 | `flags` | Reserved, 0 |
+| 7 | 1 | `flags` | Bit 0: dongle full (no slot free, retry slowly) |
 | 8 | 1 | `slot` | Time slot, 0…; `0xFF` = none yet |
 | 9 | 1 | `slots` | Slots per frame; frame = `slots` × 500 µs |
 | 10 | 2 | `sync_seq` | Input report `seq` the timing was measured on |
@@ -252,22 +252,26 @@ repeating **frame** and gives each connected controller its own **slot**:
   reports sent before its last shift (no double correction). Crystal drift is
   ~20 ns/ms, so this also keeps it in place.
 - **No retries** within a frame: a lost report is replaced by the next one.
-- **Frame changes** (2nd → 3rd controller and back): the dongle announces the
-  new frame length and each slot in ACK payloads, effective from a given frame
-  number, so all controllers switch together.
+- **Frame changes:** when more controllers connect than the 1 ms frame serves
+  (2; `CONFIG_XBX_FAST_FRAME_MAX`, 1 for testing with two boards), the dongle
+  stretches its frame to 2 ms; when they leave, the rest move into slots 0–1
+  and it goes back to 1 ms. Controllers follow `slots` and `slot` in their next
+  ACK: the report period becomes the frame length and older measurements are
+  ignored. Expect a few colliding reports during a switch.
 - Pairing traffic on pipe 0 is rare and short; it may cost an occasional report
   in an active slot.
 
 ### Connecting and disconnecting
-- **Join:** a paired, unsynced controller sends reports on its pipe every
-  ~10 ms with random jitter until an ACK assigns it a slot. Rare collisions with
-  active slots cost at most one report.
-- **Full (4 connected):** the dongle answers with a "full" status; the
-  controller shows it and retries slowly, then powers off after a timeout.
+- **Join:** a controller without a slot (just started, or no ACK for 100 ms)
+  sends one report every 5–15 periods, each at a random phase, until one lands
+  in a gap and its ACK assigns a slot. Collisions with active slots cost them
+  at most one report per attempt.
+- **Full (no slot free):** the ACK has `flags` bit 0 set; the controller
+  retries once a second. Later: show it, power off after a timeout.
 - **Drop:** no report from a slot for **1000 ms** → slot freed, USB reports a
   disconnect. Long enough to ride out brief radio dropouts mid-game.
-- **Player number** = slot (XInput receiver slot; optionally shown on the
-  Guide LED). HID mode is single-player.
+- **Player number** = pipe (XInput receiver slot), not the time slot, which
+  can change with the frame. HID mode is single-player.
 
 ### Message changes (v2)
 | Type | Message | Direction |

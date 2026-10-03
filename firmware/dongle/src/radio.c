@@ -3,21 +3,27 @@
  * reports from sequence gaps and keeps one output report queued per pipe as
  * the ACK payload for that controller's next packet.
  *
- * Time slots: a hardware timer runs the frame (RADIO_SLOTS slots of
+ * Time slots: a hardware timer runs the frame (frame_slots slots of
  * XBX_SLOT_US). A controller gets the first free slot with its first report;
  * every report's arrival is timed against that slot's start, and the error
  * goes back in the ACK payload so the controller can shift its report timer
- * (docs/protocol.md, "Time slots (TDMA)").
+ * (docs/protocol.md, "Time slots (TDMA)"). More controllers than the 1 ms
+ * frame serves switch the frame to 2 ms; when they leave, the rest move into
+ * slots 0-1 and the frame goes back to 1 ms. Controllers follow the slot and
+ * frame length in their next ACKs.
  */
 
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/counter.h>
 #include <zephyr/drivers/gpio.h>
+#include <zephyr/logging/log.h>
 #include <esb.h>
 
 #include <string.h>
 
 #include "radio.h"
+
+LOG_MODULE_REGISTER(radio, LOG_LEVEL_INF);
 
 #define ZEPHYR_USER DT_PATH(zephyr_user)
 #if DT_NODE_HAS_PROP(ZEPHYR_USER, timing_gpios)
@@ -26,8 +32,6 @@ static const struct gpio_dt_spec timing_pin = GPIO_DT_SPEC_GET(ZEPHYR_USER, timi
 #else
 #define HAS_TIMING_PIN 0
 #endif
-
-#define FRAME_US (RADIO_SLOTS * XBX_SLOT_US)
 
 static const struct device *const frame_timer = DEVICE_DT_GET(DT_NODELABEL(timer3));
 
@@ -44,6 +48,7 @@ struct link {
 	uint8_t out_rumble[4];
 	uint8_t out_led;
 	uint8_t slot;        /* XBX_SLOT_NONE until assigned */
+	bool full;           /* turned away: no slot free */
 	uint16_t sync_seq;   /* last measured report */
 	int16_t sync_err_us;
 };
@@ -51,6 +56,7 @@ struct link {
 static struct radio_stats stats;
 static struct link links[RADIO_LINKS];
 static uint8_t slots_used; /* bit n = slot n taken */
+static uint8_t frame_slots = RADIO_SLOTS_FAST;
 
 /* links with a report not yet returned by radio_wait_input() */
 static atomic_t fresh;
@@ -84,8 +90,9 @@ static void queue_ack_payload(uint8_t link)
 	out->seq = l->output_seq++;
 	memcpy(out->rumble, l->out_rumble, sizeof(out->rumble));
 	out->led = l->out_led;
+	out->flags = l->full ? XBX_OUT_FLAG_FULL : 0;
 	out->slot = l->slot;
-	out->slots = RADIO_SLOTS;
+	out->slots = frame_slots;
 	out->sync_seq = l->sync_seq;
 	out->sync_err_us = l->sync_err_us;
 
@@ -101,27 +108,68 @@ static int32_t frame_pos_us(void)
 	return (int32_t)counter_ticks_to_us(frame_timer, ticks);
 }
 
-/* Give the link the first free slot, if it has none. */
+/* Change the frame length; the timer keeps running (restarts if past the new end). */
+static void frame_resize(uint8_t slots)
+{
+	struct counter_top_cfg top = {
+		.ticks = counter_us_to_ticks(frame_timer, slots * XBX_SLOT_US),
+		.flags = COUNTER_TOP_CFG_DONT_RESET | COUNTER_TOP_CFG_RESET_WHEN_LATE,
+	};
+
+	frame_slots = slots;
+	stats.frame_slots = slots;
+	counter_set_top_value(frame_timer, &top);
+	LOG_INF("frame: %u slots (%u us)", slots, slots * XBX_SLOT_US);
+}
+
+/* Give the link the first free slot, if it has none; grow the frame if needed. */
 static void slot_assign(struct link *l)
 {
 	if (l->slot != XBX_SLOT_NONE) {
 		return;
 	}
-	for (uint8_t s = 0; s < RADIO_SLOTS; s++) {
+	if (__builtin_popcount(slots_used) >= CONFIG_XBX_FAST_FRAME_MAX && frame_slots < RADIO_SLOTS_MAX) {
+		frame_resize(RADIO_SLOTS_MAX);
+	}
+	for (uint8_t s = 0; s < frame_slots; s++) {
 		if (!(slots_used & BIT(s))) {
 			slots_used |= BIT(s);
 			l->slot = s;
+			l->full = false;
 			return;
 		}
 	}
+	l->full = true;
 }
 
-/* Arrival minus the slot start, wrapped to -FRAME_US/2..FRAME_US/2 - 1. */
+/* After a slot was freed: back to the 1 ms frame once it serves everyone. */
+static void frame_shrink(void)
+{
+	if (frame_slots == RADIO_SLOTS_FAST || __builtin_popcount(slots_used) > CONFIG_XBX_FAST_FRAME_MAX) {
+		return;
+	}
+	/* move controllers from slots 2-3 into the free fast slots */
+	for (uint8_t link = 0; link < RADIO_LINKS; link++) {
+		struct link *l = &links[link];
+
+		if (l->slot == XBX_SLOT_NONE || l->slot < RADIO_SLOTS_FAST) {
+			continue;
+		}
+		slots_used &= ~BIT(l->slot);
+		l->slot = XBX_SLOT_NONE;
+		slot_assign(l);
+		stats.link[link].slot = l->slot;
+	}
+	frame_resize(RADIO_SLOTS_FAST);
+}
+
+/* Arrival minus the slot start, wrapped to half a frame either way. */
 static int16_t slot_error_us(uint8_t slot, int32_t pos_us)
 {
+	int32_t frame_us = frame_slots * XBX_SLOT_US;
 	int32_t err = pos_us - slot * XBX_SLOT_US;
 
-	err = ((err % FRAME_US) + FRAME_US + FRAME_US / 2) % FRAME_US - FRAME_US / 2;
+	err = ((err % frame_us) + frame_us + frame_us / 2) % frame_us - frame_us / 2;
 	return (int16_t)err;
 }
 
@@ -235,7 +283,7 @@ static int radio_init(void)
 static int frame_timer_start(void)
 {
 	struct counter_top_cfg top = {
-		.ticks = counter_us_to_ticks(frame_timer, FRAME_US),
+		.ticks = counter_us_to_ticks(frame_timer, RADIO_SLOTS_FAST * XBX_SLOT_US),
 	};
 	int err;
 
@@ -269,6 +317,7 @@ int radio_start(void)
 		return err;
 	}
 
+	stats.frame_slots = frame_slots;
 	for (uint8_t link = 0; link < RADIO_LINKS; link++) {
 		links[link].slot = XBX_SLOT_NONE;
 		stats.link[link].slot = XBX_SLOT_NONE;
@@ -317,8 +366,11 @@ void radio_link_lost(uint8_t link)
 	if (links[link].slot != XBX_SLOT_NONE) {
 		slots_used &= ~BIT(links[link].slot);
 		links[link].slot = XBX_SLOT_NONE;
+		frame_shrink();
 	}
 	stats.link[link].slot = XBX_SLOT_NONE;
+	links[link].have_seq = false;
+	links[link].full = false;
 	irq_unlock(key);
 }
 
