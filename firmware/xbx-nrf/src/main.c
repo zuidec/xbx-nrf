@@ -33,6 +33,7 @@
 #include "hid_pad.h"
 #include "hid_pid.h"
 #include "input.h"
+#include "pair.h"
 #include "xinput_wired.h"
 #include "protocol.h"
 #include "usb.h"
@@ -465,12 +466,24 @@ static void wired_update(void)
 }
 
 #if !defined(CONFIG_XBX_FAKE_INPUT)
-/* show heavy/light rumble on the LEDs; only touches the PWM on a change */
+/*
+ * show heavy/light rumble on the LEDs; only touches the PWM on a change. The
+ * heavy LED is the pairing indicator while pairing.
+ */
 static void rumble_leds_update(void)
 {
 	static uint8_t shown[2];
+	static bool was_pairing;
 	uint8_t heavy, light;
 
+	if (pair_active()) {
+		was_pairing = true;
+		return;
+	}
+	if (was_pairing) {
+		was_pairing = false;
+		shown[0] = shown[1] = 0xFF; /* force a refresh */
+	}
 	rumble_get(&heavy, &light);
 	if (heavy != shown[0] || light != shown[1]) {
 		input_set_rumble(heavy, light);
@@ -505,6 +518,7 @@ static void tx_thread(void *p1, void *p2, void *p3)
 		ms += elapsed_ms;
 
 		wired_update();
+		pair_tick(elapsed_ms);
 
 		/* fires once per outage */
 		atomic_val_t age = atomic_add(&ack_age_ms, elapsed_ms);
@@ -611,6 +625,13 @@ int main(void)
 #else
 	usb_mode_init(input_held_at_boot());
 #endif
+	/* pairing storage comes with the exchange: unpaired for now */
+	err = pair_init(false);
+	if (err) {
+		LOG_ERR("pair init failed: %d", err);
+		return 0;
+	}
+
 	err = hid_pad_init();
 	if (err) {
 		LOG_ERR("HID init failed: %d", err);

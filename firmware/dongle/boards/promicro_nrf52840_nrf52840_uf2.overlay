@@ -6,6 +6,11 @@
  */
 
 / {
+	/* pairing indicator: the on-board LED (P0.15); no button, pairs when unpaired */
+	aliases {
+		pair-led = &led0;
+	};
+
 	zephyr,user {
 		/* scope timing pin: pulses on every received report */
 		timing-gpios = <&gpio0 17 GPIO_ACTIVE_HIGH>;

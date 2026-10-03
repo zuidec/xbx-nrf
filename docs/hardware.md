@@ -116,7 +116,7 @@ Runs from VDDH (USB), GPIOs at 3.0 V (set by Zephyr's board code).
 | Signal | Pin | Notes |
 |---|---|---|
 | MODE_SW | P0.29 (edge pad) | Add a switch to GND: **closed = XInput, open = HID**; internal pull-up |
-| PAIR_SW | P1.06 | On-board SW1 |
+| PAIR_SW | P1.06 | On-board SW1: press = pairing mode |
 | LED (green) | P0.06 | On-board LED1, active low |
-| RGB LED | P0.08 (R), P1.09 (G), P0.12 (B) | On-board LED2, active low |
+| RGB LED | P0.08 (R), P1.09 (G), P0.12 (B) | On-board LED2, active low; blue = pairing indicator |
 | Reset | P0.18 | On-board side button (also enters the USB bootloader) |

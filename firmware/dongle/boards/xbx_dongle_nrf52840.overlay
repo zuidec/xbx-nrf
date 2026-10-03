@@ -7,6 +7,11 @@
 #include <../boards/common/usb/cdc_acm_serial.dtsi>
 
 / {
+	aliases {
+		pair-sw = &pair_sw;
+		pair-led = &pair_led;
+	};
+
 	zephyr,user {
 		/* scope timing pin (TP4): pulses on every received report */
 		timing-gpios = <&gpio0 17 GPIO_ACTIVE_HIGH>;
