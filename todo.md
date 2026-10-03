@@ -322,7 +322,9 @@ Up to 7 paired (least recently connected replaced), 4 connected; 1 kHz for
 - [ ] USB: 4 players via the XInput mode (Xbox 360 Wireless Receiver); HID
       stays single-player.
 - [ ] Test: 2 controllers at 1 kHz (two Pro Micros + PCA10059), then 4 at 500
-      Hz (more Pro Micro clones).
+      Hz (more Pro Micro clones). Done: 2 at 1 kHz; 3 controllers (three Pro
+      Micros + PCA10059): 500/s each, slots 0–2 of 4, err within ±25 µs;
+      weakest link (−58 dBm) ~0.5 % loss. 4: one more board.
 - [ ] Tune: pairing timeout, RSSI threshold (drop timeout set: 1000 ms).
 
 ### Dongle
@@ -474,7 +476,8 @@ constants (deadzone, drift window, settle time) on the real TMR sticks.
 - [x] **M2:** dongle works as HID, then XInput ([[#Dongle]]).
 - [ ] **M2b:** pairing; 2 controllers at 1 kHz, then 4 at 500 Hz
       ([[#Pairing & multiple controllers (protocol v3)]]). Done: pairing,
-      2 at 1 kHz; 4 at 500 Hz needs more boards.
+      2 at 1 kHz, 3 at 500 Hz (2 ms frame, 0–0.5 % loss); 4 needs one
+      more board.
 - [ ] **M3:** dev board on a stock top board via J3: buttons, Guide, power
       hold/off.
 - [ ] **M4:** first custom board fits; inputs + rumble work.
