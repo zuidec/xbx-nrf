@@ -1,7 +1,7 @@
 ---
 title: Flashing & debugging the nRF52840 boards
 created: 2026-09-28
-updated: 2026-09-29
+updated: 2026-10-02
 tags:
   - xbx-nrf
   - firmware
@@ -25,7 +25,7 @@ Related: [[docs/building]], [[docs/signing]], [[todo#5. Firmware]].
 | Board | Role | Built-in programming | Board target |
 |---|---|---|---|
 | Pro Micro nRF52840 (nice!nano clone) | Controller prototype, dongle stand-in | nice!nano UF2 bootloader ✅ | `promicro_nrf52840/nrf52840/uf2` |
-| Nordic nRF52840 Dongle (PCA10059) | Dongle (off-the-shelf option) | Nordic USB DFU bootloader | `nrf52840dongle/nrf52840` |
+| Nordic nRF52840 Dongle (PCA10059) | Dongle (off-the-shelf option) | Nordic USB DFU bootloader ✅ | `nrf52840dongle/nrf52840` |
 | Custom bottom board | Controller | None; SWD only | TBD |
 | Custom dongle board | Dongle | None; SWD only (J1, JST-SH) | `xbx_dongle/nrf52840` |
 
@@ -108,7 +108,7 @@ and a built-in USB-UART for logs.
 | Probe port | Pins | Connect to |
 |---|---|---|
 | **D** (debug) | SC (SWCLK), GND, SD (SWDIO) | Target SWD pads |
-| **U** (UART) | TX, GND, RX | Target UART (TX ↔ RX crossed) |
+| **U** (UART) | TX, GND, RX | Target UART (TX ↔ RX crossed); custom dongle: the probe's cable plugs straight into J3 |
 
 3.3 V I/O, no sense pin, no reset wire (reset over SWD works).
 
@@ -183,7 +183,7 @@ app after the SoftDevice area it expects.
 > On nice!nano-style boards P0.13 switches the `VCC` pin (low = on). Drive it
 > low when powering sticks or sensors from `VCC`, or use `3.3V` instead.
 
-## nRF52840 Dongle (PCA10059) — USB DFU (no probe)
+## nRF52840 Dongle (PCA10059) — USB DFU (no probe) ✅
 
 1. Press the sideways **RESET** button (red LED pulses).
 2. Find the bootloader's port (`ls -l /dev/serial/by-id/`, "Open DFU
