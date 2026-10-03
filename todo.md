@@ -261,7 +261,7 @@ Code: `firmware/{xbx-nrf,dongle}/src/main.c`,
       woken thread: today's period jitter is up to ~10 µs, which eats TDMA slot
       margin.
 - [ ] Busy Wi-Fi, distance, other channels (`XBX_RF_CHANNELS`).
-- [ ] Tune retransmit delay/count (min delay 435 µs → one retry per 1 ms).
+- [x] Tune retransmit delay/count. Not needed: no retries with time slots.
 - [ ] Dongle timing pin once usable PCA10059 pads are known.
 - [x] Packet format v1 ([[docs/protocol#Radio (controller ↔ dongle)]]).
 - [ ] Channel hopping (per-dongle sequence, driven by the TDMA schedule).
@@ -319,8 +319,8 @@ Up to 7 paired (least recently connected replaced), 4 connected; 1 kHz for
       Default build: both at 1 kHz.
 - [ ] TDMA: margin check. Measured transaction
       333–345 µs → ~155 µs margin in a 500 µs slot.
-- [ ] USB: 4 players via the XInput mode (Xbox 360 Wireless Receiver); HID
-      stays single-player.
+- [x] USB: 4 players via the XInput mode (Xbox 360 Wireless Receiver); HID
+      stays single-player. Tested with 3 controllers.
 - [ ] Test: 2 controllers at 1 kHz (two Pro Micros + PCA10059), then 4 at 500
       Hz (more Pro Micro clones). Done: 2 at 1 kHz; 3 controllers (three Pro
       Micros + PCA10059): 500/s each, slots 0–2 of 4, err within ±25 µs;
