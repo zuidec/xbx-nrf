@@ -279,9 +279,14 @@ Up to 7 paired (least recently connected replaced), 4 connected; 1 kHz for
 - [ ] Pairing mode (Pair hold / dongle button / unpaired at plug-in), channel
       scan, PAIR_REQ/OFFER/CONFIRM/DONE (repeat until answered), RSSI check.
 - [ ] Channel choice at first use (quietest of the candidate list).
-- [ ] TDMA: dongle frame + slots, timing correction in ACKs, controller TIMER3
-      trim; 1 ms / 2 ms frame switching. Measured transaction 333–345 µs →
-      ~155 µs margin in a 500 µs slot.
+- [x] Step 2, TDMA (protocol v2): 1 ms dongle frame (TIMER3), 2 slots, first
+      free slot per link; timing error in ACKs, controller shifts one
+      TIMER3 period; no retries. Two Pro Micros: both 971–1001/s (was ~40
+      for the starved one), err within ±30 µs (mostly 0/±11: thread
+      jitter), weaker link (−48 dBm) loses ~1 % without retries; rumble
+      reaches the right controller.
+- [ ] TDMA: 2 ms frame switching for 3–4 controllers. Measured transaction
+      333–345 µs → ~155 µs margin in a 500 µs slot.
 - [ ] Join / full / drop handling; player number = slot.
 - [ ] USB: 4 players via the XInput mode (Xbox 360 Wireless Receiver); HID
       stays single-player.

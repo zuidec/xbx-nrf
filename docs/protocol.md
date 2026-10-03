@@ -22,7 +22,7 @@ itself ([[#Controller wired USB mode]]). Tasks: [[todo#Link]],
 
 ## Radio (controller ↔ dongle)
 
-Source of truth: `firmware/common/include/protocol.h`. **Version 1**
+Source of truth: `firmware/common/include/protocol.h`. **Version 2**
 (`XBX_PROTOCOL_VERSION`); both boards must run the same version.
 
 ### Link
@@ -36,7 +36,7 @@ Source of truth: `firmware/common/include/protocol.h`. **Version 1**
 | TX power | +8 dBm, both ends (`XBX_TX_POWER_DBM`) |
 | Roles | Controller = PTX, dongle = PRX |
 | Report rate | 1000 Hz from hardware TIMER3 (`XBX_REPORT_PERIOD_US`) |
-| Retries | 1, 450 µs apart (ESB minimum 435 µs); stale reports are flushed, never resent late |
+| Retries | None: a retry (ESB minimum 435 µs later) would land in the next controller's slot. Stale reports are flushed, never resent late |
 | Max payload | 32 bytes (`CONFIG_ESB_MAX_PAYLOAD_LENGTH`) |
 
 Every 1 ms the controller sends an **input report**. The dongle's ESB ACK
@@ -44,10 +44,10 @@ carries the **output report** queued for that controller (one is always kept
 queued per pipe), so rumble/LED data costs no extra transmissions. All fields
 are little-endian.
 
-Controllers aren't time-synchronised yet, so two or more on one dongle collide
-now and then ([[#Time slots (TDMA)]] fixes that). The address change from pipe
-0 to pipes 1–4 needs both ends reflashed; the version stays 1 until the report
-format changes.
+Each controller keeps to its own time slot, steered by the timing error in
+the output report ([[#Time slots (TDMA)]]). Unsynchronised controllers don't
+share a channel: their 1 ms periods don't drift apart, so one that starts
+overlapping another stays starved (measured: ~40 of 1000 reports/s).
 
 ### Input report (controller → dongle), 23 bytes
 
@@ -80,7 +80,7 @@ through:
 | 6 | LS (stick click) | 14 | X |
 | 7 | RS | 15 | Y |
 
-### Output report (dongle → controller, ACK payload), 8 bytes
+### Output report (dongle → controller, ACK payload), 14 bytes
 
 | Offset | Size | Field | Notes |
 |---|---|---|---|
@@ -89,6 +89,10 @@ through:
 | 2 | 4 | `rumble[4]` | Heavy, light, LT, RT; 0…255 |
 | 6 | 1 | `led` | Guide LED brightness, 0…255 |
 | 7 | 1 | `flags` | Reserved, 0 |
+| 8 | 1 | `slot` | Time slot, 0…; `0xFF` = none yet |
+| 9 | 1 | `slots` | Slots per frame; frame = `slots` × 500 µs |
+| 10 | 2 | `sync_seq` | Input report `seq` the timing was measured on |
+| 12 | 2 | `sync_err_us` | Its arrival minus the slot start, signed µs (> 0 = late) |
 
 ### Changing the protocol
 - Bump `XBX_PROTOCOL_VERSION` and the `_Static_assert` sizes; update this page.
@@ -101,6 +105,7 @@ through:
 |---|---|
 | 0 | Initial: 22-byte input report, 8-bit `seq` |
 | 1 | 16-bit `seq` (23-byte input report) |
+| 2 | Time slots: `slot`, `slots`, `sync_seq`, `sync_err_us` (14-byte output report); no retries |
 
 ## Pairing & multiple controllers (planned, protocol v2)
 
@@ -238,9 +243,14 @@ repeating **frame** and gives each connected controller its own **slot**:
 | 3–4 | 2 ms | 4 × 500 µs | 500 Hz |
 
 - A transaction (report + ACK) takes ~200–300 µs, so 500 µs slots leave margin.
-- **Sync:** each ACK carries a timing correction (report arrival vs. slot
-  start, measured by the dongle). The controller trims its TIMER3 period.
-  Crystal drift is ~20 ns/ms, so per-frame correction is plenty.
+- **Slot:** the dongle gives a controller the first free slot with its first
+  report and frees it on link loss.
+- **Sync:** the dongle's frame runs on TIMER3. It times each report's arrival
+  against the slot start and returns the error (`sync_seq`, `sync_err_us`).
+  The controller makes its next TIMER3 period 1000 µs − error, then 1000 µs
+  again. ACK payloads lag a report or two, so it ignores measurements of
+  reports sent before its last shift (no double correction). Crystal drift is
+  ~20 ns/ms, so this also keeps it in place.
 - **No retries** within a frame: a lost report is replaced by the next one.
 - **Frame changes** (2nd → 3rd controller and back): the dongle announces the
   new frame length and each slot in ACK payloads, effective from a given frame

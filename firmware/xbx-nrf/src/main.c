@@ -3,7 +3,9 @@
  *
  * Sends an input report every 1 ms over ESB (PTX) and prints link statistics
  * once per second. The dongle replies with an output report in the ACK
- * payload. Input: the breadboard pins (input.c), or a test pattern with
+ * payload, which also says how far the report missed this controller's time
+ * slot; the report timer shifts by that much (docs/protocol.md, "Time slots
+ * (TDMA)"). Input: the breadboard pins (input.c), or a test pattern with
  * CONFIG_XBX_FAKE_INPUT. The radio pipe (player number) is fixed by
  * CONFIG_XBX_TEST_PIPE until pairing exists.
  *
@@ -34,9 +36,14 @@
 
 LOG_MODULE_REGISTER(ctrl, LOG_LEVEL_INF);
 
-/* One retry fits in a 1 ms frame (ESB minimum retransmit delay is 435 us). */
+/* No retries: a retry (ESB minimum delay 435 us) would land in the next
+ * controller's 500 us slot. A lost report is replaced by the next one.
+ */
 #define RETRANSMIT_DELAY_US 450
-#define RETRANSMIT_COUNT    1
+#define RETRANSMIT_COUNT    0
+
+/* Largest timer shift per correction: keeps every period >= 500 us */
+#define SYNC_MAX_SHIFT_US (XBX_REPORT_PERIOD_US / 2 - 1)
 
 /* Report timing comes from a hardware timer: the 32768 Hz system tick can't do an
  * exact 1 ms (k_timer rounds to 33 ticks = 1.007 ms, ~993 reports/s).
@@ -63,6 +70,20 @@ struct link_stats {
 
 static struct link_stats stats;
 static atomic_t in_flight;
+static volatile uint16_t next_seq; /* seq of the next report sent (tx thread) */
+
+/*
+ * Slot sync: a correction from an ACK is applied by the next timer tick (one
+ * shorter or longer period). Measurements of reports sent before that shift
+ * are stale and ignored: ACK payloads lag a report or two behind.
+ */
+static struct k_spinlock sync_lock;
+static bool sync_pending;
+static int32_t sync_shift_us;      /* the pending shift: next period = 1000 - err */
+static bool sync_restore;          /* the last period was shifted: restore 1 ms */
+static bool sync_valid;            /* sync_after_seq is set */
+static uint16_t sync_after_seq;    /* last report sent at the old timing */
+static uint32_t sync_corrections;  /* stats */
 static struct xbx_output_report last_output;
 static struct xbx_input_report last_input; /* for the stats line */
 static bool wired;
@@ -82,6 +103,23 @@ static void timing_pin_set(int value)
 #if HAS_TIMING_PIN
 	gpio_pin_set_dt(&timing_pin, value);
 #endif
+}
+
+/* Queue a timer shift from the dongle's measurement, unless it's stale. */
+static void sync_from_ack(const struct xbx_output_report *out)
+{
+	k_spinlock_key_t key;
+
+	if (out->slot == XBX_SLOT_NONE || out->sync_err_us == 0) {
+		return;
+	}
+	key = k_spin_lock(&sync_lock);
+	if (!sync_pending &&
+	    (!sync_valid || (int16_t)(out->sync_seq - sync_after_seq) > 0)) {
+		sync_shift_us = CLAMP(out->sync_err_us, -SYNC_MAX_SHIFT_US, SYNC_MAX_SHIFT_US);
+		sync_pending = true;
+	}
+	k_spin_unlock(&sync_lock, key);
 }
 
 static void radio_event_handler(struct esb_evt const *event)
@@ -109,6 +147,7 @@ static void radio_event_handler(struct esb_evt const *event)
 				memcpy(&last_output, rx.data, sizeof(last_output));
 				stats.acks_with_payload++;
 				atomic_set(&ack_age_ms, 0);
+				sync_from_ack(&last_output);
 			}
 		}
 		break;
@@ -240,10 +279,42 @@ static void fill_fake_input(struct xbx_input_report *report, uint32_t tick)
 }
 #endif
 
+static void report_tick(const struct device *dev, void *user_data);
+
+static void report_period_set(const struct device *dev, uint32_t us)
+{
+	struct counter_top_cfg top = {
+		.ticks = counter_us_to_ticks(dev, us),
+		.callback = report_tick,
+		.flags = COUNTER_TOP_CFG_DONT_RESET,
+	};
+
+	/* just after a wrap: the counter is far below any new top */
+	counter_set_top_value(dev, &top);
+}
+
+/*
+ * Timer ISR, once per period. Applies a pending slot correction to the period
+ * that starts now (late = shorter), and restores 1 ms after a shifted one. The
+ * report sent for this tick still has the old timing.
+ */
 static void report_tick(const struct device *dev, void *user_data)
 {
-	ARG_UNUSED(dev);
+	k_spinlock_key_t key = k_spin_lock(&sync_lock);
+
 	ARG_UNUSED(user_data);
+	if (sync_pending) {
+		report_period_set(dev, XBX_REPORT_PERIOD_US - sync_shift_us);
+		sync_after_seq = next_seq;
+		sync_valid = true;
+		sync_pending = false;
+		sync_restore = true;
+		sync_corrections++;
+	} else if (sync_restore) {
+		report_period_set(dev, XBX_REPORT_PERIOD_US);
+		sync_restore = false;
+	}
+	k_spin_unlock(&sync_lock, key);
 	k_sem_give(&tick_sem);
 }
 
@@ -359,7 +430,6 @@ static void tx_thread(void *p1, void *p2, void *p3)
 	};
 	struct xbx_input_report *report = (struct xbx_input_report *)tx.data;
 	uint32_t tick = 0;
-	uint16_t seq = 0; /* only advances when a report is actually sent */
 
 	memset(report, 0, sizeof(*report));
 	report->type = XBX_MSG_INPUT;
@@ -405,7 +475,7 @@ static void tx_thread(void *p1, void *p2, void *p3)
 		/* drop anything stale (e.g. a report left behind after TX_FAILED) */
 		esb_flush_tx();
 
-		report->seq = seq;
+		report->seq = next_seq; /* only advances when a report is actually sent */
 		report->timestamp_us = k_cyc_to_us_floor32(k_cycle_get_32());
 		last_input = *report;
 
@@ -413,7 +483,7 @@ static void tx_thread(void *p1, void *p2, void *p3)
 		timing_pin_set(1);
 		if (esb_write_payload(&tx) == 0) {
 			stats.sent++;
-			seq++;
+			next_seq++;
 		} else {
 			timing_pin_set(0);
 			atomic_set(&in_flight, 0);
@@ -426,6 +496,7 @@ K_THREAD_DEFINE(tx_tid, 1024, tx_thread, NULL, NULL, NULL, K_PRIO_COOP(2), 0, 0)
 int main(void)
 {
 	struct link_stats prev = {0};
+	uint32_t prev_corrections = 0;
 	int err;
 
 	LOG_INF("xbx-nrf controller v%s (%s), protocol v%d, channel %d, pipe %d, tx %d dBm%s",
@@ -488,13 +559,18 @@ int main(void)
 		uint32_t attempts = now.attempts - prev.attempts;
 		uint32_t done = ok + failed;
 
+		uint32_t corrections = sync_corrections;
+
 		LOG_INF("sent %u/s  ok %u  failed %u  skipped %u  avg attempts %u.%02u  acks %u  "
-			"rumble[%u %u %u %u] led %u",
+			"slot %d err %d us  sync %u/s  rumble[%u %u %u %u] led %u",
 			sent, ok, failed, now.skipped - prev.skipped,
 			done ? attempts / done : 0, done ? (attempts * 100 / done) % 100 : 0,
 			now.acks_with_payload - prev.acks_with_payload,
+			last_output.slot == XBX_SLOT_NONE ? -1 : last_output.slot,
+			last_output.sync_err_us, corrections - prev_corrections,
 			last_output.rumble[0], last_output.rumble[1], last_output.rumble[2],
 			last_output.rumble[3], last_output.led);
+		prev_corrections = corrections;
 		uint8_t heavy, light;
 
 		rumble_get(&heavy, &light);

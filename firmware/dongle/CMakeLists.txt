@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.20.0)
 
 # Board-independent USB functions (app.overlay is ignored when board overlays exist)
 list(APPEND EXTRA_DTC_OVERLAY_FILE ${CMAKE_CURRENT_LIST_DIR}/usb.overlay)
+list(APPEND EXTRA_DTC_OVERLAY_FILE ${CMAKE_CURRENT_LIST_DIR}/frame-timer.overlay)
 
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(xbx_dongle)

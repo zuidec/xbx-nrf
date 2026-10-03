@@ -179,6 +179,7 @@ static void link_lost(uint8_t link)
 	}
 	k_spin_unlock(&host_lock, key);
 	radio_set_output(link, off, 0);
+	radio_link_lost(link);
 
 	LOG_INF("player %u: link lost, %s", link + 1,
 		xinput_mode ? "slot disconnected" : "rumble off");
