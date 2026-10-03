@@ -274,6 +274,12 @@ Up to 7 paired (least recently connected replaced), 4 connected; 1 kHz for
       reports/s get through (avg attempts 1.97), its slot flaps. The phase
       doesn't drift (crystals), so it stays starved; the retry collides too.
       Rumble routing: test after TDMA.
+- [x] Step 4.1: pairing mode and storage. Dongle: random address (base 1 +
+      7 prefixes, hardware RNG) created once, `pair/addr`; pair button
+      (`pair-sw`), blue LED (`pair-led`) blinks. Controller: Pair = P1.01
+      to GND held 3 s or at power-on, on-board LED blinks. Both enter
+      pairing at boot while unpaired; 30 s timeout. No radio change yet.
+      Tested: address persists, LEDs/buttons/pin enter pairing.
 - [ ] Per-dongle random address; pipe 0 = pairing, pipes 1–7 = controllers;
       pairing table in flash (settings).
 - [ ] Pairing mode (Pair hold / dongle button / unpaired at plug-in), channel

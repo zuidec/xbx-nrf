@@ -1,0 +1,21 @@
+/*
+ * Peripherals the dongle app needs on every board, added via
+ * EXTRA_DTC_OVERLAY_FILE in CMakeLists.txt.
+ */
+
+/ {
+	chosen {
+		/* the plain RNG: enough for the pairing address, much smaller than CryptoCell */
+		zephyr,entropy = &rng;
+	};
+};
+
+/* time slot frame clock (radio.c); TIMER2 is used by ESB */
+&timer3 {
+	status = "okay";
+};
+
+/* unused (the RNG above replaces it); disabled so its driver isn't built */
+&cryptocell {
+	status = "disabled";
+};

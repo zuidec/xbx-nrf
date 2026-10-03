@@ -18,6 +18,7 @@
 #include "protocol.h"
 #include "bridge.h"
 #include "hid_pad.h"
+#include "pairing.h"
 #include "radio.h"
 #include "usb.h"
 
@@ -38,6 +39,12 @@ int main(void)
 			LOG_ERR("HID init failed: %d", err);
 			return 0;
 		}
+	}
+
+	err = pairing_init();
+	if (err) {
+		LOG_ERR("pairing init failed: %d", err);
+		return 0;
 	}
 
 	err = usb_start();

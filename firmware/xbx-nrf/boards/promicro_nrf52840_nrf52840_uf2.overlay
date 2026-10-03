@@ -6,7 +6,9 @@
  * on-board LED (P0.15), light = P0.31 → resistor → LED → GND.
  *
  * All 18 header GPIOs are used, so the board's I2C and UART pins are freed
- * (the console is USB CDC ACM) and the scope timing pin is gone.
+ * (the console is USB CDC ACM) and the scope timing pin is gone. Pair: the
+ * sideways pin P1.01 to GND (also on the fake-input board); the on-board LED
+ * blinks while pairing.
  */
 
 #include <zephyr/dt-bindings/adc/nrf-saadc.h>
@@ -27,6 +29,7 @@
 		dpad-down-gpios = BTN(1, 6);
 		dpad-left-gpios = BTN(0, 9);
 		dpad-right-gpios = BTN(0, 10);
+		pair-gpios = BTN(1, 1);
 		ls-gpios = BTN(0, 17);
 		lt-gpios = BTN(1, 0);
 		rt-gpios = BTN(0, 11);
