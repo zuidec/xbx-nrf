@@ -1,0 +1,8 @@
+/*
+ * Time slot frame clock (radio.c), added to every build via
+ * EXTRA_DTC_OVERLAY_FILE in CMakeLists.txt. TIMER2 is used by ESB.
+ */
+
+&timer3 {
+	status = "okay";
+};

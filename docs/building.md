@@ -84,6 +84,8 @@ cd ~/Projects/xbx-nrf/firmware
   | `nrf52840dongle/nrf52840` | DFU bootloader's serial port (press RESET first) |
   | `*/uf2` (Pro Micro) | UF2 drive: mount point, or block device (`/dev/sdX`, mounted for you) |
   | Others (custom boards) | `swd`: `west flash` with the board's runner |
+- `-- -DCONFIG_…` options stay in that build folder's cache until a pristine
+  build (`-p`).
 - `BUILD_DIR=<dir>` builds into `<app>/<dir>/` instead, for a second
   configuration next to the main one. E.g. the fake-input controller on pipe 2:
   ```sh

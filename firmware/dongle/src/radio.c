@@ -2,9 +2,16 @@
  * Dongle radio: ESB receiver (PRX), one pipe per controller. Counts lost
  * reports from sequence gaps and keeps one output report queued per pipe as
  * the ACK payload for that controller's next packet.
+ *
+ * Time slots: a hardware timer runs the frame (RADIO_SLOTS slots of
+ * XBX_SLOT_US). A controller gets the first free slot with its first report;
+ * every report's arrival is timed against that slot's start, and the error
+ * goes back in the ACK payload so the controller can shift its report timer
+ * (docs/protocol.md, "Time slots (TDMA)").
  */
 
 #include <zephyr/kernel.h>
+#include <zephyr/drivers/counter.h>
 #include <zephyr/drivers/gpio.h>
 #include <esb.h>
 
@@ -20,6 +27,10 @@ static const struct gpio_dt_spec timing_pin = GPIO_DT_SPEC_GET(ZEPHYR_USER, timi
 #define HAS_TIMING_PIN 0
 #endif
 
+#define FRAME_US (RADIO_SLOTS * XBX_SLOT_US)
+
+static const struct device *const frame_timer = DEVICE_DT_GET(DT_NODELABEL(timer3));
+
 /* controller pipes 1..RADIO_LINKS */
 #define LINK_PIPE(link) ((link) + 1)
 #define PIPE_LINK(pipe) ((pipe) - 1)
@@ -32,10 +43,14 @@ struct link {
 	uint8_t output_seq;
 	uint8_t out_rumble[4];
 	uint8_t out_led;
+	uint8_t slot;        /* XBX_SLOT_NONE until assigned */
+	uint16_t sync_seq;   /* last measured report */
+	int16_t sync_err_us;
 };
 
 static struct radio_stats stats;
 static struct link links[RADIO_LINKS];
+static uint8_t slots_used; /* bit n = slot n taken */
 
 /* links with a report not yet returned by radio_wait_input() */
 static atomic_t fresh;
@@ -69,12 +84,49 @@ static void queue_ack_payload(uint8_t link)
 	out->seq = l->output_seq++;
 	memcpy(out->rumble, l->out_rumble, sizeof(out->rumble));
 	out->led = l->out_led;
+	out->slot = l->slot;
+	out->slots = RADIO_SLOTS;
+	out->sync_seq = l->sync_seq;
+	out->sync_err_us = l->sync_err_us;
 
 	esb_write_payload(&ack);
 }
 
-/* Returns true if the report was valid. */
-static bool handle_input(uint8_t link, const struct esb_payload *rx)
+/* Current position in the frame, in µs. */
+static int32_t frame_pos_us(void)
+{
+	uint32_t ticks = 0;
+
+	counter_get_value(frame_timer, &ticks);
+	return (int32_t)counter_ticks_to_us(frame_timer, ticks);
+}
+
+/* Give the link the first free slot, if it has none. */
+static void slot_assign(struct link *l)
+{
+	if (l->slot != XBX_SLOT_NONE) {
+		return;
+	}
+	for (uint8_t s = 0; s < RADIO_SLOTS; s++) {
+		if (!(slots_used & BIT(s))) {
+			slots_used |= BIT(s);
+			l->slot = s;
+			return;
+		}
+	}
+}
+
+/* Arrival minus the slot start, wrapped to -FRAME_US/2..FRAME_US/2 - 1. */
+static int16_t slot_error_us(uint8_t slot, int32_t pos_us)
+{
+	int32_t err = pos_us - slot * XBX_SLOT_US;
+
+	err = ((err % FRAME_US) + FRAME_US + FRAME_US / 2) % FRAME_US - FRAME_US / 2;
+	return (int16_t)err;
+}
+
+/* Returns true if the report was valid. pos_us: frame position at arrival. */
+static bool handle_input(uint8_t link, const struct esb_payload *rx, int32_t pos_us)
 {
 	const struct xbx_input_report *in = (const struct xbx_input_report *)rx->data;
 	struct radio_link_stats *ls = &stats.link[link];
@@ -98,6 +150,14 @@ static bool handle_input(uint8_t link, const struct esb_payload *rx)
 
 	ls->received++;
 	ls->rssi_sum += rx->rssi;
+
+	slot_assign(l);
+	if (l->slot != XBX_SLOT_NONE) {
+		l->sync_seq = in->seq;
+		l->sync_err_us = slot_error_us(l->slot, pos_us);
+	}
+	ls->slot = l->slot;
+	ls->sync_err_us = l->sync_err_us;
 	memcpy(&l->last_input, in, sizeof(l->last_input));
 	atomic_or(&fresh, BIT(link));
 	k_sem_give(&input_sem);
@@ -107,11 +167,14 @@ static bool handle_input(uint8_t link, const struct esb_payload *rx)
 static void radio_event_handler(struct esb_evt const *event)
 {
 	struct esb_payload rx;
+	int32_t pos_us;
 
 	if (event->evt_id != ESB_EVENT_RX_RECEIVED) {
 		return;
 	}
 
+	/* first thing, so handler latency adds as little as possible */
+	pos_us = frame_pos_us();
 	timing_pin_set(1);
 	while (esb_read_rx_payload(&rx) == 0) {
 		if (!(BIT(rx.pipe) & CTRL_PIPE_MASK)) {
@@ -120,7 +183,7 @@ static void radio_event_handler(struct esb_evt const *event)
 		}
 		uint8_t link = PIPE_LINK(rx.pipe);
 
-		if (handle_input(link, &rx)) {
+		if (handle_input(link, &rx, pos_us)) {
 			queue_ack_payload(link);
 		}
 	}
@@ -169,6 +232,23 @@ static int radio_init(void)
 	return esb_set_rf_channel(XBX_RF_CHANNEL);
 }
 
+static int frame_timer_start(void)
+{
+	struct counter_top_cfg top = {
+		.ticks = counter_us_to_ticks(frame_timer, FRAME_US),
+	};
+	int err;
+
+	if (!device_is_ready(frame_timer)) {
+		return -ENODEV;
+	}
+	err = counter_set_top_value(frame_timer, &top);
+	if (err) {
+		return err;
+	}
+	return counter_start(frame_timer);
+}
+
 int radio_start(void)
 {
 	int err;
@@ -179,12 +259,19 @@ int radio_start(void)
 	}
 #endif
 
+	err = frame_timer_start();
+	if (err) {
+		return err;
+	}
+
 	err = radio_init();
 	if (err) {
 		return err;
 	}
 
 	for (uint8_t link = 0; link < RADIO_LINKS; link++) {
+		links[link].slot = XBX_SLOT_NONE;
+		stats.link[link].slot = XBX_SLOT_NONE;
 		queue_ack_payload(link);
 	}
 
@@ -217,6 +304,22 @@ uint32_t radio_wait_input(k_timeout_t timeout)
 		return 0;
 	}
 	return (uint32_t)atomic_clear(&fresh);
+}
+
+void radio_link_lost(uint8_t link)
+{
+	unsigned int key;
+
+	if (link >= RADIO_LINKS) {
+		return;
+	}
+	key = irq_lock();
+	if (links[link].slot != XBX_SLOT_NONE) {
+		slots_used &= ~BIT(links[link].slot);
+		links[link].slot = XBX_SLOT_NONE;
+	}
+	stats.link[link].slot = XBX_SLOT_NONE;
+	irq_unlock(key);
 }
 
 void radio_set_output(uint8_t link, const uint8_t rumble[4], uint8_t led)
