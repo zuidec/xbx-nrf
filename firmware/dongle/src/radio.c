@@ -21,6 +21,7 @@
 
 #include <string.h>
 
+#include "pairing.h"
 #include "radio.h"
 
 LOG_MODULE_REGISTER(radio, LOG_LEVEL_INF);
@@ -55,6 +56,8 @@ struct link {
 
 static struct radio_stats stats;
 static struct link links[RADIO_LINKS];
+static bool running;
+static bool pipe0_open; /* pairing address: only while pairing */
 static uint8_t slots_used; /* bit n = slot n taken */
 static uint8_t frame_slots = RADIO_SLOTS_FAST;
 
@@ -207,8 +210,11 @@ static bool handle_input(uint8_t link, const struct esb_payload *rx, int32_t pos
 	ls->slot = l->slot;
 	ls->sync_err_us = l->sync_err_us;
 	memcpy(&l->last_input, in, sizeof(l->last_input));
-	atomic_or(&fresh, BIT(link));
-	k_sem_give(&input_sem);
+	/* connected = holds a time slot: the bridge only hears those */
+	if (l->slot != XBX_SLOT_NONE) {
+		atomic_or(&fresh, BIT(link));
+		k_sem_give(&input_sem);
+	}
 	return true;
 }
 
@@ -225,8 +231,22 @@ static void radio_event_handler(struct esb_evt const *event)
 	pos_us = frame_pos_us();
 	timing_pin_set(1);
 	while (esb_read_rx_payload(&rx) == 0) {
+		if (rx.pipe == 0) {
+			if (rx.length == sizeof(struct xbx_pair_req) &&
+			    rx.data[0] == XBX_MSG_PAIR_REQ) {
+				pairing_on_request((const struct xbx_pair_req *)rx.data, rx.rssi);
+			} else {
+				stats.bad++;
+			}
+			continue;
+		}
 		if (!(BIT(rx.pipe) & CTRL_PIPE_MASK)) {
 			stats.bad++;
+			continue;
+		}
+		if (rx.length == sizeof(struct xbx_pair_confirm) &&
+		    rx.data[0] == XBX_MSG_PAIR_CONFIRM) {
+			pairing_on_confirm(rx.pipe, (const struct xbx_pair_confirm *)rx.data);
 			continue;
 		}
 		uint8_t link = PIPE_LINK(rx.pipe);
@@ -238,15 +258,22 @@ static void radio_event_handler(struct esb_evt const *event)
 	timing_pin_set(0);
 }
 
+static uint8_t pipes_enabled(void)
+{
+	return CTRL_PIPE_MASK | (pipe0_open ? BIT(0) : 0);
+}
+
 static int radio_init(void)
 {
-	static const uint8_t base_addr_0[4] = XBX_BASE_ADDR_0;
-	static const uint8_t base_addr_1[4] = XBX_BASE_ADDR_1;
-	static const uint8_t prefixes[] = XBX_ADDR_PREFIXES;
+	static const uint8_t pair_addr[4] = XBX_PAIR_ADDR;
+	const struct pairing_addr *own = pairing_addr();
+	uint8_t prefixes[RADIO_LINKS + 1];
 	struct esb_config config = ESB_DEFAULT_CONFIG;
 	int err;
 
-	BUILD_ASSERT(ARRAY_SIZE(prefixes) == RADIO_LINKS + 1, "one prefix per pipe 0..RADIO_LINKS");
+	BUILD_ASSERT(RADIO_LINKS == PAIRING_PIPES, "one pipe per pairing table entry");
+	prefixes[0] = XBX_PAIR_PREFIX;
+	memcpy(&prefixes[1], own->prefixes, RADIO_LINKS);
 
 	config.mode = ESB_MODE_PRX;
 	config.protocol = ESB_PROTOCOL_ESB_DPL;
@@ -260,11 +287,11 @@ static int radio_init(void)
 	if (err) {
 		return err;
 	}
-	err = esb_set_base_address_0(base_addr_0);
+	err = esb_set_base_address_0(pair_addr);
 	if (err) {
 		return err;
 	}
-	err = esb_set_base_address_1(base_addr_1);
+	err = esb_set_base_address_1(own->base_addr1);
 	if (err) {
 		return err;
 	}
@@ -272,8 +299,7 @@ static int radio_init(void)
 	if (err) {
 		return err;
 	}
-	/* pipe 0 stays closed until pairing exists */
-	err = esb_enable_pipes(CTRL_PIPE_MASK);
+	err = esb_enable_pipes(pipes_enabled());
 	if (err) {
 		return err;
 	}
@@ -324,7 +350,67 @@ int radio_start(void)
 		queue_ack_payload(link);
 	}
 
-	return esb_start_rx();
+	err = esb_start_rx();
+	running = (err == 0);
+	return err;
+}
+
+/* Address changes need the receiver idle: stop, change, restart. */
+static void radio_reconfigure(void (*change)(void))
+{
+	esb_stop_rx();
+	change();
+	esb_start_rx();
+}
+
+static void enable_change(void)
+{
+	esb_enable_pipes(pipes_enabled());
+}
+
+void radio_pairing_open(bool open)
+{
+	if (open == pipe0_open) {
+		return;
+	}
+	pipe0_open = open;
+	if (running) {
+		radio_reconfigure(enable_change);
+	}
+}
+
+static uint8_t prefix_pipe, prefix_value;
+
+static void prefix_change(void)
+{
+	esb_update_prefix(prefix_pipe, prefix_value);
+}
+
+void radio_set_prefix(uint8_t pipe, uint8_t prefix)
+{
+	prefix_pipe = pipe;
+	prefix_value = prefix;
+	if (running) {
+		radio_reconfigure(prefix_change);
+	}
+}
+
+void radio_queue_ack(uint8_t pipe, const void *data, size_t len)
+{
+	struct esb_payload ack = {.pipe = pipe, .length = len};
+	unsigned int key;
+
+	if (len > sizeof(ack.data)) {
+		return;
+	}
+	memcpy(ack.data, data, len);
+	key = irq_lock();
+	if (esb_tx_full()) {
+		stats.ack_queue_full++;
+	} else {
+		esb_write_payload(&ack);
+	}
+	irq_unlock(key);
 }
 
 void radio_get_stats(struct radio_stats *out)

@@ -22,7 +22,7 @@ itself ([[#Controller wired USB mode]]). Tasks: [[todo#Link]],
 
 ## Radio (controller ↔ dongle)
 
-Source of truth: `firmware/common/include/protocol.h`. **Version 2**
+Source of truth: `firmware/common/include/protocol.h`. **Version 3**
 (`XBX_PROTOCOL_VERSION`); both boards must run the same version.
 
 ### Link
@@ -32,7 +32,7 @@ Source of truth: `firmware/common/include/protocol.h`. **Version 2**
 | Protocol | Nordic ESB, dynamic payload length, selective auto-ACK |
 | Bit rate | 2 Mbps, fast ramp-up |
 | Channel | 76 (2476 MHz), fixed for now (`XBX_RF_CHANNEL`) |
-| Address | One pipe per controller: pipes 1–4 on base 1 `C2 C2 C2 C2`, prefixes `C3`–`C6`; controller pipe = player (`CONFIG_XBX_TEST_PIPE`, fixed until pairing). Pipe 0 (base 0 "XBX1", prefix `E7`) is closed, kept for pairing |
+| Address | Pipe 0: pairing address (base 0 "XBXP", prefix `E7`), open only while pairing. Pipes 1–7: one per paired controller, on the dongle's random base address 1 and prefixes ([[#Addresses and channels]]) |
 | TX power | +8 dBm, both ends (`XBX_TX_POWER_DBM`) |
 | Roles | Controller = PTX, dongle = PRX |
 | Report rate | 1000 Hz from hardware TIMER3 (`XBX_REPORT_PERIOD_US`) |
@@ -98,20 +98,21 @@ through:
 - Bump `XBX_PROTOCOL_VERSION` and the `_Static_assert` sizes; update this page.
 - Mismatched versions show up as `bad` packets on the dongle (length/type
   check).
-- Planned for v2: pairing, multiple controllers, time slots
-  ([[#Pairing & multiple controllers (planned, protocol v2)]]).
 
 | Version | Change |
 |---|---|
 | 0 | Initial: 22-byte input report, 8-bit `seq` |
 | 1 | 16-bit `seq` (23-byte input report) |
 | 2 | Time slots: `slot`, `slots`, `sync_seq`, `sync_err_us` (14-byte output report); no retries |
+| 3 | Pairing: per-dongle random addresses, pairing messages `0x10`–`0x13` |
 
-## Pairing & multiple controllers (planned, protocol v2)
+## Pairing & multiple controllers
 
-> [!warning] Draft
-> Design agreed 2026-09-29, not implemented. Numbers marked *(tune)* are
-> starting values to adjust on hardware.
+> [!note] Status
+> Designed 2026-09-29. Implemented: addresses, pairing mode, the exchange,
+> stored data, time slots, join/full/drop. Not yet: the RSSI and ambiguity
+> checks, error blinks, factory reset, channel choice. Numbers marked
+> *(tune)* are starting values to adjust on hardware.
 
 ### Requirements
 - A controller only ever talks to the dongle it's paired with.
@@ -202,7 +203,7 @@ when it receives `PAIR_DONE`. Flash writes run from a work queue, never in the
 radio interrupt.
 
 ### Pairing messages
-Payloads (little-endian, sizes to finalize):
+Payloads (little-endian; structs in `protocol.h`):
 
 | Type | Message | Pipe | Fields | Size |
 |---|---|---|---|---|
@@ -270,19 +271,24 @@ repeating **frame** and gives each connected controller its own **slot**:
   retries once a second. Later: show it, power off after a timeout.
 - **Drop:** no report from a slot for **1000 ms** → slot freed, USB reports a
   disconnect. Long enough to ride out brief radio dropouts mid-game.
-- **Player number** = pipe (XInput receiver slot), not the time slot, which
-  can change with the frame. HID mode is single-player.
+- **Player number:** the first free XInput receiver slot when the controller
+  connects (has a time slot); not the pipe or the time slot. HID mode is
+  single-player.
+- **Replaced entry:** when a full table gives a pipe to a new controller, that
+  pipe gets a new random prefix, so the old controller can't use it anymore.
+- **Sparse pairing traffic:** a pairing controller sends its messages the way
+  a joining one does (every 5–15 periods, random phase), so it doesn't starve
+  active slots.
 
-### Message changes (v2)
+### Messages
 | Type | Message | Direction |
 |---|---|---|
-| `0x01` | Input report (unchanged) | controller → dongle |
-| `0x02` | Output report + sync fields (below) | dongle → controller |
+| `0x01` | Input report | controller → dongle |
+| `0x02` | Output report, with the time slot fields | dongle → controller |
 | `0x10`–`0x13` | Pairing ([[#Pairing messages]]) | both |
 
-Output report additions (sizes to finalize): slot index, frame length, timing
-correction (signed µs), status (`ok` / `full` / `frame change at N`), and link
-quality (RSSI, for [[todo#Dynamic TX power]]).
+Later in the output report: link quality (RSSI, for
+[[todo#Dynamic TX power]]).
 
 ### Later
 - **Encryption / authentication:** ESB has none; a key from pairing (ECDH) +
@@ -460,9 +466,8 @@ Code: `xinput.c` (USB class, packets), `bridge.c` (slot 0, output).
 | Endpoints | Per interface: interrupt IN and OUT, 32 bytes, 1 ms (`xpad` requires exactly these two) |
 | Gamepad | Created by `xpad` when a slot reports a controller: "Generic X-Box pad", product ID `0x02a1` |
 
-Only slot 0 carries a controller until pairing and multiple controllers
-([[#Pairing & multiple controllers (planned, protocol v2)]]); slots 1–3 report
-none.
+Each connected controller takes the first free slot
+([[#Connecting and disconnecting]]); free slots report none.
 
 ### Input packets (dongle → PC)
 
