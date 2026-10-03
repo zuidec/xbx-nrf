@@ -1,6 +1,7 @@
 ---
 title: xbx-nrf protocols (radio + USB)
 created: 2026-09-29
+updated: 2026-10-02
 tags:
   - xbx-nrf
   - firmware
@@ -35,12 +36,12 @@ Source of truth: `firmware/common/include/protocol.h`. **Version 3**
 | Address | Pipe 0: pairing address (base 0 "XBXP", prefix `E7`), open only while pairing. Pipes 1–7: one per paired controller, on the dongle's random base address 1 and prefixes ([[#Addresses and channels]]) |
 | TX power | +8 dBm, both ends (`XBX_TX_POWER_DBM`) |
 | Roles | Controller = PTX, dongle = PRX |
-| Report rate | 1000 Hz from hardware TIMER3 (`XBX_REPORT_PERIOD_US`) |
+| Report rate | 1000 Hz (500 Hz with 3–4 controllers), from hardware TIMER3, following the dongle's frame ([[#Time slots (TDMA)]]) |
 | Retries | None: a retry (ESB minimum 435 µs later) would land in the next controller's slot. Stale reports are flushed, never resent late |
 | Max payload | 32 bytes (`CONFIG_ESB_MAX_PAYLOAD_LENGTH`) |
 
-Every 1 ms the controller sends an **input report**. The dongle's ESB ACK
-carries the **output report** queued for that controller (one is always kept
+Every report period the controller sends an **input report**. The dongle's ESB
+ACK carries the **output report** queued for that controller (one is always kept
 queued per pipe), so rumble/LED data costs no extra transmissions. All fields
 are little-endian.
 
@@ -96,8 +97,9 @@ through:
 
 ### Changing the protocol
 - Bump `XBX_PROTOCOL_VERSION` and the `_Static_assert` sizes; update this page.
-- Mismatched versions show up as `bad` packets on the dongle (length/type
-  check).
+- Mismatched versions: pairing refuses them (version check); firmware from
+  before per-dongle addresses (v3) isn't heard at all; otherwise they show up
+  as `bad` packets on the dongle (length/type check).
 
 | Version | Change |
 |---|---|
@@ -119,8 +121,9 @@ through:
 - Several dongle/controller sets work side by side.
 - One dongle: **up to 7 paired** controllers, **up to 4 connected**.
 - Report rate: **1 kHz** with 1–2 connected, **500 Hz** with 3–4.
-- Pairing needs a deliberate action on **both** sides, and doesn't interrupt
-  controllers already playing on that dongle.
+- Pairing needs a deliberate action on **both** sides (except at first use:
+  an unpaired side enters pairing at boot), and doesn't interrupt controllers
+  already playing on that dongle.
 
 ### Addresses and channels
 - ESB gives a receiver 8 **pipes**: pipe 0 on base address 0, pipes 1–7 on base
@@ -156,14 +159,16 @@ The receiver ACKs ~150 µs after a packet arrives, before firmware has read it,
 so an ACK can only carry what was queued **before** the packet came in. Every
 request is therefore repeated: the first copy gets a plain ACK ("heard you"),
 the dongle then queues its answer, and a later copy gets the answer in its ACK.
-The controller simply repeats each message every ~2 ms until the answer
-arrives.
+The controller simply repeats each message (every 5–15 periods, see
+[[#Connecting and disconnecting]]) until the answer arrives.
 
 ### Pairing mode
 | Side | Enter | While active | Timeout |
 |---|---|---|---|
 | Dongle | Press its button; automatic at plug-in if never paired | Enables pipe 0 on its own channel; time slots keep running; LED fast blink | 30 s *(tune)* |
-| Controller | Hold **Pair** ~3 s, or power on with Pair held | Drops its current link, scans; Guide LED fast blink | 30 s *(tune)* |
+| Controller | Hold **Pair** ~3 s, power on with Pair held, or boot unpaired | Drops its current link, scans; indicator fast blink (on-board LED on the Pro Micro; Guide LED on the real board) | 30 s *(tune)* |
+
+Holding Pair (either side) for 10 s is a factory reset ([[#Stored data (Zephyr settings, flash)]]).
 
 Both windows just need to overlap; press order doesn't matter.
 
@@ -179,13 +184,14 @@ controller                                   dongle (own channel)
                                               pick pipe; queue PAIR_OFFER
   PAIR_REQ (repeat)                     ─▶
                                         ◀─   ACK: PAIR_OFFER
-  check nonce; switch to assigned pipe
+  check nonce; after 3 offers from one
+  dongle, switch to the assigned pipe
   PAIR_CONFIRM on its pipe (repeat)     ─▶
                                               save entry to flash;
                                               queue PAIR_DONE on that pipe
   PAIR_CONFIRM (repeat)                 ─▶
                                         ◀─   ACK: PAIR_DONE
-  save to flash; both leave pairing mode (LEDs solid), dongle closes pipe 0
+  save to flash; both leave pairing mode (LEDs off), dongle closes pipe 0
   controller joins normally (below)
 ```
 
@@ -239,9 +245,11 @@ aborted (ambiguity).
 | Re-pairing a known controller | Same pipe, entry updated |
 
 ### Stored data (Zephyr settings, flash)
-- **Dongle:** `base_addr1`, 7 prefixes, channel; 7 entries of `ctrl_id`, pipe,
-  last-connected counter.
-- **Controller:** `dongle_id`, `base_addr1`, prefix, pipe, channel.
+- **Dongle:** `pair/addr` (`base_addr1`, 7 prefixes), `pair/chan` (channel),
+  `pair/table` (7 entries of `ctrl_id` and a last-connected counter; entry n =
+  pipe n + 1).
+- **Controller:** `pair/link` (`dongle_id`, `base_addr1`, prefix, pipe,
+  channel).
 - **Factory reset:** Pair held **10 s**, on either side (pairing mode starts at
   3 s on the way). The controller forgets its dongle and restarts unpaired
   (it then pairs at boot); the dongle forgets all controllers and its address
@@ -260,16 +268,17 @@ repeating **frame** and gives each connected controller its own **slot**:
 | 1–2 | 1 ms | 2 × 500 µs | 1000 Hz |
 | 3–4 | 2 ms | 4 × 500 µs | 500 Hz |
 
-- A transaction (report + ACK) takes ~200–300 µs, so 500 µs slots leave margin.
+- A transaction (report + ACK) takes ~350 µs (measured 333–345 µs), leaving
+  ~150 µs margin in a 500 µs slot.
 - **Slot:** the dongle gives a controller the first free slot with its first
   report and frees it on link loss.
 - **Sync:** the dongle's frame runs on TIMER3. It times each report's arrival
-  against the slot start and returns the error (`sync_seq`, `sync_err_us`).
-  The controller makes its next TIMER3 period 1000 µs − error, then 1000 µs
-  again. ACK payloads lag a report or two, so it ignores measurements of
-  reports sent before its last shift (no double correction). Crystal drift is
-  ~20 ns/ms, so this also keeps it in place. Errors within ±15 µs are left
-  alone: mostly the controller's thread jitter.
+  against the slot start and returns the error (`sync_seq`, `sync_err_us`). The
+  controller makes its next TIMER3 period the report period − error, then the
+  report period again. ACK payloads lag a report or two, so it ignores
+  measurements of reports sent before its last shift (no double correction).
+  Crystal drift is ~20 ns/ms, so this also keeps it in place. Errors within
+  ±15 µs are left alone: mostly the controller's thread jitter.
 - **No retries** within a frame: a lost report is replaced by the next one.
 - **Frame changes:** when more controllers connect than the 1 ms frame serves
   (2; `CONFIG_XBX_FAST_FRAME_MAX`, 1 for testing with two boards), the dongle
@@ -286,7 +295,8 @@ repeating **frame** and gives each connected controller its own **slot**:
   in a gap and its ACK assigns a slot. Collisions with active slots cost them
   at most one report per attempt.
 - **Full (no slot free):** the ACK has `flags` bit 0 set; the controller
-  retries once a second. Later: show it, power off after a timeout.
+  shows the error blink and retries once a second. Later: power off after a
+  timeout.
 - **Drop:** no report from a slot for **1000 ms** → slot freed, USB reports a
   disconnect. Long enough to ride out brief radio dropouts mid-game.
 - **Player number:** the first free XInput receiver slot when the controller
@@ -324,10 +334,11 @@ Plain HID has no way to add or remove a gamepad without re-enumerating the
 whole device, hence single-player HID.
 
 **Mode selection:** read once at boot, before USB starts (`usb_mode_get()` in
-`usb.c`); changing it needs a reset. Pro Micro: jumper P0.06 to GND = XInput,
-open = HID (`mode-gpios` in the board overlay). Dongle PCB: a switch
-([[todo#Dongle]]). Each mode has its own PID, so hosts never mix up the two
-descriptor sets.
+`usb.c`); changing it needs a reset. `mode-gpios` in each board overlay:
+Pro Micro jumper P0.06 to GND = XInput, open = HID; PCA10059 switch to GND
+on the P0.29 pad = XInput; custom board SW3 (P1.09, low = XInput;
+[[docs/hardware#Custom board]]). Each mode has its own PID, so hosts never
+mix up the two descriptor sets.
 
 ## USB HID mode
 
@@ -441,11 +452,11 @@ lowest free block → Set Effect / Set Periodic / Set Envelope for that block �
 Effect Operation starts it. Direction, trigger and phase are accepted and
 ignored.
 
-**Engine** (`hid_pid_strength()`, every radio report, i.e. 1 kHz while
-linked): for each playing effect, after the start delay, magnitude with the
-envelope applied × effect gain × device gain; effects end after duration ×
-loop count. Playing effects add up, capped at 255; 0 while actuators are
-disabled or paused.
+**Engine** (`hid_pid_strength()`, every radio report, i.e. 1 kHz while linked,
+500 Hz in the 2 ms frame): for each playing effect, after the start delay,
+magnitude with the envelope applied × effect gain × device gain; effects end
+after duration × loop count. Playing effects add up, capped at 255; 0 while
+actuators are disabled or paused.
 
 **Mixing:** heavy and light each take the larger of the PID strength and the
 vendor report; LT, RT and the LED are vendor-only. Trigger rumble mixing is
@@ -467,6 +478,8 @@ SDL `SDL_JoystickRumble`; watch `rumble[…]` on the controller.
 - **Link loss:** no radio report for **1000 ms** (`LINK_TIMEOUT_MS` in
   `bridge.c`) → neutral report (sticks centred, nothing pressed), rumble off,
   PID effects stopped.
+- **Several controllers:** the first to connect drives the gamepad; the next
+  one takes over when it drops.
 
 ## USB XInput mode
 
@@ -474,7 +487,7 @@ The dongle poses as an Xbox 360 Wireless Receiver as Linux's `xpad` driver
 knows it: `xpad` binds any `0x1209` interface of the receiver type, so no
 Microsoft IDs are needed. Tested on Linux (Steam included); whether Windows'
 driver binds the receiver type with our IDs is untested ([[todo#Dongle]]).
-Code: `xinput.c` (USB class, packets), `bridge.c` (slot 0, output).
+Code: `xinput.c` (USB class, packets), `bridge.c` (player slots, output).
 
 ### Device
 | Item | Value |

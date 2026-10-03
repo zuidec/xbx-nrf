@@ -213,7 +213,7 @@ Locked decisions: [README](README.md). Not yet locked:
 	- [x] SWD on J1 (JST-SH, Pi pinout).
 	- [ ] First flash over SWD.
 	- [x] Firmware: board `xbx_dongle/nrf52840` (`firmware/boards/xbx/`),
-	      pins from the Rev1 schematic. Normal voltage mode (3.3 V LDO), so
+	      pins from the Rev1.1 schematic. Normal voltage mode (3.3 V LDO), so
 	      no REGOUT0 change.
 	- [x] Layout: Rev1.1, JLC rules, DRC and schematic parity clean; ready
 	      for fab.
@@ -243,7 +243,7 @@ Code: `firmware/{xbx-nrf,dongle}/src/main.c`,
 - [ ] **Update the default boards in `build-unsigned.sh`** as hardware moves
       on: dongle → PCA10059 done; controller → custom board when it exists.
       Custom dongle board: `xbx_dongle/nrf52840` becomes the default once
-      Rev1 works; PCA10059 stays supported.
+      Rev1.1 works; PCA10059 stays supported.
 - [x] Test firmware: ESB 2 Mbps, 1 ms fake reports, ACK payloads, stats,
       P0.17 timing pin.
 - [x] Report timing from hardware TIMER3 (exact 1 kHz; ESB uses TIMER2).
@@ -266,7 +266,7 @@ Code: `firmware/{xbx-nrf,dongle}/src/main.c`,
 - [x] Packet format v1 ([[docs/protocol#Radio (controller ↔ dongle)]]).
 - [ ] Channel hopping (per-dongle sequence, driven by the TDMA schedule).
 
-### Pairing & multiple controllers (protocol v2)
+### Pairing & multiple controllers (protocol v3)
 Design: [[docs/protocol#Pairing & multiple controllers]].
 Up to 7 paired (least recently connected replaced), 4 connected; 1 kHz for
 1–2, 500 Hz for 3–4.
@@ -350,8 +350,8 @@ USB modes, in order; one active at a time.
        interfaces, in-band connect/disconnect; after GP2040-CE / `xpad`): 8-bit
        triggers, 2 motors, no Share. pid.codes IDs: `xpad` binds any `0x1209`
        interface of the receiver type (FF/5D/81). Windows untested: check
-       whether its driver binds the receiver type with our IDs. Slot 0 done;
-       slots 1–3 with M2b.
+       whether its driver binds the receiver type with our IDs. All 4 slots
+       work (tested with 2 controllers); open only for Windows.
 	- [x] Mode strap (P0.06 to GND = XInput, PID `0x0002`) and XInput USB
 	      class: 4 interfaces, interrupt IN/OUT 32 bytes at 1 ms, presence
 	      packets and presence-query replies. Test: `xpad` binds all 4,
@@ -473,7 +473,8 @@ constants (deadzone, drift window, settle time) on the real TMR sticks.
 - [x] **M1:** 1 kHz link, latency and loss measured ([[#Link]]).
 - [x] **M2:** dongle works as HID, then XInput ([[#Dongle]]).
 - [ ] **M2b:** pairing; 2 controllers at 1 kHz, then 4 at 500 Hz
-      ([[#Pairing & multiple controllers (protocol v2)]]).
+      ([[#Pairing & multiple controllers (protocol v3)]]). Done: pairing,
+      2 at 1 kHz; 4 at 500 Hz needs more boards.
 - [ ] **M3:** dev board on a stock top board via J3: buttons, Guide, power
       hold/off.
 - [ ] **M4:** first custom board fits; inputs + rumble work.

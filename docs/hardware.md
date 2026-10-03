@@ -1,7 +1,7 @@
 ---
 title: Hardware (stock top board, J3, dongle board)
 created: 2026-09-29
-updated: 2026-10-01
+updated: 2026-10-02
 tags:
   - xbx-nrf
   - reference
@@ -85,13 +85,13 @@ Antenna: Kyocera AVX 1003893FT-AA10L0050 (FPC, u.FL, 50 mm cable) flat on the
 enclosure lid, away from the PCB; backup Taoglas CBD01.07.0100C.
 
 Board target `xbx_dongle/nrf52840` (`firmware/boards/xbx/xbx_dongle/`);
-flashing over J1 (SWD). Pins from the Rev1 schematic:
+flashing over J1 (SWD). Pins from the Rev1.1 schematic:
 
 | Signal | Pin | Notes |
 |---|---|---|
 | MODE_SW | P1.09 | SW3, read once at boot: **low = XInput** (1 kΩ to GND), **high = HID** (open, internal pull-up) |
-| PAIR_SW | P1.12 | SW2 to GND; internal pull-up |
-| PAIR_LED (blue) | P0.08 | D1, active low, 180 Ω, high drive |
+| PAIR_SW | P1.12 | SW2 to GND; internal pull-up. Press = pairing mode, hold 10 s = factory reset |
+| PAIR_LED (blue) | P0.08 | D1, active low, 180 Ω, high drive; pairing indicator |
 | P1_LED…P4_LED (green) | P1.13, P1.14, P1.15, P0.03 | D2–D5, active low, 1 kΩ |
 | PWR_LED (red) | P0.22 | D6, 1 kΩ, via JP1 (open by default; see the warning below): 2–3 = GPIO, active low; 1–2 = GND, always on |
 | DBG_TX / DBG_RX | P0.20 / P0.21 | J3 UART (JST-SH, Raspberry Pi pinout): pin 1 TX, pin 3 RX; console for MCUboot and samples (the app logs over USB) |
@@ -111,7 +111,7 @@ flashing over J1 (SWD). Pins from the Rev1 schematic:
 
 Nordic's USB dongle, for anyone not building the custom board. Board target
 `nrf52840dongle/nrf52840` (the build default); flashing over its USB
-bootloader: [[docs/flashing#nRF52840 Dongle (PCA10059) — USB DFU (no probe)]].
+bootloader: [[docs/flashing#nRF52840 Dongle (PCA10059) — USB DFU (no probe) ✅]].
 Runs from VDDH (USB), GPIOs at 3.0 V (set by Zephyr's board code).
 
 | Signal | Pin | Notes |

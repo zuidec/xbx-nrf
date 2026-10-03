@@ -1,7 +1,7 @@
 ---
 title: Firmware signing
 created: 2026-09-29
-updated: 2026-09-29
+updated: 2026-10-02
 tags:
   - xbx-nrf
   - firmware
@@ -52,9 +52,10 @@ python3 ~/ncs/v3.4.1/bootloader/mcuboot/scripts/imgtool.py keygen \
 
 ```sh
 ncs-shell
-cd ~/Projects/xbx-nrf
-firmware/build-signed.sh dongle nrf52840dongle/nrf52840/bare
-firmware/build-signed.sh xbx-nrf <custom-board>   # once it exists
+cd ~/Projects/xbx-nrf/firmware
+./build-signed.sh dongle nrf52840dongle/nrf52840/bare   # PCA10059
+./build-signed.sh dongle xbx_dongle/nrf52840            # custom dongle
+./build-signed.sh xbx-nrf <custom-board>                # once it exists
 ```
 
 The script picks the app's key from `$XBX_KEY_DIR`, builds with

@@ -13,7 +13,7 @@ Lightspeed. The stock top board and shell stay.
 ┌─────────── Controller ───────────┐          ┌──── Dongle ────┐
 │ Stock top board ─J3─ new board   │ 2.4 GHz  │ nRF52840 + USB │
 │ buttons (PCAL6416)  nRF52840     │◀────────▶│ XInput / HID   │──▶ PC
-│ power latch, boost  radio,       │ESB/Gazell│ gamepad        │
+│ power latch, boost  radio,       │   ESB    │ gamepad        │
 │ USB-C, 2×AA input   sticks,      │          │                │
 │                     triggers,    │          │                │
 │                     rumble       │          │                │
@@ -28,7 +28,7 @@ Lightspeed. The stock top board and shell stay.
 | Scope | New **bottom board only**; stock top board, shell, triggers, motors reused |
 | MCU | **nRF52840** modules on the controller and the dongle |
 | Audio | **None in v1** |
-| Wireless | **ESB/Gazell** 2.4 GHz; rumble/LED in ACK payloads |
+| Wireless | **ESB** 2.4 GHz with our own pairing and time slots; rumble/LED in ACK payloads |
 | Multiplayer | One dongle: up to **7 paired**, **4 connected**; 1 kHz with 1–2, 500 Hz with 3–4 (time slots) |
 | Dongle USB | **HID gamepad** (1 player; first) and **XInput** as an Xbox 360 Wireless Receiver (1–4 players, hot-plug), switchable. No Xbox console support |
 | Battery | **Rechargeable AAs only** (NiMH or regulated 1.5 V Li-ion AAs) |
@@ -55,8 +55,9 @@ to the button expander, and Guide / Pair / power-hold signals.
 ## Firmware
 
 Two Zephyr apps, `firmware/xbx-nrf` (controller) and `firmware/dongle`, on the
-**nRF Connect SDK v3.4.1** (pinned). Prototyped on Pro Micro nRF52840 boards;
-the 1 kHz radio link works.
+**nRF Connect SDK v3.4.1** (pinned). Prototyped on Pro Micro nRF52840 boards
+and the nRF52840 Dongle: pairing, up to 4 controllers (tested with 2), HID and
+XInput.
 
 ```sh
 cd firmware
@@ -69,7 +70,7 @@ ncs-shell                                  # SDK environment + signing keys
 |---|---|
 | [docs/building.md](docs/building.md) | SDK setup, versions, build scripts |
 | [docs/flashing.md](docs/flashing.md) | Flashing and debugging |
-| [docs/protocol.md](docs/protocol.md) | Radio and USB HID protocols |
+| [docs/protocol.md](docs/protocol.md) | Radio (pairing, time slots) and USB (HID, XInput) protocols |
 | [docs/gip.md](docs/gip.md) | Xbox GIP protocol notes (optional mode) |
 | [docs/signing.md](docs/signing.md) | Firmware signing (MCUboot, keys) |
 
@@ -78,6 +79,7 @@ ncs-shell                                  # SDK environment + signing keys
 ```
 docs/                project notes (Obsidian)
 firmware/
+  boards/            our board definitions (xbx_dongle)
   common/            shared code (include/protocol.h)
   xbx-nrf/           controller app
   dongle/            dongle app
@@ -90,6 +92,7 @@ pcb/xbx-nrf/         KiCad project, controller board (lib/: symbols,
 pcb/xbx-nrf-dongle/  KiCad project, dongle board
 mech/                FreeCAD parts (controller-bottom-board/: board outline)
 references/          schematics, scans, datasheets, pinouts
+tools/               test tools (test-rumble.sh)
 todo.md              task list (Obsidian)
 ```
 
