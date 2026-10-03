@@ -93,7 +93,7 @@ flashing over J1 (SWD). Pins from the Rev1 schematic:
 | PAIR_LED (blue) | P0.08 | D1, active low, 180 Ω, high drive |
 | P1_LED…P4_LED (green) | P1.13, P1.14, P1.15, P0.03 | D2–D5, active low, 1 kΩ |
 | PWR_LED (red) | P0.22 | D6, 1 kΩ, via JP1 (open by default; see the warning below): 2–3 = GPIO, active low; 1–2 = GND, always on |
-| DBG_RX / DBG_TX | P0.20 / P0.21 | J3 UART (JST-SH, Raspberry Pi pinout); console for MCUboot and samples (the app logs over USB) |
+| DBG_TX / DBG_RX | P0.20 / P0.21 | J3 UART (JST-SH, Raspberry Pi pinout): pin 1 TX, pin 3 RX; console for MCUboot and samples (the app logs over USB) |
 | SWCLK / SWDIO | — | J1 SWD (JST-SH, Raspberry Pi pinout) |
 | NRST | P0.18 | SW1 reset button, TP1 |
 | TIMING | P0.17 | TP4 (scope) |
