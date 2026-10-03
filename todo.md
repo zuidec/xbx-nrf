@@ -12,8 +12,8 @@ tags:
 Locked decisions: [README](README.md). Not yet locked:
 
 > [!info] Working assumptions
-> - **Antenna:** reuse the stock Xbox antennas via coax + matching network, if
->   they check out ([[#MCU / radio]]).
+> - **Antenna:** reuse the stock Xbox antennas via u.FL and coax (already
+>   50 Ω), if they check out ([[#MCU / radio]]).
 > - **Power switching:** stock top board latch; our board holds it via J3 pin 9
 >   ([[docs/hardware]]).
 
@@ -151,15 +151,15 @@ Locked decisions: [README](README.md). Not yet locked:
 - [x] MCU: **nRF52840** (no audio in v1).
 - [ ] Module: **Raytac MDBT50Q-U1MV2** preferred (as the dongle; u.FL to the
       stock antennas via coax); check its size and fit.
-- [ ] **Stock antennas: verify before ordering the PCB.** Top board: `ANT` (Z4,
-      Z5, Z6 → J5/J6), `ANT1` (Z1, Z2, Z3 → J8). Stock SoC board: coax J1, J2.
-      One was Xbox Wireless, one Bluetooth.
+- [ ] **Stock antennas: verify before ordering the PCB (functional check).**
+      Top board: `ANT` (Z4, Z5, Z6 → J5/J6), `ANT1` (Z1, Z2, Z3 → J8).
+      Stock SoC board: coax J1, J2. Both are 2.4 GHz-band (Xbox Wireless,
+      Bluetooth) and already matched to 50 Ω at their connectors (the stock
+      board fed them over coax): module u.FL → pigtail → connector, no
+      tuning.
 	- [ ] Which connector goes where; connector/cable type.
-	- [ ] Find the **2.4 GHz** antenna (return loss). VNA: NanoVNA V2 / SAA-2N
-	      (3 GHz) or LiteVNA 64 (6.3 GHz); NanoVNA-H/H4 only reach ~1.5 GHz.
-	- [ ] Top board's matching network at 2.4 GHz.
-	- [ ] Pi network on our board (3 footprints, VNA-tuned, 0 Ω bypass).
-	- [ ] Fallback: chip-antenna module at the shell edge.
+	- [ ] Pick the better of the two: RSSI/loss at distance with a Pro Micro
+	      (VNA sweep optional).
 - [ ] Analog inputs: 8 on the nRF52840; 4 stick + 2 trigger + 1 battery = 7
       (8 if the 1.8 V stick rail is measured).
 - [ ] RF layout: short 50 Ω CPW to the coax, ground vias, away from motors and
@@ -194,29 +194,31 @@ Locked decisions: [README](README.md). Not yet locked:
 
 ## 4. Hardware design — dongle
 
-- [ ] PCA10059: prototype and supported off-the-shelf dongle (overlay with
-      the mode switch on P0.29; build default). Test HID, XInput, rumble on
-      it.
+- [x] PCA10059: prototype and supported off-the-shelf dongle (overlay with
+      the mode switch on P0.29; build default). Tested: HID (one
+      controller), XInput, rumble, pairing.
 - [ ] **Custom dongle PCB** (the plan), module **Raytac MDBT50Q-U1MV2**
       (u.FL; 32.768 kHz crystal; USB with VBUS and VDDH):
-	- [ ] Power from USB 5 V on VBUS + VDDH (no LDO); VDD becomes REG0's
-	      output: decoupling per the module's high-voltage-mode reference.
-	- [ ] USB-C (CC: 5.1 kΩ to GND each), ESD diodes at the connector,
+	- [x] Power: LDS3985M33R LDO, VBUS → VDD + VDDH (3.3 V, normal voltage
+	      mode); VBUS also to the module for USB.
+	- [x] USB-C (CC: 5.1 kΩ to GND each), ESD diodes at the connector,
 	      VBUS ≤ 10 µF.
-	- [ ] Antenna: Kyocera AVX **1003893FT-AA10L0050** (FPC, 87 %, 50 mm
+	- [x] Antenna: Kyocera AVX **1003893FT-AA10L0050** (FPC, 87 %, 50 mm
 	      cable, u.FL) flat on the lid, over no PCB copper; flat puck on a
 	      USB cable, USB at the rear. Backup: Taoglas CBD01.07.0100C cable
 	      dipole along the front wall (straight, ≥ 15 mm from metal).
-	      Compare both with the dongle's rx/lost/RSSI stats.
-	- [ ] USB mode switch read at boot ([[#Dongle]] step 4), pair button,
-	      status LED (sized for the VDD chosen below); avoid P0.09/P0.10
-	      (NFC) and P0.18 (reset).
-	- [ ] SWD on J1 (JST-SH, Pi pinout): first flash over SWD.
+	- [ ] Compare both antennas with the dongle's rx/lost/RSSI stats.
+	- [x] USB mode switch read at boot ([[#Dongle]] step 4), pair button,
+	      status LEDs; none on P0.09/P0.10 (NFC) or P0.18 (reset).
+	- [x] SWD on J1 (JST-SH, Pi pinout).
+	- [ ] First flash over SWD.
 	- [x] Firmware: board `xbx_dongle/nrf52840` (`firmware/boards/xbx/`),
 	      pins from the Rev1 schematic. Normal voltage mode (3.3 V LDO), so
 	      no REGOUT0 change.
-	- [ ] Order 5–6 modules in one DigiKey Marketplace order ($25 flat
-	      shipping), shared with the controller.
+	- [x] Layout: Rev1.1, JLC rules, DRC and schematic parity clean; ready
+	      for fab.
+	- [ ] Order the PCBs (JLC) and 5–6 modules (one DigiKey Marketplace
+	      order, $25 flat shipping, shared with the controller) together.
 
 ---
 
@@ -248,9 +250,11 @@ Code: `firmware/{xbx-nrf,dongle}/src/main.c`,
 - [x] Sequence number advances only on sent reports; 16-bit (protocol v1,
       23-byte report); gap ≥ 0x8000 = restart.
 - [x] TX power +8 dBm both ends (`XBX_TX_POWER_DBM`).
-- [ ] Check controller `skipped` when the dongle shows `rx` < 1000 with low
-      `lost` (seen once: `rx 942 lost 2`).
-- [ ] If still marginal: 1 Mbps (+3–4 dB; recheck `RETRANSMIT_DELAY_US`).
+- [x] Check controller `skipped` when the dongle shows `rx` < 1000 with low
+      `lost` (seen once: `rx 942 lost 2`). With time slots: `skipped` 0–3/s,
+      `rx` ~1000.
+- [x] If still marginal: 1 Mbps (+3–4 dB). Not needed: ~1000/s per
+      controller, ~1 % loss on the weaker link without retries.
 - [x] Latency on the scope (P0.17; results above). A 33 µs FRFR minimum was
       a measurement artifact.
 - [ ] Start each transmission from the TIMER3 interrupt (or PPI) instead of a
@@ -372,9 +376,9 @@ USB modes, in order; one active at a time.
 	      vendor report, both motors. Tested: `fftest` (gain, delay,
 	      duration, summing), SDL `SDL_JoystickRumble`.
 	- [x] PID section in `protocol.md`.
-4. [ ] **Mode switching:** physical switch on the dongle PCB, read once at
-       boot before USB starts (Pro Micro: jumper, see step 2; PCA10059: a
-       jumper on a spare pad, or its button held at plug-in).
+4. [x] **Mode switching:** `mode-gpios`, read once at boot before USB
+       starts. Pro Micro: jumper on P0.06; PCA10059: switch to GND on the
+       P0.29 pad; custom board: SW3 (P1.09, low = XInput).
 5. [x] Open-source license + `LICENSE` file (MIT / CERN-OHL-S-2.0 /
        CC-BY-4.0, REUSE compliant).
 6. [ ] USB IDs: pid.codes test PIDs `0x0001`–`0x0004` for now (dongle HID /

@@ -66,8 +66,9 @@ the button is released ([[todo#Power latch (top board)]]).
 
 Two feeds on the top board (`ANT` via J5/J6, `ANT1` via J8), each with a
 matching network; the stock SoC board reaches them through coax connectors J1,
-J2. We'll reuse the 2.4 GHz one, after verification (required before ordering
-the PCB; [[todo#MCU / radio]]).
+J2. Both cover 2.4 GHz and arrive matched to 50 Ω, so the module's u.FL
+connects to one by a coax pigtail with no tuning; a functional check picks
+which ([[todo#MCU / radio]]).
 
 ## Dongle board
 
