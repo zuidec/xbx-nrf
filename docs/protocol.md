@@ -31,7 +31,7 @@ Source of truth: `firmware/common/include/protocol.h`. **Version 3**
 |---|---|
 | Protocol | Nordic ESB, dynamic payload length, selective auto-ACK |
 | Bit rate | 2 Mbps, fast ramp-up |
-| Channel | 76 (2476 MHz), fixed for now (`XBX_RF_CHANNEL`) |
+| Channel | Per dongle: the quietest of 24, 49, 74, 76, 78 (2400 + n MHz) at first use (`XBX_RF_CHANNELS`, [[#Addresses and channels]]) |
 | Address | Pipe 0: pairing address (base 0 "XBXP", prefix `E7`), open only while pairing. Pipes 1–7: one per paired controller, on the dongle's random base address 1 and prefixes ([[#Addresses and channels]]) |
 | TX power | +8 dBm, both ends (`XBX_TX_POWER_DBM`) |
 | Roles | Controller = PTX, dongle = PRX |
@@ -109,10 +109,10 @@ through:
 ## Pairing & multiple controllers
 
 > [!note] Status
-> Designed 2026-09-29. Implemented: addresses, pairing mode, the exchange
-> and its checks, stored data, factory reset, time slots, join/full/drop.
-> Not yet: channel choice. Numbers marked *(tune)* are starting values to
-> adjust on hardware.
+> Designed 2026-09-29, implemented: addresses, channel choice, pairing mode,
+> the exchange and its checks, stored data, factory reset, time slots,
+> join/full/drop. Later: channel hopping, encryption. Numbers marked *(tune)*
+> are starting values to adjust on hardware.
 
 ### Requirements
 - A controller only ever talks to the dongle it's paired with.
@@ -136,10 +136,19 @@ through:
   unless that dongle is in pairing mode.
 - Random addresses are chosen once, at first use; patterns resembling the
   preamble (mostly `0x55`/`0xAA`) are rejected.
-- **Channel:** each dongle picks the quietest channel (RSSI sampling) from a
-  fixed **candidate list**, at first use: **24, 49, 74, 76, 78** *(tune)*,
-  i.e. 2424–2478 MHz in the gaps between Wi-Fi channels 1/6/11, clear of BLE
-  advertising. Channel hopping later follows a per-dongle sequence.
+- **Channel:** each dongle picks the quietest channel from a fixed
+  **candidate list** at first use: **24, 49, 74, 76, 78** *(tune)*, i.e.
+  2424–2478 MHz in the gaps between Wi-Fi channels 1/6/11, clear of BLE
+  advertising. It samples RSSI 400 times per channel (100 ms each) and takes
+  the one with the fewest samples above −85 dBm (then the weakest average);
+  stored as `pair/chan`, chosen again after a factory reset. A dongle paired
+  before channel choice existed keeps 76. Channel hopping later follows a
+  per-dongle sequence.
+- **Pairing scan:** a pairing controller tries each candidate in turn (one
+  request per attempt, sparse as when joining); an ACK means a dongle in
+  pairing mode listens there, so it stays (moving on after 3 misses). Two
+  dongles pairing on different channels at once aren't detected: the
+  controller pairs with the one it finds first.
 - **IDs:** each nRF52840's factory-unique 64-bit `DEVICEID` (FICR).
 
 ### ESB constraint: answers take two transmissions
@@ -164,8 +173,8 @@ Both windows just need to overlap; press order doesn't matter.
 controller                                   dongle (own channel)
   scan candidate channels:
   PAIR_REQ on pipe 0 (pairing address)  ─▶   (pipe 0 open only in pairing mode)
-      no ACK → next channel (~0.6 ms each)
-      ACK    → stay, repeat every ~2 ms
+      no ACK → next channel
+      ACK    → stay, repeat (every 5–15 periods)
                                               check RSSI, version, ambiguity;
                                               pick pipe; queue PAIR_OFFER
   PAIR_REQ (repeat)                     ─▶

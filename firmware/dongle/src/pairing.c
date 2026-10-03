@@ -1,6 +1,7 @@
 /*
- * Dongle pairing (see pairing.h). Settings keys "pair/addr" (address) and
- * "pair/table" (paired controllers). Mode timing, the LED blink, answers and
+ * Dongle pairing (see pairing.h). Settings keys "pair/addr" (address),
+ * "pair/chan" (channel, the quietest candidate at first use) and "pair/table"
+ * (paired controllers). Mode timing, the LED blink, answers and
  * flash writes run on the system work queue; interrupts only store and
  * schedule.
  *
@@ -80,6 +81,7 @@ struct stored_table {
 
 static struct pairing_addr addr;
 static bool addr_loaded;
+static uint8_t channel; /* 0 = not chosen yet */
 static struct stored_table table = {.version = TABLE_VERSION};
 static uint8_t dongle_id[8];
 
@@ -197,6 +199,14 @@ static int pairing_settings_set(const char *name, size_t len, settings_read_cb r
 		}
 		addr = stored.addr;
 		addr_loaded = true;
+		return 0;
+	}
+	if (strcmp(name, "chan") == 0) {
+		uint8_t ch;
+
+		if (len == sizeof(ch) && read_cb(cb_arg, &ch, sizeof(ch)) == sizeof(ch)) {
+			channel = ch;
+		}
 		return 0;
 	}
 	if (strcmp(name, "table") == 0) {
@@ -369,7 +379,7 @@ static void offer_queue(uint8_t status, const uint8_t nonce[4], uint8_t pipe)
 		memcpy(msg.base_addr1, addr.base_addr1, sizeof(msg.base_addr1));
 		msg.prefix = addr.prefixes[pipe - 1];
 		msg.pipe = pipe;
-		msg.channel = XBX_RF_CHANNEL;
+		msg.channel = channel;
 	}
 	radio_queue_ack(0, &msg, sizeof(msg));
 }
@@ -582,6 +592,7 @@ static void reset_fn(struct k_work *work)
 	led_pattern(LED_RESET);
 	settings_delete("pair/table");
 	settings_delete("pair/addr");
+	settings_delete("pair/chan");
 	k_msleep(1000); /* LED solid: done */
 	sys_reboot(SYS_REBOOT_COLD);
 }
@@ -657,11 +668,29 @@ int pairing_init(void)
 			return err;
 		}
 	}
+	if (!channel && !table_empty()) {
+		/* paired before channel choice existed: on the old fixed channel */
+		channel = 76;
+		settings_save_one("pair/chan", &channel, sizeof(channel));
+	}
+	if (!channel) {
+		static const uint8_t candidates[] = XBX_RF_CHANNELS;
+
+		LOG_INF("first use: choosing the quietest channel");
+		if (radio_channel_scan(&channel)) {
+			channel = candidates[0];
+			LOG_WRN("channel scan failed: using %u", channel);
+		}
+		if (settings_save_one("pair/chan", &channel, sizeof(channel))) {
+			LOG_WRN("channel save failed");
+		}
+	}
 	for (int i = 0; i < PAIRING_PIPES; i++) {
 		paired += table.entry[i].last_connected != 0;
 	}
-	LOG_INF("address %02x%02x%02x%02x, %d controller(s) paired", addr.base_addr1[0],
-		addr.base_addr1[1], addr.base_addr1[2], addr.base_addr1[3], paired);
+	LOG_INF("address %02x%02x%02x%02x, channel %u, %d controller(s) paired",
+		addr.base_addr1[0], addr.base_addr1[1], addr.base_addr1[2], addr.base_addr1[3],
+		channel, paired);
 
 	if (table_empty()) {
 		pairing_start("nothing paired");
@@ -672,6 +701,11 @@ int pairing_init(void)
 const struct pairing_addr *pairing_addr(void)
 {
 	return &addr;
+}
+
+uint8_t pairing_channel(void)
+{
+	return channel;
 }
 
 bool pairing_active(void)

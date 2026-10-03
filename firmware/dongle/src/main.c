@@ -29,9 +29,8 @@ int main(void)
 	struct radio_stats prev = {0};
 	int err;
 
-	LOG_INF("xbx-nrf dongle v%s (%s), protocol v%d, channel %d, tx %d dBm",
-		APP_VERSION_STRING, STRINGIFY(APP_BUILD_VERSION), XBX_PROTOCOL_VERSION, XBX_RF_CHANNEL,
-		XBX_TX_POWER_DBM);
+	LOG_INF("xbx-nrf dongle v%s (%s), protocol v%d, tx %d dBm", APP_VERSION_STRING,
+		STRINGIFY(APP_BUILD_VERSION), XBX_PROTOCOL_VERSION, XBX_TX_POWER_DBM);
 
 	if (usb_mode_get() == USB_MODE_HID) {
 		err = hid_pad_init();

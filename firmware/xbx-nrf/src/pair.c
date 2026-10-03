@@ -24,6 +24,7 @@ LOG_MODULE_REGISTER(pair, LOG_LEVEL_INF);
 #define PAIR_TIMEOUT_MS  30000
 #define FACTORY_RESET_MS 10000 /* Pair held */
 #define OFFER_SETTLE     3     /* offers to collect before confirming */
+#define SCAN_MISSES      3     /* misses on an answering channel before moving on */
 #define BLINK_MS         100   /* pairing: fast blink, 5 Hz */
 #define ERROR_BLINK_MS   400   /* error: three slow blinks */
 #define ERROR_MS         (6 * ERROR_BLINK_MS)
@@ -50,6 +51,10 @@ static struct pair_link stored;  /* the link in use; valid if paired */
 static bool paired;
 static struct pair_link offered; /* from the offer, until done */
 static uint8_t offers;           /* matching offers so far (REQUEST) */
+static const uint8_t channels[] = XBX_RF_CHANNELS;
+static uint8_t scan_idx;         /* channel being tried (REQUEST) */
+static uint8_t scan_misses;
+static bool scan_heard;          /* the current channel answered */
 static uint8_t ctrl_id[8];
 static uint8_t nonce[4];
 
@@ -127,6 +132,9 @@ static void pair_start(const char *why)
 
 	sys_put_le32(n, nonce); /* a fresh one per window: tells our offers apart */
 	offers = 0;
+	scan_idx = 0;
+	scan_misses = 0;
+	scan_heard = false;
 	state = PAIR_REQUEST;
 	active_ms = 0;
 	k_spin_unlock(&lock, key);
@@ -158,9 +166,6 @@ int pair_init(void)
 	}
 	if (err) {
 		LOG_WRN("settings: %d", err);
-	}
-	if (paired) {
-		LOG_INF("paired: pipe %u", stored.pipe);
 	}
 
 	if (!gpio_is_ready_dt(&pair_pin)) {
@@ -295,6 +300,30 @@ bool pair_next_message(struct esb_payload *tx)
 	return ok;
 }
 
+uint8_t pair_channel(void)
+{
+	return state == PAIR_CONFIRM ? offered.channel : channels[scan_idx];
+}
+
+void pair_on_tx_result(bool acked)
+{
+	if (state != PAIR_REQUEST) {
+		return;
+	}
+	if (acked) {
+		/* a dongle in pairing mode listens here: stay */
+		scan_heard = true;
+		scan_misses = 0;
+		return;
+	}
+	if (!scan_heard || ++scan_misses >= SCAN_MISSES) {
+		scan_idx = (scan_idx + 1) % ARRAY_SIZE(channels);
+		scan_heard = false;
+		scan_misses = 0;
+		offers = 0; /* offers count per dongle, so per channel */
+	}
+}
+
 void pair_on_ack(const uint8_t *data, size_t len)
 {
 	k_spinlock_key_t key = k_spin_lock(&lock);
@@ -345,7 +374,7 @@ void pair_on_ack(const uint8_t *data, size_t len)
 		paired = true;
 		k_spin_unlock(&lock, key);
 		k_work_submit(&save_work);
-		LOG_INF("paired: pipe %u", offered.pipe);
+		LOG_INF("paired: pipe %u, channel %u", offered.pipe, offered.channel);
 		pair_stop("paired", false);
 		return;
 	}

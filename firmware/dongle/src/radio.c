@@ -14,8 +14,11 @@
  */
 
 #include <zephyr/kernel.h>
+#include <zephyr/drivers/clock_control.h>
+#include <zephyr/drivers/clock_control/nrf_clock_control.h>
 #include <zephyr/drivers/counter.h>
 #include <zephyr/drivers/gpio.h>
+#include <hal/nrf_radio.h>
 #include <zephyr/logging/log.h>
 #include <esb.h>
 
@@ -303,7 +306,108 @@ static int radio_init(void)
 	if (err) {
 		return err;
 	}
-	return esb_set_rf_channel(XBX_RF_CHANNEL);
+	return esb_set_rf_channel(pairing_channel());
+}
+
+/* Channel scan: samples per channel and their spacing (100 ms per channel) */
+#define SCAN_SAMPLES     400
+#define SCAN_SPACING_US  250
+#define SCAN_BUSY_DBM    85 /* stronger than -85 dBm counts as busy */
+
+/* HF crystal on, for the radio (as ESB does). */
+static int hfclk_request(struct onoff_client *cli)
+{
+	struct onoff_manager *mgr = z_nrf_clock_control_get_onoff(CLOCK_CONTROL_NRF_SUBSYS_HF);
+	int err;
+	int res;
+
+	if (!mgr) {
+		return -ENODEV;
+	}
+	sys_notify_init_spinwait(&cli->notify);
+	err = onoff_request(mgr, cli);
+	if (err < 0) {
+		return err;
+	}
+	do {
+		err = sys_notify_fetch_result(&cli->notify, &res);
+		if (!err && res) {
+			return res;
+		}
+		if (err == -EAGAIN) {
+			k_yield();
+		}
+	} while (err == -EAGAIN);
+	return 0;
+}
+
+/* Busy samples (and the mean RSSI magnitude) on one channel: radio idle, before ESB. */
+static uint32_t channel_busy(uint8_t channel, uint32_t *mean)
+{
+	uint32_t busy = 0;
+	uint32_t sum = 0;
+
+	nrf_radio_mode_set(NRF_RADIO, NRF_RADIO_MODE_NRF_2MBIT);
+	nrf_radio_frequency_set(NRF_RADIO, 2400 + channel);
+	nrf_radio_event_clear(NRF_RADIO, NRF_RADIO_EVENT_READY);
+	nrf_radio_task_trigger(NRF_RADIO, NRF_RADIO_TASK_RXEN);
+	while (!nrf_radio_event_check(NRF_RADIO, NRF_RADIO_EVENT_READY)) {
+	}
+
+	for (int i = 0; i < SCAN_SAMPLES; i++) {
+		uint8_t rssi;
+
+		nrf_radio_event_clear(NRF_RADIO, NRF_RADIO_EVENT_RSSIEND);
+		nrf_radio_task_trigger(NRF_RADIO, NRF_RADIO_TASK_RSSISTART);
+		while (!nrf_radio_event_check(NRF_RADIO, NRF_RADIO_EVENT_RSSIEND)) {
+		}
+		rssi = nrf_radio_rssi_sample_get(NRF_RADIO); /* magnitude: -dBm */
+		sum += rssi;
+		busy += rssi < SCAN_BUSY_DBM;
+		k_busy_wait(SCAN_SPACING_US);
+	}
+
+	nrf_radio_event_clear(NRF_RADIO, NRF_RADIO_EVENT_DISABLED);
+	nrf_radio_task_trigger(NRF_RADIO, NRF_RADIO_TASK_DISABLE);
+	while (!nrf_radio_event_check(NRF_RADIO, NRF_RADIO_EVENT_DISABLED)) {
+	}
+	*mean = sum / SCAN_SAMPLES;
+	return busy;
+}
+
+int radio_channel_scan(uint8_t *quietest)
+{
+	static const uint8_t channels[] = XBX_RF_CHANNELS;
+	struct onoff_client cli;
+	uint32_t best_busy = UINT32_MAX;
+	uint32_t best_mean = 0;
+	int err;
+
+	if (running) {
+		return -EBUSY;
+	}
+	err = hfclk_request(&cli);
+	if (err) {
+		return err;
+	}
+	nrf_radio_power_set(NRF_RADIO, true);
+
+	for (size_t i = 0; i < ARRAY_SIZE(channels); i++) {
+		uint32_t mean;
+		uint32_t busy = channel_busy(channels[i], &mean);
+
+		LOG_INF("channel %u: busy %u/%u, mean -%u dBm", channels[i], busy, SCAN_SAMPLES,
+			mean);
+		/* fewest busy samples; on a tie the weaker average (larger magnitude) */
+		if (busy < best_busy || (busy == best_busy && mean > best_mean)) {
+			best_busy = busy;
+			best_mean = mean;
+			*quietest = channels[i];
+		}
+	}
+
+	onoff_release(z_nrf_clock_control_get_onoff(CLOCK_CONTROL_NRF_SUBSYS_HF));
+	return 0;
 }
 
 static int frame_timer_start(void)
