@@ -4,6 +4,8 @@
  * Controller (ESB PTX) sends an input report every 1 ms. The dongle (ESB PRX)
  * answers with an output report in the ACK payload, which also places the
  * controller in its time slot (docs/protocol.md, "Time slots (TDMA)").
+ * Controllers pair first: the dongle's random address and a pipe come from
+ * the pairing exchange (docs/protocol.md, "Pairing & multiple controllers").
  */
 
 #ifndef XBX_PROTOCOL_H_
@@ -11,22 +13,21 @@
 
 #include <stdint.h>
 
-#define XBX_PROTOCOL_VERSION 2 /* v2: time slot fields in the output report */
+#define XBX_PROTOCOL_VERSION 3 /* v3: pairing, per-dongle addresses */
 
-/* Fixed link parameters until pairing / channel hopping.
+/* Fixed channel until channel choice / hopping.
  * Channel 76 = 2476 MHz: above Wi-Fi channel 11 and clear of BLE
  * advertising channel 39 (2480 MHz).
  */
 #define XBX_RF_CHANNEL     76
-#define XBX_BASE_ADDR_0    {0x58, 0x42, 0x58, 0x31} /* "XBX1" */
-#define XBX_BASE_ADDR_1    {0xC2, 0xC2, 0xC2, 0xC2}
 
-/* One pipe per controller: pipes 1..XBX_CTRL_PIPES on base address 1, with
- * fixed test prefixes until pairing assigns random ones. Pipe 0 (base address
- * 0) is kept for pairing. Controller pipe n = player n (XInput slot n - 1).
+/* Pipe 0: the pairing address, the same on every dongle, open only while it
+ * pairs. Pipes 1..XBX_CTRL_PIPES: one per paired controller, on the dongle's
+ * random base address 1 with its random prefixes.
  */
-#define XBX_CTRL_PIPES     4
-#define XBX_ADDR_PREFIXES  {0xE7, 0xC3, 0xC4, 0xC5, 0xC6} /* pipes 0..4 */
+#define XBX_PAIR_ADDR      {0x58, 0x42, 0x58, 0x50} /* "XBXP" */
+#define XBX_PAIR_PREFIX    0xE7
+#define XBX_CTRL_PIPES     7
 #define XBX_REPORT_PERIOD_US 1000
 
 /* Time slots: the dongle's frame is split into XBX_SLOT_US slots, one per
@@ -43,8 +44,18 @@
 #define XBX_TX_POWER_DBM   8
 
 enum xbx_msg_type {
-	XBX_MSG_INPUT = 0x01,  /* controller -> dongle */
-	XBX_MSG_OUTPUT = 0x02, /* dongle -> controller (ACK payload) */
+	XBX_MSG_INPUT = 0x01,        /* controller -> dongle */
+	XBX_MSG_OUTPUT = 0x02,       /* dongle -> controller (ACK payload) */
+	XBX_MSG_PAIR_REQ = 0x10,     /* controller -> dongle, pipe 0 */
+	XBX_MSG_PAIR_OFFER = 0x11,   /* dongle -> controller, ACK on pipe 0 */
+	XBX_MSG_PAIR_CONFIRM = 0x12, /* controller -> dongle, assigned pipe */
+	XBX_MSG_PAIR_DONE = 0x13,    /* dongle -> controller, ACK on that pipe */
+};
+
+enum xbx_pair_status {
+	XBX_PAIR_OK = 0,
+	XBX_PAIR_VERSION_MISMATCH = 1,
+	XBX_PAIR_ABORTED = 2, /* ambiguity: two controllers or two dongles at once */
 };
 
 /* buttons: same bit layout as XInput wButtons, so the dongle can pass it through */
@@ -93,6 +104,39 @@ struct xbx_output_report {
 	int16_t sync_err_us; /* its arrival minus the slot start: > 0 = late */
 } __attribute__((packed));
 
+/*
+ * Pairing. Every message is repeated until its answer arrives: an ACK only
+ * carries what was queued before the packet came in.
+ */
+struct xbx_pair_req {
+	uint8_t type;        /* XBX_MSG_PAIR_REQ */
+	uint8_t ctrl_id[8];  /* controller DEVICEID */
+	uint8_t proto_ver;   /* XBX_PROTOCOL_VERSION */
+	uint8_t nonce[4];    /* echoed in the offer */
+} __attribute__((packed));
+
+struct xbx_pair_offer {
+	uint8_t type;          /* XBX_MSG_PAIR_OFFER */
+	uint8_t status;        /* enum xbx_pair_status */
+	uint8_t dongle_id[8];  /* dongle DEVICEID */
+	uint8_t nonce[4];      /* the request's */
+	uint8_t base_addr1[4]; /* dongle's random base address 1 */
+	uint8_t prefix;        /* the pipe's prefix */
+	uint8_t pipe;          /* 1..XBX_CTRL_PIPES */
+	uint8_t channel;
+} __attribute__((packed));
+
+struct xbx_pair_confirm {
+	uint8_t type;         /* XBX_MSG_PAIR_CONFIRM */
+	uint8_t ctrl_id[8];
+	uint8_t dongle_id[8];
+} __attribute__((packed));
+
+struct xbx_pair_done {
+	uint8_t type;   /* XBX_MSG_PAIR_DONE */
+	uint8_t status; /* enum xbx_pair_status */
+} __attribute__((packed));
+
 enum xbx_rumble_motor {
 	XBX_RUMBLE_HEAVY = 0,
 	XBX_RUMBLE_LIGHT = 1,
@@ -102,5 +146,9 @@ enum xbx_rumble_motor {
 
 _Static_assert(sizeof(struct xbx_input_report) == 23, "input report size changed");
 _Static_assert(sizeof(struct xbx_output_report) == 14, "output report size changed");
+_Static_assert(sizeof(struct xbx_pair_req) == 14, "pair request size changed");
+_Static_assert(sizeof(struct xbx_pair_offer) == 21, "pair offer size changed");
+_Static_assert(sizeof(struct xbx_pair_confirm) == 17, "pair confirm size changed");
+_Static_assert(sizeof(struct xbx_pair_done) == 2, "pair done size changed");
 
 #endif /* XBX_PROTOCOL_H_ */

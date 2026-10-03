@@ -12,6 +12,8 @@
 #ifndef XBX_DONGLE_RADIO_H_
 #define XBX_DONGLE_RADIO_H_
 
+#include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include <zephyr/kernel.h>
@@ -50,6 +52,15 @@ void radio_get_last_input(uint8_t link, struct xbx_input_report *input);
  * timeout; read the reports with radio_get_last_input().
  */
 uint32_t radio_wait_input(k_timeout_t timeout);
+
+/* Pipe 0 (the pairing address) open or closed (thread context). */
+void radio_pairing_open(bool open);
+
+/* New prefix for a controller pipe 1..RADIO_LINKS (thread context). */
+void radio_set_prefix(uint8_t pipe, uint8_t prefix);
+
+/* Queue a pairing answer as the ACK payload for the pipe's next packet. */
+void radio_queue_ack(uint8_t pipe, const void *data, size_t len);
 
 /* The link timed out (bridge): free its time slot for the next controller. */
 void radio_link_lost(uint8_t link);

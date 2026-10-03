@@ -8,9 +8,12 @@
  * (TDMA)"). The report period follows the dongle's frame: 1 ms, or 2 ms with
  * 3-4 controllers. Without a slot (joining, or the dongle was lost) it sends
  * only every 5-15 periods, each time at a random phase, until a gap between
- * the others' slots gets it an ACK; with the dongle full, once a second. Input: the breadboard pins (input.c), or a test pattern with
- * CONFIG_XBX_FAKE_INPUT. The radio pipe (player number) is fixed by
- * CONFIG_XBX_TEST_PIPE until pairing exists.
+ * the others' slots gets it an ACK; with the dongle full, once a second.
+ * Pairing messages (pair.c) go out the same sparse way. Unpaired and not
+ * pairing, it sends nothing.
+ *
+ * Input: the breadboard pins (input.c), or a test pattern with
+ * CONFIG_XBX_FAKE_INPUT.
  *
  * Wired mode (CONFIG_XBX_WIRED): while a PC has the USB device configured,
  * reports go to USB instead and the radio pauses: the HID gamepad, or the
@@ -216,6 +219,8 @@ static void radio_event_handler(struct esb_evt const *event)
 				stats.acks_with_payload++;
 				atomic_set(&ack_age_ms, 0);
 				sync_from_ack(&last_output);
+			} else if (pair_active()) {
+				pair_on_ack(rx.data, rx.length);
 			}
 		}
 		break;
@@ -224,12 +229,30 @@ static void radio_event_handler(struct esb_evt const *event)
 	}
 }
 
+/* Use the dongle's address for the link's pipe (radio idle). */
+static int radio_apply_link(const struct pair_link *link)
+{
+	int err = esb_set_base_address_1(link->base_addr1);
+
+	if (err) {
+		return err;
+	}
+	return esb_update_prefix(link->pipe, link->prefix);
+}
+
+/*
+ * Pipe 0: the pairing address. Pipes 1..7 share base address 1, which is the
+ * paired dongle's; only our own pipe's prefix matters (set from the link).
+ */
 static int radio_init(void)
 {
-	static const uint8_t base_addr_0[4] = XBX_BASE_ADDR_0;
-	static const uint8_t base_addr_1[4] = XBX_BASE_ADDR_1;
-	static const uint8_t prefixes[] = XBX_ADDR_PREFIXES;
+	static const uint8_t pair_addr[4] = XBX_PAIR_ADDR;
+	static const uint8_t placeholder[4] = {0xC2, 0xC2, 0xC2, 0xC2};
+	static const uint8_t prefixes[XBX_CTRL_PIPES + 1] = {
+		XBX_PAIR_PREFIX, 0xC1, 0xC3, 0xC4, 0xC5, 0xC6, 0xC7, 0xC8,
+	};
 	struct esb_config config = ESB_DEFAULT_CONFIG;
+	struct pair_link link;
 	int err;
 
 	config.mode = ESB_MODE_PTX;
@@ -246,17 +269,23 @@ static int radio_init(void)
 	if (err) {
 		return err;
 	}
-	err = esb_set_base_address_0(base_addr_0);
+	err = esb_set_base_address_0(pair_addr);
 	if (err) {
 		return err;
 	}
-	err = esb_set_base_address_1(base_addr_1);
+	err = esb_set_base_address_1(placeholder);
 	if (err) {
 		return err;
 	}
 	err = esb_set_prefixes(prefixes, ARRAY_SIZE(prefixes));
 	if (err) {
 		return err;
+	}
+	if (pair_link_get(&link)) {
+		err = radio_apply_link(&link);
+		if (err) {
+			return err;
+		}
 	}
 	return esb_set_rf_channel(XBX_RF_CHANNEL);
 }
@@ -496,11 +525,13 @@ static void rumble_leds_update(void)
 static void tx_thread(void *p1, void *p2, void *p3)
 {
 	struct esb_payload tx = {
-		.pipe = CONFIG_XBX_TEST_PIPE,
 		.noack = false,
 		.length = sizeof(struct xbx_input_report),
 	};
+	struct esb_payload pair_tx;
 	struct xbx_input_report *report = (struct xbx_input_report *)tx.data;
+	struct pair_link link;
+	bool was_pairing = false;
 	uint32_t tick = 0;
 	uint32_t ms = 0;        /* uptime in report periods, as ms */
 	uint32_t next_join = 0; /* tick of the next join attempt */
@@ -550,21 +581,44 @@ static void tx_thread(void *p1, void *p2, void *p3)
 			continue;
 		}
 
+		bool pairing = pair_active();
+
+		if (pairing != was_pairing) {
+			/* pairing drops the link; after it, join again */
+			was_pairing = pairing;
+			last_output.slot = XBX_SLOT_NONE;
+		}
+
+		/* follow the address pairing asks for (radio idle: nothing in flight) */
+		if (!atomic_get(&in_flight) && pair_link_changed(&link) && link.pipe >= 1) {
+			if (radio_apply_link(&link)) {
+				LOG_ERR("radio address change failed");
+			}
+		}
+
+		bool linked = pair_link_get(&link);
+
+		if (!pairing && !linked) {
+			continue; /* unpaired: nobody to talk to */
+		}
+
 		/*
-		 * No slot: send only every JOIN_GAP periods, each at a random phase
-		 * (shifted two ticks ahead, so it's in place for the attempt).
+		 * No slot, or pairing: send only every JOIN_GAP periods, each at a
+		 * random phase (shifted two ticks ahead, so it's in place).
 		 */
-		if (!slot_held()) {
+		if (pairing || !slot_held()) {
 			if (tick == next_join - 2) {
 				sync_random_shift();
 			}
 			if ((int32_t)(tick - next_join) < 0) {
 				continue;
 			}
-			next_join = tick + ((last_output.flags & XBX_OUT_FLAG_FULL)
+			next_join = tick + ((!pairing && (last_output.flags & XBX_OUT_FLAG_FULL))
 						    ? JOIN_FULL_MS * 1000 / period_us
 						    : random_range(JOIN_GAP_MIN, JOIN_GAP_MAX));
-			stats.join_attempts++;
+			if (!pairing) {
+				stats.join_attempts++;
+			}
 		}
 
 		if (atomic_get(&in_flight)) {
@@ -575,6 +629,20 @@ static void tx_thread(void *p1, void *p2, void *p3)
 		/* drop anything stale (e.g. a report left behind after TX_FAILED) */
 		esb_flush_tx();
 
+		if (pairing) {
+			if (!pair_next_message(&pair_tx)) {
+				continue;
+			}
+			atomic_set(&in_flight, 1);
+			if (esb_write_payload(&pair_tx) == 0) {
+				stats.sent++;
+			} else {
+				atomic_set(&in_flight, 0);
+			}
+			continue;
+		}
+
+		tx.pipe = link.pipe;
 		report->seq = next_seq; /* only advances when a report is actually sent */
 		report->timestamp_us = k_cyc_to_us_floor32(k_cycle_get_32());
 		last_input = *report;
@@ -599,9 +667,9 @@ int main(void)
 	uint32_t prev_corrections = 0;
 	int err;
 
-	LOG_INF("xbx-nrf controller v%s (%s), protocol v%d, channel %d, pipe %d, tx %d dBm%s",
+	LOG_INF("xbx-nrf controller v%s (%s), protocol v%d, channel %d, tx %d dBm%s",
 		APP_VERSION_STRING, STRINGIFY(APP_BUILD_VERSION), XBX_PROTOCOL_VERSION, XBX_RF_CHANNEL,
-		CONFIG_XBX_TEST_PIPE, XBX_TX_POWER_DBM,
+		XBX_TX_POWER_DBM,
 		IS_ENABLED(CONFIG_XBX_FAKE_INPUT) ? ", fake input" : "");
 
 #if HAS_TIMING_PIN
@@ -625,8 +693,7 @@ int main(void)
 #else
 	usb_mode_init(input_held_at_boot());
 #endif
-	/* pairing storage comes with the exchange: unpaired for now */
-	err = pair_init(false);
+	err = pair_init();
 	if (err) {
 		LOG_ERR("pair init failed: %d", err);
 		return 0;

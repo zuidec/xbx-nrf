@@ -3,8 +3,9 @@
  * controller and wakes this thread; converting and submitting happens here, in
  * thread context, as the USB stack requires.
  *
- * XInput mode: each radio link is its own receiver slot (player), connected on
- * its first report and disconnected on link loss. HID mode is single-player:
+ * XInput mode: each connected controller (radio link with a time slot) gets
+ * the first free receiver slot (player) on its first report and gives it back
+ * on link loss. HID mode is single-player:
  * the first controller to link up drives the gamepad until it's lost, others
  * are ignored meanwhile; link loss sends a neutral report.
  *
@@ -25,6 +26,7 @@
 #include "bridge.h"
 #include "hid_pad.h"
 #include "hid_pid.h"
+#include "pairing.h"
 #include "protocol.h"
 #include "radio.h"
 #include "usb.h"
@@ -32,7 +34,9 @@
 
 LOG_MODULE_REGISTER(bridge, LOG_LEVEL_INF);
 
-BUILD_ASSERT(RADIO_LINKS <= XINPUT_SLOTS, "one XInput slot per radio link");
+BUILD_ASSERT(RADIO_SLOTS_MAX <= XINPUT_SLOTS, "an XInput slot for every connected controller");
+
+#define XSLOT_NONE 0xFF
 
 /* No report for this long = link lost: release everything (docs/protocol.md) */
 #define LINK_TIMEOUT_MS 1000
@@ -47,6 +51,7 @@ static struct k_thread bridge_thread_data;
 
 struct player {
 	bool up;
+	uint8_t xslot;    /* XInput receiver slot, XSLOT_NONE = none */
 	uint32_t last_ms; /* uptime of the last report */
 	/* last host output for this player (USB thread) */
 	uint8_t host_rumble[4];
@@ -70,31 +75,55 @@ static void host_output(const uint8_t rumble[4], uint8_t led)
 	k_spin_unlock(&host_lock, key);
 }
 
+/* the player in an XInput slot, or NULL (call with host_lock held) */
+static struct player *xslot_player(uint8_t xslot)
+{
+	for (uint8_t link = 0; link < RADIO_LINKS; link++) {
+		if (players[link].xslot == xslot) {
+			return &players[link];
+		}
+	}
+	return NULL;
+}
+
 /* XInput: 2 motors */
 static void xinput_rumble(uint8_t slot, uint8_t heavy, uint8_t light)
 {
-	k_spinlock_key_t key;
+	k_spinlock_key_t key = k_spin_lock(&host_lock);
+	struct player *p = xslot_player(slot);
 
-	if (slot >= RADIO_LINKS) {
-		return;
+	if (p) {
+		p->host_rumble[XBX_RUMBLE_HEAVY] = heavy;
+		p->host_rumble[XBX_RUMBLE_LIGHT] = light;
 	}
-	key = k_spin_lock(&host_lock);
-	players[slot].host_rumble[XBX_RUMBLE_HEAVY] = heavy;
-	players[slot].host_rumble[XBX_RUMBLE_LIGHT] = light;
 	k_spin_unlock(&host_lock, key);
 }
 
 /* the Guide LED has no player number: any pattern but 0 (off) is on */
 static void xinput_led(uint8_t slot, uint8_t pattern)
 {
-	k_spinlock_key_t key;
+	k_spinlock_key_t key = k_spin_lock(&host_lock);
+	struct player *p = xslot_player(slot);
 
-	if (slot >= RADIO_LINKS) {
-		return;
+	if (p) {
+		p->host_led = pattern ? 0xFF : 0;
 	}
-	key = k_spin_lock(&host_lock);
-	players[slot].host_led = pattern ? 0xFF : 0;
 	k_spin_unlock(&host_lock, key);
+}
+
+/* first free XInput slot, or XSLOT_NONE */
+static uint8_t xslot_take(struct player *p)
+{
+	k_spinlock_key_t key = k_spin_lock(&host_lock);
+
+	for (uint8_t xs = 0; xs < XINPUT_SLOTS; xs++) {
+		if (!xslot_player(xs)) {
+			p->xslot = xs;
+			break;
+		}
+	}
+	k_spin_unlock(&host_lock, key);
+	return p->xslot;
 }
 
 static const struct xinput_callbacks xinput_cbs = {
@@ -131,20 +160,30 @@ static void link_report(uint8_t link, uint32_t now)
 	p->last_ms = now;
 	if (!p->up) {
 		p->up = true;
-		LOG_INF("player %u: link up", link + 1);
+		pairing_link_connected(link + 1);
 		if (xinput_mode) {
-			/* presence first: the host adds the gamepad */
-			xinput_set_connected(link, true);
+			if (xslot_take(p) == XSLOT_NONE) {
+				LOG_WRN("pipe %u: no XInput slot free", link + 1);
+			} else {
+				/* presence first: the host adds the gamepad */
+				xinput_set_connected(p->xslot, true);
+			}
+		}
+		LOG_INF("pipe %u: link up%s", link + 1, xinput_mode ? "" : " (HID)");
+		if (xinput_mode && p->xslot != XSLOT_NONE) {
+			LOG_INF("pipe %u: player %u", link + 1, p->xslot + 1);
 		}
 	}
 	if (!xinput_mode && hid_link < 0) {
 		hid_link = link;
-		LOG_INF("player %u: drives the HID gamepad", link + 1);
+		LOG_INF("pipe %u: drives the HID gamepad", link + 1);
 	}
 
 	radio_get_last_input(link, &in);
 	if (xinput_mode) {
-		xinput_update(link, &in);
+		if (p->xslot != XSLOT_NONE) {
+			xinput_update(p->xslot, &in);
+		}
 	} else if (link == hid_link) {
 		struct hid_pad_state state;
 
@@ -162,7 +201,9 @@ static void link_lost(uint8_t link)
 
 	p->up = false;
 	if (xinput_mode) {
-		xinput_set_connected(link, false);
+		if (p->xslot != XSLOT_NONE) {
+			xinput_set_connected(p->xslot, false);
+		}
 	} else if (link == hid_link) {
 		const struct hid_pad_state neutral = {.hat = HID_PAD_HAT_CENTERED};
 
@@ -174,6 +215,7 @@ static void link_lost(uint8_t link)
 	key = k_spin_lock(&host_lock);
 	memset(p->host_rumble, 0, sizeof(p->host_rumble));
 	p->host_led = 0;
+	p->xslot = XSLOT_NONE;
 	if (link == hid_link) {
 		hid_link = -1; /* the next controller to report takes over */
 	}
@@ -181,8 +223,8 @@ static void link_lost(uint8_t link)
 	radio_set_output(link, off, 0);
 	radio_link_lost(link);
 
-	LOG_INF("player %u: link lost, %s", link + 1,
-		xinput_mode ? "slot disconnected" : "rumble off");
+	LOG_INF("pipe %u: link lost, %s", link + 1,
+		xinput_mode ? "player disconnected" : "rumble off");
 }
 
 static void bridge_thread(void *p1, void *p2, void *p3)
@@ -206,6 +248,9 @@ static void bridge_thread(void *p1, void *p2, void *p3)
 
 void bridge_start(void)
 {
+	for (uint8_t link = 0; link < RADIO_LINKS; link++) {
+		players[link].xslot = XSLOT_NONE;
+	}
 	hid_pad_set_output_cb(host_output);
 	xinput_set_callbacks(&xinput_cbs);
 	k_thread_create(&bridge_thread_data, bridge_stack, K_THREAD_STACK_SIZEOF(bridge_stack),

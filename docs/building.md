@@ -87,10 +87,9 @@ cd ~/Projects/xbx-nrf/firmware
 - `-- -DCONFIG_…` options stay in that build folder's cache until a pristine
   build (`-p`).
 - `BUILD_DIR=<dir>` builds into `<app>/<dir>/` instead, for a second
-  configuration next to the main one. E.g. the fake-input controller on pipe 2:
+  configuration next to the main one. E.g. the fake-input controller:
   ```sh
-  BUILD_DIR=build-p2 ./build-unsigned.sh xbx-nrf -p -- \
-    -DCONFIG_XBX_FAKE_INPUT=y -DCONFIG_XBX_TEST_PIPE=2
+  BUILD_DIR=build-p2 ./build-unsigned.sh xbx-nrf -p -- -DCONFIG_XBX_FAKE_INPUT=y
   ```
 - Default boards live in `build-unsigned.sh`; update them when the real hardware
   exists ([[todo#Link]]).

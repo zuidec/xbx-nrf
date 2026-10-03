@@ -263,7 +263,7 @@ Code: `firmware/{xbx-nrf,dongle}/src/main.c`,
 - [ ] Channel hopping (per-dongle sequence, driven by the TDMA schedule).
 
 ### Pairing & multiple controllers (protocol v2)
-Design: [[docs/protocol#Pairing & multiple controllers (planned, protocol v2)]].
+Design: [[docs/protocol#Pairing & multiple controllers]].
 Up to 7 paired (least recently connected replaced), 4 connected; 1 kHz for
 1–2, 500 Hz for 3–4.
 - [x] Step 1: fixed test pipes 1–4 (`CONFIG_XBX_TEST_PIPE`), per-pipe stats
@@ -280,8 +280,14 @@ Up to 7 paired (least recently connected replaced), 4 connected; 1 kHz for
       to GND held 3 s or at power-on, on-board LED blinks. Both enter
       pairing at boot while unpaired; 30 s timeout. No radio change yet.
       Tested: address persists, LEDs/buttons/pin enter pairing.
-- [ ] Per-dongle random address; pipe 0 = pairing, pipes 1–7 = controllers;
-      pairing table in flash (settings).
+- [x] Step 4.2: the exchange (protocol v3). Pipe 0 = pairing address,
+      open while pairing; pipes 1–7 on the dongle's address; REQ → OFFER →
+      CONFIRM → DONE, sparse like joining; dongle table (7, least recently
+      connected replaced, its prefix re-rolled), `pair/table`; controller
+      `pair/link`; XInput player = first free slot at connect. Tested:
+      both pair in ~25 ms (pipes 1, 2; players 1, 2), reconnect after a
+      power cycle, re-pairing keeps the pipe, an unpaired controller is
+      silent.
 - [ ] Pairing mode (Pair hold / dongle button / unpaired at plug-in), channel
       scan, PAIR_REQ/OFFER/CONFIRM/DONE (repeat until answered), RSSI check.
 - [ ] Channel choice at first use (quietest of the candidate list).
