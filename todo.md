@@ -288,8 +288,13 @@ Up to 7 paired (least recently connected replaced), 4 connected; 1 kHz for
       both pair in ~25 ms (pipes 1, 2; players 1, 2), reconnect after a
       power cycle, re-pairing keeps the pipe, an unpaired controller is
       silent.
-- [ ] Pairing mode (Pair hold / dongle button / unpaired at plug-in), channel
-      scan, PAIR_REQ/OFFER/CONFIRM/DONE (repeat until answered), RSSI check.
+- [x] Step 4.3: checks. Dongle: RSSI ≥ −50 dBm
+      (`CONFIG_XBX_PAIR_RSSI_MIN`), second controller in a window → abort
+      (answers ABORTED for 2 s). Controller: collects 3 offers, two dongles
+      → abort. Error blink (three slow), factory reset (Pair held 10 s,
+      both sides). Timing corrections: ±15 µs dead band. Tested: far away
+      ignored, two controllers abort, both resets, sync rate drops. Not
+      testable yet: two dongles, dongle full.
 - [ ] Channel choice at first use (quietest of the candidate list).
 - [x] Step 2, TDMA (protocol v2): 1 ms dongle frame (TIMER3), 2 slots, first
       free slot per link; timing error in ACKs, controller shifts one
@@ -308,7 +313,6 @@ Up to 7 paired (least recently connected replaced), 4 connected; 1 kHz for
       stays single-player.
 - [ ] Test: 2 controllers at 1 kHz (two Pro Micros + PCA10059), then 4 at 500
       Hz (more Pro Micro clones).
-- [ ] Factory reset combo; error blinks (mismatch, ambiguity, full).
 - [ ] Tune: pairing timeout, RSSI threshold (drop timeout set: 1000 ms).
 
 ### Dongle

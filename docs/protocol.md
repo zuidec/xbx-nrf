@@ -109,10 +109,10 @@ through:
 ## Pairing & multiple controllers
 
 > [!note] Status
-> Designed 2026-09-29. Implemented: addresses, pairing mode, the exchange,
-> stored data, time slots, join/full/drop. Not yet: the RSSI and ambiguity
-> checks, error blinks, factory reset, channel choice. Numbers marked
-> *(tune)* are starting values to adjust on hardware.
+> Designed 2026-09-29. Implemented: addresses, pairing mode, the exchange
+> and its checks, stored data, factory reset, time slots, join/full/drop.
+> Not yet: channel choice. Numbers marked *(tune)* are starting values to
+> adjust on hardware.
 
 ### Requirements
 - A controller only ever talks to the dongle it's paired with.
@@ -183,19 +183,21 @@ controller                                   dongle (own channel)
 Once both sides are in pairing mode, this takes well under a second.
 
 **Dongle checks on `PAIR_REQ`** (step "check" above):
-- **Proximity:** RSSI ≥ **−50 dBm** *(tune)*, i.e. held close; otherwise
-  ignored.
+- **Proximity:** RSSI ≥ **−50 dBm** *(tune: `CONFIG_XBX_PAIR_RSSI_MIN`)*,
+  i.e. held close; otherwise ignored.
 - **Version:** `proto_ver` must match; otherwise `PAIR_OFFER` with status
   "version mismatch" and both show the error blink.
-- **Ambiguity:** a second, different `ctrl_id` in the same window → abort, error
-  blink.
+- **Ambiguity:** a second, different `ctrl_id` in the same window → abort,
+  error blink. For 2 s the dongle answers every request with status
+  "aborted" (so both controllers learn it), then closes pipe 0.
 - **Pipe:** known `ctrl_id` → same pipe; else a free pipe; else the **least
   recently connected** entry's pipe.
 
 **Controller checks on `PAIR_OFFER`:**
 - `nonce` must echo its own (not someone else's offer).
 - Offers from two different `dongle_id`s in one window (two dongles pairing
-  nearby) → abort, error blink.
+  nearby) → abort, error blink. To give a second dongle the chance to answer,
+  it collects **3 offers** before it confirms (~30 ms).
 
 **Commit order:** the dongle saves when it receives `PAIR_CONFIRM` on the new
 pipe (proof the controller has the offer and switched); the controller saves
@@ -231,8 +233,14 @@ aborted (ambiguity).
 - **Dongle:** `base_addr1`, 7 prefixes, channel; 7 entries of `ctrl_id`, pipe,
   last-connected counter.
 - **Controller:** `dongle_id`, `base_addr1`, prefix, pipe, channel.
-- Factory reset: e.g. Pair + View held at power-on *(tune)*; the dongle's
-  button held ~10 s *(tune)*.
+- **Factory reset:** Pair held **10 s**, on either side (pairing mode starts at
+  3 s on the way). The controller forgets its dongle and restarts unpaired
+  (it then pairs at boot); the dongle forgets all controllers and its address
+  (new random one) and restarts. The LED goes solid for 1 s first.
+
+**LEDs** (dongle: pairing LED; controller: the indicator, on-board on the Pro
+Micro): fast blink (5 Hz) = pairing mode; three slow blinks = error (refused,
+aborted, version mismatch, dongle full); solid = factory reset.
 
 ### Time slots (TDMA)
 One radio can't receive two controllers at once, so the dongle runs a
@@ -251,7 +259,8 @@ repeating **frame** and gives each connected controller its own **slot**:
   The controller makes its next TIMER3 period 1000 µs − error, then 1000 µs
   again. ACK payloads lag a report or two, so it ignores measurements of
   reports sent before its last shift (no double correction). Crystal drift is
-  ~20 ns/ms, so this also keeps it in place.
+  ~20 ns/ms, so this also keeps it in place. Errors within ±15 µs are left
+  alone: mostly the controller's thread jitter.
 - **No retries** within a frame: a lost report is replaced by the next one.
 - **Frame changes:** when more controllers connect than the 1 ms frame serves
   (2; `CONFIG_XBX_FAST_FRAME_MAX`, 1 for testing with two boards), the dongle
