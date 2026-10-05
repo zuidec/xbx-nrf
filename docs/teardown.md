@@ -59,6 +59,9 @@ use the resistors below, never a direct short.
       PCAL6416 ACKs at `0x21`; gone while pin 9 is low (reset); every button
       reads on its mapped bit. Without the pull-up setup the inputs read
       `0x0000`.
+- [x] Top board I2C pull-ups: none (pin 5 / 7 open to TP35, unpowered).
+- [x] Guide on J3 pin 2: active-low, read with the nice!nano's pull-up.
+- [x] Q8 (Guide) and Q14 (Pair): both PNP (diode test).
 - [x] Pair sense: pull-up from pin 13 to 3.3 V; low while Pair is pressed,
       not Guide.
 - [x] Rails while on: pins 1 (3.6 V), 3 (`3v/B+`), 4 (3.3 V) as expected.

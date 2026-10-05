@@ -53,13 +53,13 @@ Locked decisions: [README](README.md). Not yet locked:
 > - **J3 pin 13** (via D30) is probably Pair sense, not a force-off input.
 
 - [x] R46 → SW2 Pair / PCAL6416 P10 net (Pair power-on path).
-- [ ] Bench test: bottom board out, 2.0–2.8 V on the AA wires, watch TP35:
+- [x] Bench test: bottom board out, 2.0–2.8 V on the AA wires, watch TP35:
 	- [x] Guide / Pair: 3.3 V on TP35 stays up while held, drops shortly
 	      after release. One early reading held ~3 s (not repeated).
 	- [x] Pin 9 pulled high (1 kΩ to 3.3 V) keeps power after release (Guide
 	      and Pair); removing it turns it off.
 - [ ] Trace R25's source.
-- [ ] Q8 and Q14 polarity (PNP expected).
+- [x] Q8 and Q14 polarity: both PNP (measured).
 - [x] Pin 9 holds power *and* resets the PCAL6416 (R4/EG2): low → no ACK
       at `0x21` (measured, top board on USB).
 - [x] Pin 13 reads low while Pair is pressed (with a pull-up); Guide doesn't
@@ -73,11 +73,12 @@ Locked decisions: [README](README.md). Not yet locked:
 
 ### J3/J5 connector (top ↔ bottom)
 - [ ] Connector part number and pitch; source the mating half.
-- [ ] Full pinout vs. schematic:
+- [x] Full pinout vs. schematic:
 	- [x] Pin 11: J7 pin 1 (0.1 Ω) and SoC pin 1; 2.4 kΩ to GND; not a rail
 	      or GND. Probably Play & Charge detect.
 	- [x] Pin 13: Pair sense (measured).
-- [ ] Pin 2 (Guide) active-low, pull-up on our side.
+- [x] Pin 2 (Guide) active-low, pull-up on our side (read on the test
+      controller).
 - [x] 3.3 V / 3.6 V / `3v/B+` on J3: as expected when on; all up on USB.
 
 ### PCAL6416 expander (top board)
@@ -87,8 +88,8 @@ Locked decisions: [README](README.md). Not yet locked:
 - [x] Register map checked against the datasheet
       ([[docs/pcal6416#Register map]]).
 - [x] I2C scan finds `0x21` (nice!nano, 100 kHz, 4.7 kΩ pull-ups to TP35).
-- [ ] Where are the I2C pull-ups? (4.7 kΩ on our side works; the top board's
-      own not checked.)
+- [x] I2C pull-ups: none on the top board; ours required (4.7 kΩ to 3.3 V
+      works at 100 kHz).
 - [x] Every button on real hardware: all match the port map.
 
 ### Bottom board (being replaced)

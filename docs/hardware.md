@@ -57,12 +57,12 @@ battery through Q6/Q7's gate network (direction not yet checked).
 | Pin | Signal | Direction (bottom board) | Notes |
 |---|---|---|---|
 | 1 | 3.6 V | Power in | Rumble supply |
-| 2 | GU (Guide) via D27 | Input | Active-low; pull-up on our board |
+| 2 | GU (Guide) via D27 | Input | Active-low; pull-up on our board (measured) |
 | 3 | 3v/B+ | Power in | Switched battery rail; battery sense |
 | 4 | 3.3 V | Power in | nRF supply |
-| 5 | SCL | Output | I2C to the PCAL6416 |
+| 5 | SCL | Output | I2C to the PCAL6416; no pull-up on the top board (ours required) |
 | 6 | LED control | Output | Guide LED (Q3) |
-| 7 | SDA | Bidirectional | I2C to the PCAL6416 |
+| 7 | SDA | Bidirectional | I2C to the PCAL6416; no pull-up on the top board |
 | 8 | USB D+ | Bidirectional | From the USB-C port |
 | 9 | ~RESET / power hold | Output | High = power held (measured) + expander out of reset (*verify*). No effect on USB |
 | 10 | USB D− | Bidirectional | |
