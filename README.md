@@ -61,18 +61,16 @@ XInput.
 
 ```sh
 cd firmware
-./build-unsigned.sh xbx-nrf [-f <device>]  # development build (+ flash)
-ncs-shell                                  # SDK environment + signing keys
-./build-signed.sh dongle <board>           # signed release build
+./build.sh xbx-nrf [-f <device>]  # development build (+ flash)
+./build.sh dongle -r               # release build
 ```
 
 | Doc | Covers |
 |---|---|
-| [docs/building.md](docs/building.md) | SDK setup, versions, build scripts |
+| [docs/building.md](docs/building.md) | SDK setup, versions, build script |
 | [docs/flashing.md](docs/flashing.md) | Flashing and debugging |
 | [docs/protocol.md](docs/protocol.md) | Radio (pairing, time slots) and USB (HID, XInput) protocols |
 | [docs/gip.md](docs/gip.md) | Xbox GIP protocol notes (optional mode) |
-| [docs/signing.md](docs/signing.md) | Firmware signing (MCUboot, keys) |
 
 ## Repository layout
 
@@ -84,9 +82,8 @@ firmware/
   xbx-nrf/           controller app
   dongle/            dongle app
   ncs-version        pinned SDK + toolchain
-  check-sdk.sh       version check for the build scripts
-  build-unsigned.sh  development build
-  build-signed.sh    signed release build
+  check-sdk.sh       version check for build.sh
+  build.sh           build (+ flash) script
 pcb/xbx-nrf/         KiCad project, controller board (lib/: symbols,
                      footprints, 3D)
 pcb/xbx-nrf-dongle/  KiCad project, dongle board

@@ -1,4 +1,4 @@
-# Sourced by the build scripts: checks that the active nRF Connect SDK and
+# Sourced by build.sh: checks that the active nRF Connect SDK and
 # toolchain match the versions pinned in firmware/ncs-version.
 # Sets ZEPHYR_BASE if it isn't set yet.
 

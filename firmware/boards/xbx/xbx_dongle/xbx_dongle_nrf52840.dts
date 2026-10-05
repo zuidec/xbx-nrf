@@ -82,8 +82,6 @@
 		led3 = &p3_led;
 		led4 = &p4_led;
 		led5 = &pwr_led;
-		mcuboot-button0 = &pair_sw;
-		mcuboot-led0 = &pair_led;
 		watchdog0 = &wdt0;
 	};
 };

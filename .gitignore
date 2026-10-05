@@ -10,7 +10,7 @@ references/third-party/
 # --- Secrets -----------------------------------------------------------------
 secrets.*
 SECRETS.*
-# private keys (signing keys live in ~/.config/xbx-nrf/keys, never in the repo)
+# private keys: never in the repo
 *.pem
 *.key
 *.p12

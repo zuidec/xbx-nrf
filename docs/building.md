@@ -1,7 +1,7 @@
 ---
 title: Building the firmware
 created: 2026-09-29
-updated: 2026-10-02
+updated: 2026-10-05
 tags:
   - xbx-nrf
   - firmware
@@ -14,8 +14,7 @@ aliases:
 
 # Building the firmware
 
-Related: [[docs/flashing|Flashing & debugging]],
-[[docs/signing|Firmware signing]], [[todo#5. Firmware]].
+Related: [[docs/flashing|Flashing & debugging]], [[todo#5. Firmware]].
 
 ## Apps
 
@@ -26,7 +25,7 @@ Related: [[docs/flashing|Flashing & debugging]],
 
 Standalone Zephyr apps, outside the SDK folder. Shared code:
 `firmware/common/include/` (e.g. `protocol.h`). Our own board definitions:
-`firmware/boards/`; both build scripts pass it as `BOARD_ROOT` (sysbuild
+`firmware/boards/`; the build script passes it as `BOARD_ROOT` (sysbuild
 doesn't search the app folder), so plain `west build` needs
 `BOARD_ROOT=firmware/boards` for them.
 
@@ -40,7 +39,7 @@ doesn't search the app folder), so plain `west build` needs
 | nrfutil / sdk-manager | 8.2.1 / 1.16.1 | not pinned |
 | KiCad | 10.0.3 | not pinned |
 
-`firmware/check-sdk.sh` (run by both build scripts) stops the build if
+`firmware/check-sdk.sh` (run by the build script) stops the build if
 `$ZEPHYR_BASE/../nrf/VERSION` or the toolchain behind `west` doesn't match
 `firmware/ncs-version`, and prints the fix.
 
@@ -54,7 +53,6 @@ doesn't search the app folder), so plain `west build` needs
 2. Create `~/bin/ncs-shell` (not in the repo):
    ```bash
    #!/bin/bash
-   export XBX_KEY_DIR="$HOME/.config/xbx-nrf/keys"   # docs/signing.md
    export ZEPHYR_BASE="$HOME/ncs/v3.4.1/zephyr"
    nrfutil sdk-manager toolchain launch --ncs-version v3.4.1 --shell
    ```
@@ -64,19 +62,21 @@ doesn't search the app folder), so plain `west build` needs
 
 ## Building
 
-Development builds: unsigned, no MCUboot (board bootloaders stay), into
-`<app>/build/`.
+Builds go into `<app>/build/`; board bootloaders stay.
 
 ```sh
 cd ~/Projects/xbx-nrf/firmware
-./build-unsigned.sh xbx-nrf                  # incremental
-./build-unsigned.sh dongle -p                # pristine
-./build-unsigned.sh dongle -f /dev/ttyACM0   # build, then flash
+./build.sh xbx-nrf                  # incremental
+./build.sh dongle -p                # pristine
+./build.sh dongle -f /dev/ttyACM0   # build, then flash
+./build.sh dongle -r                # release build
 ```
 
 - Runs from any folder and shell: outside `ncs-shell` it restarts itself in
   the pinned toolchain (`nrfutil sdk-manager toolchain launch`).
 - Extra arguments go to `west build`; `-b` overrides the default board.
+- `-r` / `--release` adds the app's `release.conf` (no USB console, no logs)
+  and builds into `<app>/build-release/`.
 - `-f` / `--flash <device>` flashes after a successful build
   ([[docs/flashing]]):
 
@@ -90,14 +90,12 @@ cd ~/Projects/xbx-nrf/firmware
 - `BUILD_DIR=<dir>` builds into `<app>/<dir>/` instead, for a second
   configuration next to the main one. E.g. the fake-input controller:
   ```sh
-  BUILD_DIR=build-p2 ./build-unsigned.sh xbx-nrf -p -- -DCONFIG_XBX_FAKE_INPUT=y
+  BUILD_DIR=build-p2 ./build.sh xbx-nrf -p -- -DCONFIG_XBX_FAKE_INPUT=y
   ```
-- Default boards live in `build-unsigned.sh`; update them when the real hardware
+- Default boards live in `build.sh`; update them when the real hardware
   exists ([[todo#Link]]).
 - Plain `west build` also works but skips the version check, and needs `-b`
   again after `-p`.
-
-Signed builds: [[docs/signing]].
 
 ### Output files
 
@@ -142,7 +140,6 @@ app's `CMakeLists.txt` has no effect.
 - After `git tag v0.1.0` the build ID reads `v0.1.0` (`v0.1.0-3-g<hash>` later).
 - Uncommitted changes don't show in the build ID: commit before flashing
   anything you keep.
-- Signed images carry the app version (`0.1.0+0`) for MCUboot.
 
 ## Upgrading the SDK
 
@@ -150,7 +147,7 @@ app's `CMakeLists.txt` has no effect.
 2. `nrfutil sdk-manager install --ncs-version <new>`; note the toolchain bundle
    ID (`~/ncs/toolchains/toolchains.json`).
 3. Update `firmware/ncs-version`, `~/bin/ncs-shell` and the table above.
-4. Pristine-build both apps, unsigned and signed; fix warnings.
+4. Pristine-build both apps; fix warnings.
 5. Re-run the link test on hardware.
 6. Commit it all together ("Upgrade to NCS vX.Y.Z").
 

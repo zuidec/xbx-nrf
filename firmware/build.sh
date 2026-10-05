@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
-# Unsigned development build (no MCUboot) into <app>/build/, optionally
-# flashed right after.
+# Firmware build into <app>/build/, optionally flashed right after.
 #
 # Usage (from anywhere; starts the pinned SDK toolchain itself if needed):
-#   ./build-unsigned.sh <xbx-nrf|dongle> [-f <device>] [extra west build args]
-#   e.g. ./build-unsigned.sh xbx-nrf -p                       # pristine rebuild
-#        ./build-unsigned.sh dongle -f /dev/ttyACM0           # build + flash
+#   ./build.sh <xbx-nrf|dongle> [-r] [-f <device>] [extra west build args]
+#   e.g. ./build.sh xbx-nrf -p                       # pristine rebuild
+#        ./build.sh dongle -f /dev/ttyACM0           # build + flash
+#        ./build.sh dongle -r                        # release build
+#
+# -r / --release adds the app's release.conf (no USB console, no logs) and
+# builds into <app>/build-release/.
 #
 # -f / --flash <device>, by board:
 #   nrf52840dongle/nrf52840  serial port of the DFU bootloader (press RESET)
@@ -26,7 +29,7 @@ source "$script_dir/check-sdk.sh"
 xbx_relaunch_in_toolchain "$script_dir" "$script_dir/$(basename "${BASH_SOURCE[0]}")" "$@"
 
 usage() {
-	echo "usage: $0 <xbx-nrf|dongle> [-f <device>] [extra west build args]" >&2
+	echo "usage: $0 <xbx-nrf|dongle> [-r] [-f <device>] [extra west build args]" >&2
 	exit 2
 }
 
@@ -40,14 +43,17 @@ dongle)  board="nrf52840dongle/nrf52840" ;; # PCA10059; Pro Micro: -b promicro_n
 *) usage ;;
 esac
 
-# Take -f / --flash out of the arguments (west gets the rest). An explicit
-# -b / --board wins over the default; remember it for flashing.
+# Take -r and -f / --flash out of the arguments (west gets the rest). An
+# explicit -b / --board wins over the default; remember it for flashing.
 flash_dev=""
+release=false
 explicit_board=false
+cmake_sep=false
 west_args=()
 while [ $# -gt 0 ]; do
 	case "$1" in
-	--) west_args+=("$@"); break ;; # the rest is for CMake
+	--) west_args+=("$@"); cmake_sep=true; break ;; # the rest is for CMake
+	-r | --release) release=true ;;
 	-f | --flash) [ $# -ge 2 ] || usage; flash_dev="$2"; shift 2; continue ;;
 	--flash=*) flash_dev="${1#--flash=}" ;;
 	-b | --board)
@@ -59,13 +65,20 @@ while [ $# -gt 0 ]; do
 	shift
 done
 app_dir="$script_dir/$app"
-build_dir="$app_dir/${BUILD_DIR:-build}"
+if $release; then
+	build_dir="$app_dir/${BUILD_DIR:-build-release}"
+	$cmake_sep || west_args+=(--)
+	west_args+=(-DEXTRA_CONF_FILE="$app_dir/release.conf")
+else
+	build_dir="$app_dir/${BUILD_DIR:-build}"
+fi
 
 xbx_check_sdk "$script_dir" || exit 1
 
 echo "app:   $app"
 echo "board: $board"
 echo "out:   $build_dir"
+$release && echo "conf:  $app_dir/release.conf"
 
 # BOARD_ROOT: our boards in firmware/boards/ (sysbuild ignores the app folder)
 if $explicit_board; then

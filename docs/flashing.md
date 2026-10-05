@@ -1,7 +1,7 @@
 ---
 title: Flashing & debugging the nRF52840 boards
 created: 2026-09-28
-updated: 2026-10-02
+updated: 2026-10-05
 tags:
   - xbx-nrf
   - firmware
@@ -14,7 +14,7 @@ aliases:
 
 # Flashing & debugging the nRF52840 boards
 
-Related: [[docs/building]], [[docs/signing]], [[todo#5. Firmware]].
+Related: [[docs/building]], [[todo#5. Firmware]].
 
 > [!warning] Mostly untested
 > ✅ = verified on hardware. Everything else is from docs and may depend on tool
@@ -174,7 +174,7 @@ app after the SoftDevice area it expects.
 2. Build and flash, from `firmware/`, giving the drive's block device (mounted
    for you) or its mount point:
    ```sh
-   ./build-unsigned.sh xbx-nrf -f /dev/sdX
+   ./build.sh xbx-nrf -f /dev/sdX
    ```
    Or copy `<app>/build/<app>/zephyr/zephyr.uf2` onto the drive by hand.
 3. The app reboots; logs appear on `/dev/ttyACM*` (USB CDC console).
@@ -189,7 +189,7 @@ app after the SoftDevice area it expects.
 2. Find the bootloader's port (`ls -l /dev/serial/by-id/`, "Open DFU
    Bootloader"), then build and flash from `firmware/`:
    ```sh
-   ./build-unsigned.sh dongle -f /dev/ttyACMx
+   ./build.sh dongle -f /dev/ttyACMx
    ```
    The script packages `<app>/build/dfu.zip` and runs `nrfutil nrf5sdk-tools
    dfu usb-serial`. GUI alternative: nRF Connect for Desktop → Programmer.

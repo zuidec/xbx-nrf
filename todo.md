@@ -26,8 +26,7 @@ Locked decisions: [README](README.md). Not yet locked:
   [[references/third-party/soc-pinout.txt]]
 - Notes: [[docs/hardware|Hardware]], [[docs/pcal6416|PCAL6416]],
   [[docs/a3910|A3910]], [[docs/protocol|Protocols]], [[docs/gip|GIP]],
-  [[docs/building|Building]], [[docs/flashing|Flashing]],
-  [[docs/signing|Signing]]
+  [[docs/building|Building]], [[docs/flashing|Flashing]]
 - Datasheets: [[references/third-party/A1304-Datasheet.pdf]] (trigger sensor,
   7.7 mA,
   t_PO 50–70 µs), [[references/third-party/A3910-datasheet.pdf]],
@@ -240,7 +239,7 @@ Code: `firmware/{xbx-nrf,dongle}/src/main.c`,
 > Clone antennas are weak. Remaining loss looks like fades/interference →
 > channel hopping.
 
-- [ ] **Update the default boards in `build-unsigned.sh`** as hardware moves
+- [ ] **Update the default boards in `build.sh`** as hardware moves
       on: dongle → PCA10059 done; controller → custom board when it exists.
       Custom dongle board: `xbx_dongle/nrf52840` becomes the default once
       Rev1.1 works; PCA10059 stays supported.
@@ -335,7 +334,7 @@ USB modes, in order; one active at a time.
 	- [x] USB device: own context, VID `0x1209` / test PID `0x0001`, strings,
 	      serial from `DEVICEID`; board's CDC-at-boot off.
 	- [x] `CONFIG_XBX_USB_CONSOLE`: CDC ACM console as a composite function, on
-	      in `build-unsigned.sh`, off in `build-signed.sh`.
+	      in development builds, off in release builds.
 	- [x] HID interface + report descriptor; check with `lsusb -v`,
 	      `evtest`. evtest: every control maps as designed.
 	- [x] Radio → HID: button remap, D-pad → hat, Y inversion; latest-wins
@@ -386,8 +385,7 @@ USB modes, in order; one active at a time.
 6. [ ] USB IDs: pid.codes test PIDs `0x0001`–`0x0004` for now (dongle HID /
        XInput, controller HID / XInput: one per interface set, since Windows
        and SDL/Steam cache drivers and mappings per VID:PID). Apply for our
-       own once the repo is public; decide first whether MCUboot serial
-       recovery needs one too.
+       own once the repo is public; our bootloader builds need IDs too.
 
 ### Controller
 - [ ] Power state machine: hold pin 9 early → PCAL6416 setup → run;
@@ -449,24 +447,27 @@ constants (deadzone, drift window, settle time) on the real TMR sticks.
 ### Build & versions
 [[docs/building|Building]]
 - [x] SDK pinned in `firmware/ncs-version` (v3.4.1, toolchain 8285d8ad56),
-      checked by the build scripts.
+      checked by the build script.
 - [x] App `VERSION` files (0.1.0); boot log shows version, build ID, protocol.
 - [x] `git tag v0.1.0` once M1 is done.
 
-### Firmware signing
-[[docs/signing|Signing]]
-- [x] One key per device, in `~/.config/xbx-nrf/keys/`.
-- [x] `.gitignore` key patterns.
-- [x] `sysbuild-signed.conf` + `build-signed.sh`; dongle build verified.
-- [x] Image version from `VERSION` (`0.1.0+0`).
-- [x] **Back up both keys offline.**
-- [ ] Controller signed build (needs an MCUboot-capable board;
-      `release.conf` checked with an unsigned build).
-- [ ] Update method: MCUboot serial recovery over USB (`mcumgr`/`smpmgr`).
-- [ ] Downgrade protection.
-- [ ] Release: lock APPROTECT.
-- [ ] **MCUboot vs. power hold:** MCUboot runs before the app raises pin 9.
-      Measure; if too slow, raise pin 9 from an MCUboot hook.
+### Bootloader
+Adafruit nRF52 UF2 bootloader on both boards, unsigned
+([[docs/signing|why not signed]]).
+- [ ] Build setup: upstream at a pinned tag plus our board folders in
+      `tools/bootloader/`, built by a script.
+- [ ] `xbx_dongle` board: PAIR_LED as the bootloader LED, own names, test
+      PID. Zephyr `xbx_dongle/nrf52840/uf2` variant (app after the
+      SoftDevice area, UF2 output).
+- [ ] `xbx_controller` board: raise power hold (pin 9) in `board_init2()`;
+      check teardown leaves it high and the app configures it active.
+- [ ] Controller DFU entry: LS + RS held at power-on. Patch `main.c`, or set
+      `GPREGRET` from `board_init2()` if `main.c` reads it later. Check
+      the pull-ups on LS / RS.
+- [ ] App entry: button combo → `GPREGRET = 0x57` + reset (not View + Menu +
+      LS, the erase combo).
+- [ ] Measure power-on to pin 9 high (the 500 ms double-reset wait only
+      follows a reset-pin reset).
 
 ---
 

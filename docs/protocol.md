@@ -353,7 +353,7 @@ application collection. Tested with `evtest`, SDL and Steam on Linux.
 | Reports | Input ID 1, 16 bytes (= `in-report-size` in `usb.overlay`); output ID 2, 6 bytes; PID `0x11`–`0x23` ([[#Force feedback (PID)]]) |
 | HID endpoints | Interrupt IN 1 ms; interrupt OUT 1 ms (PID uploads send several reports in a row), max packet 64 (must exceed every output report, or reports merge) |
 | Serial number | From the nRF52840 `DEVICEID` |
-| Console | `CONFIG_XBX_USB_CONSOLE`: on in `build-unsigned.sh`, off in `build-signed.sh` |
+| Console | `CONFIG_XBX_USB_CONSOLE`: on in development builds, off in release builds (`release.conf`) |
 
 pid.codes rules: test PIDs `0x0001`–`0x000F` are for development only. Our own
 PID requires a public repo with an open-source license and a `LICENSE` file
