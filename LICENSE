@@ -7,7 +7,7 @@ This project uses different licenses for different kinds of content. The full
 license texts are in LICENSES/. Per-path details are in REUSE.toml
 (https://reuse.software).
 
-  Firmware and scripts (firmware/, build scripts, config)   MIT
+  Firmware and scripts (firmware/, build scripts, config)   MPL-2.0
   Hardware design (pcb/, mech/)                             CERN-OHL-S-2.0
   Documentation (docs/, *.md)                              CC-BY-4.0
 

@@ -7,7 +7,7 @@ version = 1
 path = ["firmware/**", "tools/**", ".gitignore", "REUSE.toml"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 zuidec"
-SPDX-License-Identifier = "MIT"
+SPDX-License-Identifier = "MPL-2.0"
 
 # Hardware design
 [[annotations]]

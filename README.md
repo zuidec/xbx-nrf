@@ -104,8 +104,8 @@ todo.md              task list (Obsidian)
 
 ## License
 
-Copyright (c) 2026 zuidec. Firmware and scripts: **MIT**. Hardware design:
-**CERN-OHL-S-2.0**. Documentation: **CC-BY-4.0**. Third-party CAD parts
-(SnapMagic, KiCad libraries) keep their CC-BY-SA-4.0 licenses; see the
+Copyright (c) 2026 zuidec. Firmware and scripts: **MPL-2.0**. Hardware
+design: **CERN-OHL-S-2.0**. Documentation: **CC-BY-4.0**. Third-party CAD
+parts (SnapMagic, KiCad libraries) keep their CC-BY-SA-4.0 licenses; see the
 `ATTRIBUTION.md` in each library folder. Details: [LICENSE](LICENSE),
 [REUSE.toml](REUSE.toml), full texts in [LICENSES/](LICENSES/).
