@@ -319,11 +319,12 @@ Up to 7 paired (least recently connected replaced), 4 connected; 1 kHz for
 - [ ] TDMA: margin check. Measured transaction
       333–345 µs → ~155 µs margin in a 500 µs slot.
 - [x] USB: 4 players via the XInput mode (Xbox 360 Wireless Receiver); HID
-      stays single-player. Tested with 3 controllers.
-- [ ] Test: 2 controllers at 1 kHz (two Pro Micros + PCA10059), then 4 at 500
+      stays single-player. Tested with 4 controllers.
+- [x] Test: 2 controllers at 1 kHz (two Pro Micros + PCA10059), then 4 at 500
       Hz (more Pro Micro clones). Done: 2 at 1 kHz; 3 controllers (three Pro
       Micros + PCA10059): 500/s each, slots 0–2 of 4, err within ±25 µs;
-      weakest link (−58 dBm) ~0.5 % loss. 4: one more board.
+      weakest link (−58 dBm) ~0.5 % loss. 4 controllers: 500/s each, slots
+      0–3 of 4, err within ±18 µs, 0 loss (−35 to −42 dBm).
 - [ ] Tune: pairing timeout, RSSI threshold (drop timeout set: 1000 ms).
 
 ### Dongle
@@ -352,7 +353,7 @@ USB modes, in order; one active at a time.
        triggers, 2 motors, no Share. pid.codes IDs: `xpad` binds any `0x1209`
        interface of the receiver type (FF/5D/81). Windows untested: check
        whether its driver binds the receiver type with our IDs. All 4 slots
-       work (tested with 2 controllers); open only for Windows.
+       work (tested with 4 controllers); open only for Windows.
 	- [x] Mode strap (P0.06 to GND = XInput, PID `0x0002`) and XInput USB
 	      class: 4 interfaces, interrupt IN/OUT 32 bytes at 1 ms, presence
 	      packets and presence-query replies. Test: `xpad` binds all 4,
@@ -475,10 +476,9 @@ Adafruit nRF52 UF2 bootloader on both boards, unsigned
 
 - [x] **M1:** 1 kHz link, latency and loss measured ([[#Link]]).
 - [x] **M2:** dongle works as HID, then XInput ([[#Dongle]]).
-- [ ] **M2b:** pairing; 2 controllers at 1 kHz, then 4 at 500 Hz
+- [x] **M2b:** pairing; 2 controllers at 1 kHz, then 4 at 500 Hz
       ([[#Pairing & multiple controllers (protocol v3)]]). Done: pairing,
-      2 at 1 kHz, 3 at 500 Hz (2 ms frame, 0–0.5 % loss); 4 needs one
-      more board.
+      2 at 1 kHz, 3 and 4 at 500 Hz (2 ms frame, 0–0.5 % loss).
 - [ ] **M3:** dev board on a stock top board via J3: buttons, Guide, power
       hold/off.
 - [ ] **M4:** first custom board fits; inputs + rumble work.
