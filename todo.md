@@ -110,12 +110,13 @@ Locked decisions: [README](README.md). Not yet locked:
 
 ## 2. Mechanical
 
-- [ ] Fully constrained FreeCAD outline (datum hole at origin).
-	- [ ] Check the image scale on a second horizontal and vertical distance
-	      (X was ~4.9 % off).
-	- [ ] Holes, J3, stick centers, trigger sensors, J7 from calipers.
+- [x] Fully constrained FreeCAD outline.
+	- [x] Image scale: the scan was off; corrected from the test print.
+	- [ ] J3, stick centres, trigger sensors, J7 from calipers (needs the
+	      controller).
 - [ ] DXF → KiCad `Edge.Cuts`; holes → MountingHole footprints.
-- [ ] 1:1 paper print fit check.
+- [x] Fit check: 3D-printed 1.6 mm board fits the shell (replaces the 1:1
+      paper print).
 - [ ] STEP fit check in the shell.
 - [ ] Trigger stops (independent of the side rails):
 	- [ ] Blu-Tack clearance test behind each trigger.
