@@ -240,7 +240,7 @@
       "internal_id": "",
       "mfg": "",
       "mpn": "",
-      "sch_revision": ""
+      "sch_revision": "${REV}"
     },
     "layer_pairs": [],
     "layer_presets": [],
@@ -648,7 +648,7 @@
         "uuid": "80da5dd1-c318-49cd-9b75-a008ecafd4bc"
       }
     ],
-    "used_designators": "S1-2",
+    "used_designators": "",
     "variants": []
   },
   "sheets": [
@@ -657,7 +657,10 @@
       "xbx-nrf"
     ]
   ],
-  "text_variables": {},
+  "text_variables": {
+    "PROJTITLE": "XBX-NRF Gamepad",
+    "REV": "1.1"
+  },
   "tuning_profiles": {
     "meta": {
       "version": 0
