@@ -47,32 +47,37 @@ Locked decisions: [README](README.md). Not yet locked:
 >   `3v/B+` → boosts.
 > - **Hold:** J3 pin 9 → R7 → D26 → Q9; same net as the
 >   [[docs/pcal6416#Connections|PCAL6416 reset]].
-> - Probably **not self-holding**: firmware must raise pin 9 before release.
+> - **Not self-holding**: 3.3 V stays up while Guide or Pair is held, drops
+>   shortly after release; pin 9 high holds it (measured). Firmware must
+>   raise pin 9 while the button is pressed.
 > - **J3 pin 13** (via D30) is probably Pair sense, not a force-off input.
 
 - [x] R46 → SW2 Pair / PCAL6416 P10 net (Pair power-on path).
 - [ ] Bench test: bottom board out, 2.0–2.8 V on the AA wires, watch TP35:
-	- [ ] Guide press: does 3.3 V drop on release?
-	- [ ] Same with Pair.
-	- [ ] How long does power stay up while held (boot-to-hold budget)?
-	- [ ] Pin 9 pulled high (1 kΩ to 3.3 V) keeps power after release; letting
-	      go of pin 9 turns it off.
+	- [x] Guide / Pair: 3.3 V on TP35 stays up while held, drops shortly
+	      after release. One early reading held ~3 s (not repeated).
+	- [x] Pin 9 pulled high (1 kΩ to 3.3 V) keeps power after release (Guide
+	      and Pair); removing it turns it off.
 - [ ] Trace R25's source.
 - [ ] Q8 and Q14 polarity (PNP expected).
 - [ ] Pin 9 holds power *and* resets the PCAL6416 (R4/EG2).
-- [ ] Pin 13 reads low while Pair is pressed (with a pull-up).
+- [x] Pin 13 reads low while Pair is pressed (with a pull-up); Guide doesn't
+      affect it.
 - [ ] How the stock SoC powers off (pin 9 release only?).
-- [ ] Standby current from the AAs, controller off.
-- [ ] USB plugged in: U1 powers `3v/B+` regardless of the latch; Q6 isolates the
-      AAs.
+- [x] Standby current from the AAs, controller off: < 0.1 µA (meter reads
+      0.0 µA; top board alone). Held on, no bottom board: 0.35 mA.
+- [x] USB plugged in: all rails up without a button; pin 9 has no effect.
+	- [ ] AA side still sees ~0.25 mA (likely 5vB → R21 → R23 into the
+	      battery): check the direction.
 
 ### J3/J5 connector (top ↔ bottom)
 - [ ] Connector part number and pitch; source the mating half.
 - [ ] Full pinout vs. schematic:
-	- [ ] Pin 11: SoC pin 1 / J7 pin 1. Play & Charge?
-	- [ ] Pin 13: SoC pin 10, probably Pair sense.
+	- [x] Pin 11: J7 pin 1 (0.1 Ω) and SoC pin 1; 2.4 kΩ to GND; not a rail
+	      or GND. Probably Play & Charge detect.
+	- [x] Pin 13: Pair sense (measured).
 - [ ] Pin 2 (Guide) active-low, pull-up on our side.
-- [ ] 3.3 V / 3.6 V / `3v/B+` on J3, controller on vs off.
+- [x] 3.3 V / 3.6 V / `3v/B+` on J3: as expected when on; all up on USB.
 
 ### PCAL6416 expander (top board)
 [[docs/pcal6416|PCAL6416 notes]]
@@ -92,12 +97,16 @@ Locked decisions: [README](README.md). Not yet locked:
 - [ ] Stock sticks really are RKJXV122400R (calipers or 1:1 print).
 - [x] Stick pinout: VR1 = X, VR2 = Y; 1.8 V on VR1_3 + VR2_1, GND on
       VR1_1 + VR2_3 ([[docs/hardware#Sticks (RKJXV122400R footprint)]]).
-	- [ ] Confirm the wipers (VR1_2, VR2_2) by continuity to TP64 / TP63.
-	- [ ] Axis directions with the TMR modules.
+	- [x] Wipers (TP64/63/112/65) and click (TP42/43): continuity checked.
+	- [x] Axis directions, stock pots: X higher to the right, Y higher
+	      downwards.
+	- [ ] Same with the TMR modules.
 - [x] Push-switch contact pairs: A/C = signal (LSC/RSC), B/D = GND.
 - [ ] A1304 placement relative to the trigger magnets.
-- [ ] Stick supply `AN+`: U6 TLV70718 (1.8 V LDO with enable).
-- [ ] Trigger sensor supply `TRG+`: pulsed, 125 Hz, 17 % duty.
+- [x] Stick supply `AN+`: U8 TLV70718 (1.8 V LDO from 3.3 V, EN from the
+      SoC, 100 kΩ pull-down).
+- [x] Trigger sensor supply `TRG+`: U9 TLV70732 from 3.3 V as a switch;
+      pulsed, 125 Hz, 17 % duty.
 - [x] Rumble drivers: 2× A3910 (U4: LT + Heavy, U5: RT + Light)
       ([[docs/a3910#Stock wiring (bottom board)]]).
 - [ ] Motor pad positions, VBB decoupling, CR1–CR4 parts
@@ -143,11 +152,14 @@ Locked decisions: [README](README.md). Not yet locked:
 - [ ] VBUS detect (J3 pin 12).
 - [ ] **Charging:** external (default) / VBUS to J7 for Play & Charge / in
       controller (needs chemistry detection; probably not worth it).
-- [ ] Stick supply: **1.8 V** LDO with enable and 100 kΩ pull-down (like
-      AN+), on while the controller is on, off in sleep. Pulse it around
+- [ ] Stick supply 1V8_STICK: **TLV70018DDCR** with EN on a GPIO and
+      100 kΩ pull-down ([[docs/hardware#Supplies]]), on while the controller
+      is on, off in sleep. Pulse it around
       samples only if the TMR sticks' start-up time allows (check their
       1.8 V rating, current and start-up time).
-- [ ] Trigger sensor supply: switched, pulsed (on, ≥ 100 µs, sample, off).
+- [ ] Trigger sensor supply TRG+: **P-FET** from 3.3 V, gate pull-up,
+      GPIO low = on; pulsed (on, ≥ 100 µs, sample, off).
+	- [ ] Choose the FET (IRLML6401 / DMG2301L / AO3401A).
 - [ ] No back-powering: float GPIOs before a rail goes down.
 
 ### MCU / radio
@@ -174,7 +186,8 @@ Locked decisions: [README](README.md). Not yet locked:
 - [x] Sticks: **TMR** (low noise, no wear drift).
 - [ ] Stick directions (right, up = positive) set in firmware: the supply
       pins are fixed by the stock pinout (never swap them on TMR sticks).
-      Expected: Y inverted. The breadboard stick reads X reversed.
+      Measured (stock pots): Y inverted, X not. The breadboard stick reads X
+      reversed.
 - [ ] Calibration button on its own GPIO, reachable without opening the
       shell (battery bay?) ([[#Stick and trigger calibration]]).
 - [ ] Triggers: A1304 at the stock positions.
@@ -191,6 +204,8 @@ Locked decisions: [README](README.md). Not yet locked:
 ### Connectors
 - [ ] J3 mating connector.
 - [ ] J7 Play & Charge contacts (if used).
+- [ ] J3 pin 11 (P&C detect?) to a free digital GPIO through a 0 Ω / DNP
+      footprint, input without pull: ready for P&C experiments later.
 - [ ] J8 expansion port: keep or drop?
 
 ---
@@ -406,7 +421,8 @@ USB modes, in order; one active at a time.
 - [ ] PCAL6416 polling ([[docs/pcal6416#Firmware notes]]).
 - [ ] Stick/trigger ADC ([[docs/hardware#Analog inputs]]): sticks on the
       internal 0.6 V reference, gain 1/3 (0–1.8 V), as a ratio to the
-      measured 1.8 V rail; triggers gain 1/6 (TRG+ is 3.3 V). Trigger supply
+      measured 1.8 V rail; triggers on VDD/4, gain 1/4 (ratiometric, as
+      TRG+ ≈ VDD). Trigger supply
       pulsed around each sample; stick supply as its hardware item allows.
 - [ ] **Custom board pins:** board definition for the controller (like
       `xbx_dongle`), replacing the Pro Micro overlay's pins with the
@@ -543,6 +559,5 @@ trigger view, guided calibration, deadzone / curve / trigger-stop settings.
 
 ## Open questions
 
-- Is the latch self-holding (expected: no)?
-- Is J3 pin 13 Pair sense? What is pin 11?
+- What does J3 pin 11 (Play & Charge detect?) signal with a pack inserted?
 - Does a Play & Charge pack need I2C commands to charge?

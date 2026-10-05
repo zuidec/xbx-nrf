@@ -39,8 +39,18 @@ Sources: [[references/third-party/XB1 1914 TOP BOARD.pdf]],
 | U1 MP1476L | USB 5 V → `3v/B+`; powered on whenever USB is plugged in |
 | SW13 + Q8 / SW2 + Q14 → Q9 | Guide or Pair powers on; J3 pin 9 holds it |
 
-The latch is probably **not self-holding**: firmware must raise J3 pin 9 before
-the button is released ([[todo#Power latch (top board)]]).
+The latch is **not self-holding**: Guide or Pair keeps 3.3 V up for as long
+as it is held, and drops shortly after release (one early reading showed
+~3 s; not repeated). Pulling J3 pin 9 high holds power until it is released,
+so firmware must raise pin 9 while the button is still pressed: in the
+bootloader, or early in boot
+([[todo#Power latch (top board)]]). Top board alone, AAs side: < 0.1 µA off,
+0.35 mA held on.
+
+With USB plugged in, all rails (`3v/B+`, 3.3 V, 3.6 V) are up without a
+button press, and pin 9 has no effect: firmware needs its own "off" state on
+USB. The AA side still sees ~0.25 mA, probably 5vB → R21 → R23 into the
+battery through Q6/Q7's gate network (direction not yet checked).
 
 ## J3: top ↔ bottom board connector
 
@@ -54,12 +64,18 @@ the button is released ([[todo#Power latch (top board)]]).
 | 6 | LED control | Output | Guide LED (Q3) |
 | 7 | SDA | Bidirectional | I2C to the PCAL6416 |
 | 8 | USB D+ | Bidirectional | From the USB-C port |
-| 9 | ~RESET / power hold | Output | High = power held + expander out of reset. *Verify* |
+| 9 | ~RESET / power hold | Output | High = power held (measured) + expander out of reset (*verify*). No effect on USB |
 | 10 | USB D− | Bidirectional | |
-| 11 | ? | — | Also J7 pin 1 (Play & Charge?). *Unknown* |
+| 11 | Play & Charge detect? | Input | J7 pin 1 (0.1 Ω), SoC pin 1; 2.4 kΩ to GND on the bottom board; not a rail or GND |
 | 12 | VBUS | Input | USB detection |
-| 13 | Pair sense via D30 | Input | Suspected; active-low. *Verify* |
+| 13 | Pair sense via D30 | Input | Active-low: low while Pair is pressed, not Guide (measured) |
 | 14 | GND | — | |
+
+Rails on pins 1, 3, 4 measured as expected with the controller on.
+
+**J7 (Play & Charge contacts, bottom board):** 1 → J3 pin 11, 2 SCL2 (via R15,
+0 Ω), 3 SDA2, 4 VBUS. No GND pin: the pack's ground is the AA− contact. Not
+used in v1.
 
 *Verify* / *Unknown*: [[todo#J3/J5 connector (top ↔ bottom)]].
 
@@ -80,8 +96,8 @@ KiCad: `pcb/xbx-nrf/`. Design in progress:
 
 TMR drop-in sticks on the Alps RKJXV footprint. Pinout from the stock bottom
 board ([[references/third-party/XB1_1914_BOTTOM_BOARD_SOME_VALUES.pdf]]) and
-board scans; same for both sticks. Wipers as the middle pin: by elimination,
-not yet measured.
+board scans; same for both sticks. Checked on the test controller: wipers
+(TP64/63/112/65) and click (TP42/43) by continuity.
 
 | Pin | Function | Net (left / right) |
 |---|---|---|
@@ -99,13 +115,14 @@ not yet measured.
 > A pot only inverts its axis; a TMR stick's sensor can be damaged. Axis
 > direction is fixed by this pinout and corrected in firmware.
 
-- **Directions (stock convention, check with the TMR modules):** X reads
-  higher to the right (matches the report); Y reads higher downwards, so Y is
-  inverted in firmware.
+- **Directions (measured on the stock pots; recheck with the TMR modules):**
+  X reads higher to the right (matches the report); Y reads higher
+  downwards, so Y is inverted in firmware.
 - **Supply:** stock U8 TLV70718 (1.8 V LDO from 3.3 V, EN from the SoC with
-  a 100 kΩ pull-down); ours the same, on while the controller is on. 100 nF
-  from 1.8 V to GND at each stick. The stock SoC uses this rail as its ADC
-  reference (ratiometric); the nRF52840 can't, so AIN7 measures it.
+  a 100 kΩ pull-down); ours 1V8_STICK ([[#Supplies]]), on while the
+  controller is on. 100 nF from 1.8 V to GND at each stick. The stock SoC
+  uses this rail as its ADC reference (ratiometric); the nRF52840 can't, so
+  AIN7 measures it.
 - **Filtering:** per axis, series R + C to GND at the nRF's AIN pin (C
   closest to the pin): 0 Ω + 100 nF, R optional for tuning (up to 1 kΩ). The
   SAADC input is > 1 MΩ, so 1 kΩ costs < 0.1 % gain error (absorbed by
@@ -128,10 +145,39 @@ devicetree), so swap for routing as needed.
 | AIN1 | P0.03 | LSY | 0–1.8 V |
 | AIN2 | P0.04 | RSX | 0–1.8 V |
 | AIN3 | P0.05 | RSY | 0–1.8 V |
-| AIN4 | P0.28 | LT (A1304) | Up to TRG+ (3.3 V): gain 1/6 (3.6 V full scale) |
+| AIN4 | P0.28 | LT (A1304) | 0–TRG+: VDD/4 ref, gain 1/4 (ratiometric: TRG+ ≈ VDD) |
 | AIN5 | P0.29 | RT (A1304) | Same as LT |
 | AIN6 | P0.30 | VBAT: switched divider on `3v/B+` | Divided to below 1.8 V |
 | AIN7 | P0.31 | 1V8_STICK: stick supply | Ratio for the stick readings |
+
+### Supplies
+
+The top board supplies 3.3 V (logic, nRF) and 3.6 V (rumble) over J3; the
+sensor rails are ours. Both enables default to off, so the rails stay down
+through reset.
+
+| Rail | Part | From | Enable | Load |
+|---|---|---|---|---|
+| 1V8_STICK | TLV70018DDCR (1.8 V LDO, SOT-23-5) | J3 3.3 V | GPIO high = on, 100 kΩ pull-down | Sticks, AIN7 sense |
+| TRG+ | P-FET, SOT-23 (part open) | J3 3.3 V | GPIO low = on, 100 kΩ gate pull-up to 3.3 V | 2× A1304 |
+
+- **TLV70018 (DDC):** 1 IN, 2 GND, 3 EN, 4 NC (open or GND), 5 OUT. 1 µF
+  X5R/X7R on IN and OUT. EN on above 0.9 V, max VIN + 0.3 V; start-up
+  ~100 µs; ±2 %; no active output discharge. KiCad:
+  `Regulator_Linear:TLV70018_SOT23-5`.
+- **TRG+ P-FET:** source on 3.3 V, drain = TRG+; logic-level (|Vgs(th)| ≤
+  ~1 V, Rds(on) specified at −2.5 V). The A1304 needs a VCC ramp of at
+  least 5 µs: slow the FET with a gate resistor (~10 kΩ; check on a scope).
+  100 nF per sensor (datasheet bypass).
+- **A1304 (LH, SOT-23W):** 1 VCC, 2 VOUT, 3 GND. 3.0–3.6 V, 7.7 mA typ
+  (9 mA max) each; output ratiometric to VCC (50 % at no field); power-on
+  50–70 µs (10 nF load). On the pulsed trigger inputs keep the filter fast:
+  ~10 nF, 0 Ω (100 nF + 1 kΩ would take ~0.5 ms to settle).
+  Candidates in KiCad's `Transistor_FET`: IRLML6401, DMG2301L, AO3401A
+  (JLC basic). A FET instead of the stock LDO-as-switch: our GPIOs are
+  3.3 V, so no level shifting, and it drops less (A1304 needs ≥ 3.0 V).
+- Stock for comparison: U8 TLV70718 (sticks) and U9 TLV70732 from 3.3 V used
+  as a switch for TRG+ (EN from the SoC via R38, 100 kΩ pull-down).
 
 ## Dongle board
 
