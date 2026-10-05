@@ -60,7 +60,8 @@ Locked decisions: [README](README.md). Not yet locked:
 	      and Pair); removing it turns it off.
 - [ ] Trace R25's source.
 - [ ] Q8 and Q14 polarity (PNP expected).
-- [ ] Pin 9 holds power *and* resets the PCAL6416 (R4/EG2).
+- [x] Pin 9 holds power *and* resets the PCAL6416 (R4/EG2): low → no ACK
+      at `0x21` (measured, top board on USB).
 - [x] Pin 13 reads low while Pair is pressed (with a pull-up); Guide doesn't
       affect it.
 - [ ] How the stock SoC powers off (pin 9 release only?).
@@ -85,9 +86,10 @@ Locked decisions: [README](README.md). Not yet locked:
 - [x] INT not connected → poll.
 - [x] Register map checked against the datasheet
       ([[docs/pcal6416#Register map]]).
-- [ ] I2C scan finds `0x21`.
-- [ ] Where are the I2C pull-ups?
-- [ ] Every button on real hardware.
+- [x] I2C scan finds `0x21` (nice!nano, 100 kHz, 4.7 kΩ pull-ups to TP35).
+- [ ] Where are the I2C pull-ups? (4.7 kΩ on our side works; the top board's
+      own not checked.)
+- [x] Every button on real hardware: all match the port map.
 
 ### Bottom board (being replaced)
 - [x] Sticks are on the bottom board.

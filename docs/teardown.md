@@ -55,7 +55,10 @@ use the resistors below, never a direct short.
       One early reading held ~3 s (not repeated).
 - [x] Hold: 1 kΩ from pin 9 to TP35 keeps power after a Guide or Pair tap;
       removing it turns power off.
-- [ ] While held: I2C scan finds the PCAL6416 at `0x21`.
+- [x] I2C (nice!nano test app, top board on USB, 4.7 kΩ pull-ups to TP35):
+      PCAL6416 ACKs at `0x21`; gone while pin 9 is low (reset); every button
+      reads on its mapped bit. Without the pull-up setup the inputs read
+      `0x0000`.
 - [x] Pair sense: pull-up from pin 13 to 3.3 V; low while Pair is pressed,
       not Guide.
 - [x] Rails while on: pins 1 (3.6 V), 3 (`3v/B+`), 4 (3.3 V) as expected.
