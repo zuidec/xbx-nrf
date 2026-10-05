@@ -90,9 +90,11 @@ Locked decisions: [README](README.md). Not yet locked:
       `pcb/xbx-nrf/lib/RKJXV122400R/`; pads checked against
       [[references/third-party/product_catalog_rkjxv.pdf]].
 - [ ] Stock sticks really are RKJXV122400R (calipers or 1:1 print).
-- [ ] Each stick's orientation (which output is X/Y, axis direction; check
-      again with the TMR modules).
-- [ ] Push-switch contact pairs (A/B/C/D).
+- [x] Stick pinout: VR1 = X, VR2 = Y; 1.8 V on VR1_3 + VR2_1, GND on
+      VR1_1 + VR2_3 ([[docs/hardware#Sticks (RKJXV122400R footprint)]]).
+	- [ ] Confirm the wipers (VR1_2, VR2_2) by continuity to TP64 / TP63.
+	- [ ] Axis directions with the TMR modules.
+- [x] Push-switch contact pairs: A/C = signal (LSC/RSC), B/D = GND.
 - [ ] A1304 placement relative to the trigger magnets.
 - [ ] Stick supply `AN+`: U6 TLV70718 (1.8 V LDO with enable).
 - [ ] Trigger sensor supply `TRG+`: pulsed, 125 Hz, 17 % duty.
@@ -141,9 +143,10 @@ Locked decisions: [README](README.md). Not yet locked:
 - [ ] VBUS detect (J3 pin 12).
 - [ ] **Charging:** external (default) / VBUS to J7 for Play & Charge / in
       controller (needs chemistry detection; probably not worth it).
-- [ ] Stick supply: **1.8 V** LDO with enable (like AN+; lower consumption),
-      pulsed around each sample like the trigger supply. Check the TMR sticks'
-      1.8 V rating, current and settling time.
+- [ ] Stick supply: **1.8 V** LDO with enable and 100 kΩ pull-down (like
+      AN+), on while the controller is on, off in sleep. Pulse it around
+      samples only if the TMR sticks' start-up time allows (check their
+      1.8 V rating, current and start-up time).
 - [ ] Trigger sensor supply: switched, pulsed (on, ≥ 100 µs, sample, off).
 - [ ] No back-powering: float GPIOs before a rail goes down.
 
@@ -160,8 +163,8 @@ Locked decisions: [README](README.md). Not yet locked:
 	- [ ] Which connector goes where; connector/cable type.
 	- [ ] Pick the better of the two: RSSI/loss at distance with a Pro Micro
 	      (VNA sweep optional).
-- [ ] Analog inputs: 8 on the nRF52840; 4 stick + 2 trigger + 1 battery = 7
-      (8 if the 1.8 V stick rail is measured).
+- [ ] Analog inputs: all 8 used (4 stick, 2 trigger, battery, 1.8 V stick
+      rail); plan in [[docs/hardware#Analog inputs]].
 - [ ] RF layout: short 50 Ω CPW to the coax, ground vias, away from motors and
       battery wiring.
 - [ ] SWD header / pads.
@@ -169,9 +172,9 @@ Locked decisions: [README](README.md). Not yet locked:
 
 ### Inputs
 - [x] Sticks: **TMR** (low noise, no wear drift).
-- [ ] Stick wiring gives the report's directions (right, up = positive),
-      so no firmware inversion is needed. The breadboard stick reads X
-      reversed.
+- [ ] Stick directions (right, up = positive) set in firmware: the supply
+      pins are fixed by the stock pinout (never swap them on TMR sticks).
+      Expected: Y inverted. The breadboard stick reads X reversed.
 - [ ] Calibration button on its own GPIO, reachable without opening the
       shell (battery bay?) ([[#Stick and trigger calibration]]).
 - [ ] Triggers: A1304 at the stock positions.
@@ -401,10 +404,14 @@ USB modes, in order; one active at a time.
       unknown whether it does for `xpad` / USB receivers.
 - [ ] USB-powered "off" state.
 - [ ] PCAL6416 polling ([[docs/pcal6416#Firmware notes]]).
-- [ ] Stick/trigger ADC: internal 0.6 V reference, gain 1/3 → 0–1.8 V at
-      12 bits (not ratiometric; calibration absorbs the LDO offset; if it
-      drifts, measure the 1.8 V rail on the 8th analog input). Stick and
-      trigger supplies pulsed around each sample.
+- [ ] Stick/trigger ADC ([[docs/hardware#Analog inputs]]): sticks on the
+      internal 0.6 V reference, gain 1/3 (0–1.8 V), as a ratio to the
+      measured 1.8 V rail; triggers gain 1/6 (TRG+ is 3.3 V). Trigger supply
+      pulsed around each sample; stick supply as its hardware item allows.
+- [ ] **Custom board pins:** board definition for the controller (like
+      `xbx_dongle`), replacing the Pro Micro overlay's pins with the
+      schematic's: analog inputs, LSC / RSC / B, Guide, Pair, power hold,
+      I2C, A3910 inputs, supply enables, LEDs.
 - [ ] Rumble PWM ([[docs/a3910#Firmware notes]]).
 - [x] Rumble safety: rumble/LED values off if no ACK payload for 100 ms
       (`OUTPUT_TIMEOUT_MS`); the motor driver will read these values.

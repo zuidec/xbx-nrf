@@ -1,7 +1,7 @@
 ---
-title: Hardware (stock top board, J3, dongle board)
+title: Hardware (stock top board, J3, controller and dongle boards)
 created: 2026-09-29
-updated: 2026-10-02
+updated: 2026-10-05
 tags:
   - xbx-nrf
   - reference
@@ -11,9 +11,10 @@ aliases:
   - J3
   - top board
   - dongle board
+  - controller board
 ---
 
-# Hardware: stock top board, J3, dongle board
+# Hardware: stock top board, J3, controller and dongle boards
 
 The stock **top board** and the **J3** connector our bottom board plugs into.
 Related: [[docs/pcal6416|PCAL6416 (buttons)]], [[docs/a3910|A3910 (rumble)]],
@@ -69,6 +70,68 @@ matching network; the stock SoC board reaches them through coax connectors J1,
 J2. Both cover 2.4 GHz and arrive matched to 50 Ω, so the module's u.FL
 connects to one by a coax pigtail with no tuning; a functional check picks
 which ([[todo#MCU / radio]]).
+
+## Controller board
+
+KiCad: `pcb/xbx-nrf/`. Design in progress:
+[[todo#3. Hardware design — controller board]].
+
+### Sticks (RKJXV122400R footprint)
+
+TMR drop-in sticks on the Alps RKJXV footprint. Pinout from the stock bottom
+board ([[references/third-party/XB1_1914_BOTTOM_BOARD_SOME_VALUES.pdf]]) and
+board scans; same for both sticks. Wipers as the middle pin: by elimination,
+not yet measured.
+
+| Pin | Function | Net (left / right) |
+|---|---|---|
+| VR1_1 | X pot end "L" | GND |
+| VR1_2 | X wiper | LSX / RSX |
+| VR1_3 | X pot end "R" | 1.8 V (trace to VR2_1) |
+| VR2_1 | Y pot end "D" | 1.8 V |
+| VR2_2 | Y wiper | LSY / RSY |
+| VR2_3 | Y pot end "U" | GND |
+| A, C | Click, signal side | LSC / RSC (stock: 33 Ω series, cap to GND) |
+| B, D | Click, other side | GND |
+| SH1–SH4 | Shield | GND |
+
+> [!warning] Never swap 1.8 V and GND on a TMR stick
+> A pot only inverts its axis; a TMR stick's sensor can be damaged. Axis
+> direction is fixed by this pinout and corrected in firmware.
+
+- **Directions (stock convention, check with the TMR modules):** X reads
+  higher to the right (matches the report); Y reads higher downwards, so Y is
+  inverted in firmware.
+- **Supply:** stock U8 TLV70718 (1.8 V LDO from 3.3 V, EN from the SoC with
+  a 100 kΩ pull-down); ours the same, on while the controller is on. 100 nF
+  from 1.8 V to GND at each stick. The stock SoC uses this rail as its ADC
+  reference (ratiometric); the nRF52840 can't, so AIN7 measures it.
+- **Filtering:** per axis, series R + C to GND at the nRF's AIN pin (C
+  closest to the pin): 0 Ω + 100 nF, R optional for tuning (up to 1 kΩ). The
+  SAADC input is > 1 MΩ, so 1 kΩ costs < 0.1 % gain error (absorbed by
+  calibration); the 100 nF supplies the sampling charge, and R isolates the
+  sensor output from the cap. Filter the 1V8 sense the same way. Stock: caps
+  only, no series R (C24 LSX, C22 + C322 LSY, C25 RSX, C23 RSY); wipers go
+  straight to the SoC.
+- Stock test points: TP64 LSX, TP63 LSY, TP112 RSX, TP65 RSY, TP103 1.8 V,
+  TP36 1.8 V enable, TP42 LSC, TP43 RSC.
+
+### Analog inputs
+
+All 8 SAADC inputs are used; reserve them before assigning digital pins. Any
+AIN can take any signal (reference and gain are per channel, mapping in the
+devicetree), so swap for routing as needed.
+
+| AIN | Pin | Signal | Range / ADC setting |
+|---|---|---|---|
+| AIN0 | P0.02 | LSX | 0–1.8 V: internal 0.6 V ref, gain 1/3 |
+| AIN1 | P0.03 | LSY | 0–1.8 V |
+| AIN2 | P0.04 | RSX | 0–1.8 V |
+| AIN3 | P0.05 | RSY | 0–1.8 V |
+| AIN4 | P0.28 | LT (A1304) | Up to TRG+ (3.3 V): gain 1/6 (3.6 V full scale) |
+| AIN5 | P0.29 | RT (A1304) | Same as LT |
+| AIN6 | P0.30 | VBAT: switched divider on `3v/B+` | Divided to below 1.8 V |
+| AIN7 | P0.31 | 1V8_STICK: stick supply | Ratio for the stick readings |
 
 ## Dongle board
 
