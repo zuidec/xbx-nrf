@@ -73,15 +73,28 @@ battery through Q6/Q7's gate network (direction not yet checked).
 
 Rails on pins 1, 3, 4 measured as expected with the controller on.
 
-**Connector (measured, no markings):** 2 × 7, 1.27 × 1.27 mm. Top board J3
-male: 4 mm tall, 0.5 mm base, 3.5 mm tapered pins, two locating slots.
-Bottom board J5 female: 9.35 × 3.15 × ~3.5 mm, gull-wing SMT legs (odd pins
-one row, even the other), two locating tabs on the even-pin side (5.3 mm
-apart, 0.5 mm wide; can be omitted), chamfer at the pin 1 corner (keep).
-Boards ~5.2 mm apart mated: ~1.2 mm gap above J5, ~2.3 mm insertion, so the
-screw bosses set the stack and a socket 3.0–4.0 mm tall fits. KiCad footprint:
-`Connector_PinSocket_1.27mm:PinSocket_2x07_P1.27mm_Vertical_SMD` (pad rows
-±1.8 mm, 2.1 × 0.75 mm pads); add the pin 1 chamfer on Fab/silkscreen.
+**Connector (measured, no markings):** 2 × 7, 1.27 × 1.27 mm.
+
+| | Top board J3 (male) | Bottom board J5 (female, ours) |
+|---|---|---|
+| Body | Shrouded header, 4 mm tall incl. 0.5 mm floor | 9.35 × 3.15 × 3.5 mm |
+| Shroud opening | 9.5 × 3.25 mm, 45° chamfer at pin 1 (~1.2 mm hypotenuse, ~0.85 mm legs) | Chamfered to match at pin 1 |
+| Keying | Two slots | Two tabs on the even-pin side, 5.3 mm apart, 0.5 mm wide |
+| Contacts | 3.5 mm tapered pins | Entry holes ~0.8 mm |
+| Mounting | – | Gull-wing SMT, odd pins one row, even the other |
+
+- **Stack:** boards ~5.2 mm apart; J5 sits ~2.3 mm deep in the shroud (its
+  mating surface), ~1.2 mm gap to J3's floor. The screw bosses set the stack.
+- **Fit:** a 2 × 7 socket body is ~9.3 mm long, so a square corner only
+  clears the shroud's chamfer if (9.5 − length) + (3.25 − width) ≥ 1.7 mm:
+  impossible for two rows. A replacement needs the pin 1 chamfer (≥ ~0.75 mm
+  legs), or the chamfered fill gets cut out of J3's shroud corner. The tabs
+  can be omitted.
+- **Sourcing:** no direct match found (open). Target: ~3.5 mm tall, body
+  within 9.5 × 3.25 mm, SMT.
+- KiCad footprint (generic 1.27 mm 2 × 7 SMD socket):
+  `Connector_PinSocket_1.27mm:PinSocket_2x07_P1.27mm_Vertical_SMD`; mark the
+  pin 1 chamfer on Fab/silkscreen and the shroud outline on the courtyard.
 
 **J7 (Play & Charge contacts, bottom board):** 1 → J3 pin 11, 2 SCL2 (via R15,
 0 Ω), 3 SDA2, 4 VBUS. No GND pin: the pack's ground is the AA− contact. Not

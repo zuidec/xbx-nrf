@@ -74,9 +74,9 @@ Locked decisions: [README](README.md). Not yet locked:
 ### J3/J5 connector (top ↔ bottom)
 - [x] Connector pitch and geometry: 2 × 7, 1.27 mm; J3 male (top board), J5
       female (ours) ([[docs/hardware#J3: top ↔ bottom board connector]]).
-- [ ] Source the J5 replacement (female, SMT, 3.0–4.0 mm tall, pin 1
-      chamfer): check the Samtec CLP-107 drawing; test-fit candidates on J3.
-      Fallback: reuse the stock J5.
+- [ ] Source the J5 replacement: female, SMT, ~3.5 mm tall, body within the
+      9.5 × 3.25 mm shroud, pin 1 chamfer (or the shroud corner gets cut). No
+      direct match found yet; test-fit candidates on J3.
 	- [ ] Measure the stock J5 pad span against the KiCad footprint (5.7 mm
 	      outer edge to outer edge).
 - [x] Full pinout vs. schematic:
