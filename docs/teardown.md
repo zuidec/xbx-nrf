@@ -67,6 +67,8 @@ use the resistors below, never a direct short.
 - [x] Rails while on: pins 1 (3.6 V), 3 (`3v/B+`), 4 (3.3 V) as expected.
 - [x] USB plugged in, no button: all rails up. AA side still ~0.25 mA
       (direction not checked).
+- [ ] `3v/B+` voltage on USB (TP34): must stay below 3.6 V for the battery
+      sense input.
 - [x] Pin 11: 0.1 Ω to J7 pin 1, 2.4 kΩ to GND; no continuity to GND or any
       rail. Rails show a slowly climbing resistance: decoupling caps
       charging, normal.

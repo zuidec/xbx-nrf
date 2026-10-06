@@ -162,16 +162,28 @@ All 8 SAADC inputs are used; reserve them before assigning digital pins. Any
 AIN can take any signal (reference and gain are per channel, mapping in the
 devicetree), so swap for routing as needed.
 
-| AIN | Pin | Signal | Range / ADC setting |
-|---|---|---|---|
-| AIN0 | P0.02 | LSX | 0–1.8 V: internal 0.6 V ref, gain 1/3 |
-| AIN1 | P0.03 | LSY | 0–1.8 V |
-| AIN2 | P0.04 | RSX | 0–1.8 V |
-| AIN3 | P0.05 | RSY | 0–1.8 V |
-| AIN4 | P0.28 | LT (A1304) | 0–TRG+: VDD/4 ref, gain 1/4 (ratiometric: TRG+ ≈ VDD) |
-| AIN5 | P0.29 | RT (A1304) | Same as LT |
-| AIN6 | P0.30 | VBAT: switched divider on `3v/B+` | Divided to below 1.8 V |
-| AIN7 | P0.31 | 1V8_STICK: stick supply | Ratio for the stick readings |
+Unlike an STM32 there is no external reference: each channel's full scale is
+reference ÷ gain, set per channel. Pins never above VDD + 0.3 V regardless.
+
+| AIN | Pin | Signal | Reference | Gain | Full scale |
+|---|---|---|---|---|---|
+| AIN0 | P0.02 | LSX | Internal 0.6 V | 1/3 | 1.8 V |
+| AIN1 | P0.03 | LSY | Internal 0.6 V | 1/3 | 1.8 V |
+| AIN2 | P0.04 | RSX | Internal 0.6 V | 1/3 | 1.8 V |
+| AIN3 | P0.05 | RSY | Internal 0.6 V | 1/3 | 1.8 V |
+| AIN4 | P0.28 | LT (A1304) | VDD/4 | 1/4 | VDD (ratiometric: TRG+ ≈ VDD) |
+| AIN5 | P0.29 | RT (A1304) | VDD/4 | 1/4 | VDD |
+| AIN6 | P0.30 | VBAT: `3v/B+` via 100 kΩ, 100 nF at the pin, no divider | Internal 0.6 V | 1/6 | 3.6 V |
+| AIN7 | P0.31 | 1V8_STICK: stick supply | Internal 0.6 V | 1/4 | 2.4 V (rail at ~75 %, no clipping) |
+
+Sticks are read as a ratio to AIN7 (same reference, so its error cancels;
+fixed gain differences are absorbed by calibration). Run the SAADC offset
+calibration at start-up.
+
+VBAT needs no divider: `3v/B+` stays below 3.6 V (2 AAs ≤ ~3.0 V; on USB below
+3.3 V, as U5/U6 only boost) and is 0 V when off (behind Q6/Q7), so nothing
+drains. The 100 kΩ limits current into the pin's protection diode while
+`3v/B+` comes up before 3.3 V; the 100 nF supplies the sampling charge.
 
 ### Supplies
 

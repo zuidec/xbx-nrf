@@ -154,7 +154,9 @@ Locked decisions: [README](README.md). Not yet locked:
 	- [ ] GPIO ← J3 pin 2 (Guide), pull-up.
 	- [ ] GPIO ← J3 pin 13 (Pair), pull-up, if confirmed; readable while the
 	      expander is in reset.
-- [ ] Battery sense: switched ADC divider on `3v/B+` (J3 pin 3).
+- [ ] Battery sense: `3v/B+` (J3 pin 3) to AIN6 via 100 kΩ, 100 nF at the
+      pin, no divider ([[docs/hardware#Analog inputs]]).
+	- [ ] Measure `3v/B+` on USB: must stay below 3.6 V.
 	- [ ] NiMH cutoff (~1.0 V/cell = 2.0 V) and warning threshold.
 	- [ ] Flat NiMH curve → coarse gauge; maybe coulomb counting.
 	- [ ] Regulated Li-ion AAs: no gauge possible.
@@ -430,8 +432,8 @@ USB modes, in order; one active at a time.
 - [ ] PCAL6416 polling ([[docs/pcal6416#Firmware notes]]).
 - [ ] Stick/trigger ADC ([[docs/hardware#Analog inputs]]): sticks on the
       internal 0.6 V reference, gain 1/3 (0–1.8 V), as a ratio to the
-      measured 1.8 V rail; triggers on VDD/4, gain 1/4 (ratiometric, as
-      TRG+ ≈ VDD). Trigger supply
+      measured 1.8 V rail (AIN7 at gain 1/4 so it doesn't clip); triggers on
+      VDD/4, gain 1/4 (ratiometric, as TRG+ ≈ VDD). Trigger supply
       pulsed around each sample; stick supply as its hardware item allows.
 - [ ] **Custom board pins:** board definition for the controller (like
       `xbx_dongle`), replacing the Pro Micro overlay's pins with the
