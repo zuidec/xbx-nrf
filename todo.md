@@ -170,7 +170,7 @@ Locked decisions: [README](README.md). Not yet locked:
       1.8 V rating, current and start-up time).
 - [ ] Trigger sensor supply TRG+: **P-FET** from 3.3 V, gate pull-up,
       GPIO low = on; pulsed (on, ≥ 100 µs, sample, off).
-	- [ ] Choose the FET (IRLML6401 / DMG2301L / AO3401A).
+	- [x] FET: AO3401A, one for both triggers.
 - [ ] No back-powering: float GPIOs before a rail goes down.
 
 ### MCU / radio

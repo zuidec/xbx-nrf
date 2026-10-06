@@ -194,23 +194,19 @@ through reset.
 | Rail | Part | From | Enable | Load |
 |---|---|---|---|---|
 | 1V8_STICK | TLV70018DDCR (1.8 V LDO, SOT-23-5) | J3 3.3 V | GPIO high = on, 100 kΩ pull-down | Sticks, AIN7 sense |
-| TRG+ | P-FET, SOT-23 (part open) | J3 3.3 V | GPIO low = on, 100 kΩ gate pull-up to 3.3 V | 2× A1304 |
+| TRG+ | P-FET (AO3401A), one for both triggers | J3 3.3 V | GPIO low = on, gate pull-up (off through reset) | 2× A1304 |
 
 - **TLV70018 (DDC):** 1 IN, 2 GND, 3 EN, 4 NC (open or GND), 5 OUT. 1 µF
   X5R/X7R on IN and OUT. EN on above 0.9 V, max VIN + 0.3 V; start-up
   ~100 µs; ±2 %; no active output discharge. KiCad:
   `Regulator_Linear:TLV70018_SOT23-5`.
-- **TRG+ P-FET:** source on 3.3 V, drain = TRG+; logic-level (|Vgs(th)| ≤
-  ~1 V, Rds(on) specified at −2.5 V). The A1304 needs a VCC ramp of at
-  least 5 µs: slow the FET with a gate resistor (~10 kΩ; check on a scope).
-  100 nF per sensor (datasheet bypass).
+- **TRG+:** a P-FET instead of the stock LDO-as-switch: our GPIOs are 3.3 V,
+  so no level shifting, and it drops less (A1304 needs ≥ 3.0 V). Switch-on
+  slowed by a gate resistor: the A1304 needs a VCC ramp of at least 5 µs.
 - **A1304 (LH, SOT-23W):** 1 VCC, 2 VOUT, 3 GND. 3.0–3.6 V, 7.7 mA typ
   (9 mA max) each; output ratiometric to VCC (50 % at no field); power-on
   50–70 µs (10 nF load). On the pulsed trigger inputs keep the filter fast:
   ~10 nF, 0 Ω (100 nF + 1 kΩ would take ~0.5 ms to settle).
-  Candidates in KiCad's `Transistor_FET`: IRLML6401, DMG2301L, AO3401A
-  (JLC basic). A FET instead of the stock LDO-as-switch: our GPIOs are
-  3.3 V, so no level shifting, and it drops less (A1304 needs ≥ 3.0 V).
 - Stock for comparison: U8 TLV70718 (sticks) and U9 TLV70732 from 3.3 V used
   as a switch for TRG+ (EN from the SoC via R38, 100 kΩ pull-down).
 
