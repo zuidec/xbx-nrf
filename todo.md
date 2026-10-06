@@ -72,7 +72,13 @@ Locked decisions: [README](README.md). Not yet locked:
 	      battery): check the direction.
 
 ### J3/J5 connector (top ↔ bottom)
-- [ ] Connector part number and pitch; source the mating half.
+- [x] Connector pitch and geometry: 2 × 7, 1.27 mm; J3 male (top board), J5
+      female (ours) ([[docs/hardware#J3: top ↔ bottom board connector]]).
+- [ ] Source the J5 replacement (female, SMT, 3.0–4.0 mm tall, pin 1
+      chamfer): check the Samtec CLP-107 drawing; test-fit candidates on J3.
+      Fallback: reuse the stock J5.
+	- [ ] Measure the stock J5 pad span against the KiCad footprint (5.7 mm
+	      outer edge to outer edge).
 - [x] Full pinout vs. schematic:
 	- [x] Pin 11: J7 pin 1 (0.1 Ω) and SoC pin 1; 2.4 kΩ to GND; not a rail
 	      or GND. Probably Play & Charge detect.

@@ -73,6 +73,16 @@ battery through Q6/Q7's gate network (direction not yet checked).
 
 Rails on pins 1, 3, 4 measured as expected with the controller on.
 
+**Connector (measured, no markings):** 2 × 7, 1.27 × 1.27 mm. Top board J3
+male: 4 mm tall, 0.5 mm base, 3.5 mm tapered pins, two locating slots.
+Bottom board J5 female: 9.35 × 3.15 × ~3.5 mm, gull-wing SMT legs (odd pins
+one row, even the other), two locating tabs on the even-pin side (5.3 mm
+apart, 0.5 mm wide; can be omitted), chamfer at the pin 1 corner (keep).
+Boards ~5.2 mm apart mated: ~1.2 mm gap above J5, ~2.3 mm insertion, so the
+screw bosses set the stack and a socket 3.0–4.0 mm tall fits. KiCad footprint:
+`Connector_PinSocket_1.27mm:PinSocket_2x07_P1.27mm_Vertical_SMD` (pad rows
+±1.8 mm, 2.1 × 0.75 mm pads); add the pin 1 chamfer on Fab/silkscreen.
+
 **J7 (Play & Charge contacts, bottom board):** 1 → J3 pin 11, 2 SCL2 (via R15,
 0 Ω), 3 SDA2, 4 VBUS. No GND pin: the pack's ground is the AA− contact. Not
 used in v1.
