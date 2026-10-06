@@ -18,14 +18,14 @@ it back together. Related: [[docs/hardware]], [[docs/a3910]],
 
 ## Motor wires (bottom board)
 
-The grip motors sit in the handles: **heavy (strong) on the left, light
-(weak) on the right**, seen from the front. The wires are soldered to pads
+The grip motors sit in the handles: **heavy (strong) on the left, weak
+(light) on the right**, seen from the front. The wires are soldered to pads
 SQ1–SQ8; odd pads are driven (A3910 OUTx), even pads are GND.
 
 | Motor | Driven pad (+) | GND pad (−) | Driver |
 |---|---|---|---|
 | Heavy (left grip) | SQ3, red | SQ4, black | U4 OUT2 |
-| Light (right grip) | SQ7, red | SQ8, black | U5 OUT2 |
+| Weak (right grip) | SQ7, red | SQ8, black | U5 OUT2 |
 | LT impulse trigger | SQ1, grey | SQ2, black | U4 OUT1 |
 | RT impulse trigger | SQ5, grey | SQ6, black | U5 OUT1 |
 

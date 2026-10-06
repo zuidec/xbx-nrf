@@ -43,7 +43,7 @@ int hid_pad_init(void);
 void hid_pad_update(const struct hid_pad_state *state);
 
 /*
- * Output report handler: rumble (heavy, light, LT, RT) and Guide LED, 0..255.
+ * Output report handler: rumble (heavy, weak, LT, RT) and Guide LED, 0..255.
  * Also called with all zeros when the USB interface goes down.
  */
 typedef void (*hid_pad_output_cb_t)(const uint8_t rumble[4], uint8_t led);

@@ -72,7 +72,7 @@ void radio_queue_ack(uint8_t pipe, const void *data, size_t len);
 void radio_link_lost(uint8_t link);
 
 /*
- * Rumble (heavy, light, LT, RT: 0..255) and Guide LED for one controller; sent
+ * Rumble (heavy, weak, LT, RT: 0..255) and Guide LED for one controller; sent
  * in its next ACK payloads until changed.
  */
 void radio_set_output(uint8_t link, const uint8_t rumble[4], uint8_t led);

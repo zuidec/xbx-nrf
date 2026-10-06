@@ -95,7 +95,7 @@ Header `09 00 <seq> 09`, then:
 | 6 | Left impulse | 0–100 % |
 | 7 | Right impulse | 0–100 % |
 | 8 | Left grip (heavy) | 0–100 % |
-| 9 | Right grip (light) | 0–100 % |
+| 9 | Right grip (weak) | 0–100 % |
 | 10 | Duration | ×10 ms; `0` = stop all |
 | 11 | Delay | ×10 ms |
 | 12 | Repeat | Count; `0` = play once |

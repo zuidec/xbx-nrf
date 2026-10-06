@@ -20,6 +20,6 @@ uint16_t input_held_at_boot(void);
 void input_read(struct xbx_input_report *report);
 
 /* Rumble to LED brightness, 0..255 each. */
-void input_set_rumble(uint8_t heavy, uint8_t light);
+void input_set_rumble(uint8_t heavy, uint8_t weak);
 
 #endif /* XBX_CTRL_INPUT_H_ */

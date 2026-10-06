@@ -479,30 +479,30 @@ static void host_output(const uint8_t rumble[4], uint8_t led)
 }
 
 /* wired XInput: 2 motors */
-static void xinput_rumble(uint8_t heavy, uint8_t light)
+static void xinput_rumble(uint8_t heavy, uint8_t weak)
 {
 	k_spinlock_key_t key = k_spin_lock(&host_lock);
 
 	host_rumble[XBX_RUMBLE_HEAVY] = heavy;
-	host_rumble[XBX_RUMBLE_LIGHT] = light;
+	host_rumble[XBX_RUMBLE_WEAK] = weak;
 	k_spin_unlock(&host_lock, key);
 }
 
-/* heavy/light for the motors: from the dongle, or wired from the PC (larger of
+/* heavy/weak for the motors: from the dongle, or wired from the PC (larger of
  * the vendor report and the PID strength, as on the dongle)
  */
-static void rumble_get(uint8_t *heavy, uint8_t *light)
+static void rumble_get(uint8_t *heavy, uint8_t *weak)
 {
 	if (wired) {
 		uint8_t pid = hid_pid_strength(k_uptime_get_32());
 		k_spinlock_key_t key = k_spin_lock(&host_lock);
 
 		*heavy = MAX(host_rumble[XBX_RUMBLE_HEAVY], pid);
-		*light = MAX(host_rumble[XBX_RUMBLE_LIGHT], pid);
+		*weak = MAX(host_rumble[XBX_RUMBLE_WEAK], pid);
 		k_spin_unlock(&host_lock, key);
 	} else {
 		*heavy = last_output.rumble[XBX_RUMBLE_HEAVY];
-		*light = last_output.rumble[XBX_RUMBLE_LIGHT];
+		*weak = last_output.rumble[XBX_RUMBLE_WEAK];
 	}
 }
 
@@ -530,14 +530,14 @@ static void wired_update(void)
 
 #if !defined(CONFIG_XBX_FAKE_INPUT)
 /*
- * show heavy/light rumble on the LEDs; only touches the PWM on a change. The
+ * show heavy/weak rumble on the LEDs; only touches the PWM on a change. The
  * heavy LED is the pairing indicator while pairing.
  */
 static void rumble_leds_update(void)
 {
 	static uint8_t shown[2];
 	static bool was_pairing;
-	uint8_t heavy, light;
+	uint8_t heavy, weak;
 
 	if (pair_indicator_busy()) {
 		was_pairing = true;
@@ -547,11 +547,11 @@ static void rumble_leds_update(void)
 		was_pairing = false;
 		shown[0] = shown[1] = 0xFF; /* force a refresh */
 	}
-	rumble_get(&heavy, &light);
-	if (heavy != shown[0] || light != shown[1]) {
-		input_set_rumble(heavy, light);
+	rumble_get(&heavy, &weak);
+	if (heavy != shown[0] || weak != shown[1]) {
+		input_set_rumble(heavy, weak);
 		shown[0] = heavy;
-		shown[1] = light;
+		shown[1] = weak;
 	}
 }
 #endif
@@ -784,12 +784,12 @@ int main(void)
 			last_output.rumble[0], last_output.rumble[1], last_output.rumble[2],
 			last_output.rumble[3], last_output.led);
 		prev_corrections = corrections;
-		uint8_t heavy, light;
+		uint8_t heavy, weak;
 
-		rumble_get(&heavy, &light);
+		rumble_get(&heavy, &weak);
 		LOG_INF("%s  buttons %04x  lx %d ly %d  lt %u rt %u  motors %u %u",
 			wired ? "wired" : "radio", last_input.buttons, last_input.lx, last_input.ly,
-			last_input.lt, last_input.rt, heavy, light);
+			last_input.lt, last_input.rt, heavy, weak);
 		prev = now;
 	}
 	return 0;

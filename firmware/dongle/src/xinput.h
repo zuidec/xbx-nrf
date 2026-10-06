@@ -18,7 +18,7 @@ struct xbx_input_report;
 /* Host commands, called from the USB stack's thread. */
 struct xinput_callbacks {
 	/* rumble 0..255; also (0, 0) when the host goes away */
-	void (*rumble)(uint8_t slot, uint8_t heavy, uint8_t light);
+	void (*rumble)(uint8_t slot, uint8_t heavy, uint8_t weak);
 	/* xpad LED pattern 0..15 (2..5 flash player 1..4, 6..9 player 1..4 on) */
 	void (*led)(uint8_t slot, uint8_t pattern);
 	/* Guide held 5 s: xpad asks the receiver to turn the controller off */

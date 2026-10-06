@@ -101,7 +101,7 @@ static const struct adc_dt_spec adc_lx = ADC_DT_SPEC_GET_BY_NAME(ZEPHYR_USER, lx
 static const struct adc_dt_spec adc_ly = ADC_DT_SPEC_GET_BY_NAME(ZEPHYR_USER, ly);
 
 static const struct pwm_dt_spec led_heavy = PWM_DT_SPEC_GET_BY_NAME(ZEPHYR_USER, heavy);
-static const struct pwm_dt_spec led_light = PWM_DT_SPEC_GET_BY_NAME(ZEPHYR_USER, light);
+static const struct pwm_dt_spec led_weak = PWM_DT_SPEC_GET_BY_NAME(ZEPHYR_USER, weak);
 
 static uint32_t pressed;                   /* debounced, bit per input_pin.bit */
 static uint8_t lockout_ms[ARRAY_SIZE(pins)];
@@ -213,7 +213,7 @@ static struct {
 } cal;
 
 /* last rumble request, shown on the LEDs whenever not calibrating */
-static uint8_t rumble_heavy, rumble_light;
+static uint8_t rumble_heavy, rumble_weak;
 
 static void led_set(const struct pwm_dt_spec *led, uint8_t level);
 
@@ -250,7 +250,7 @@ static void axis_store(struct calib_data *data, enum calib_axis_id id, struct st
 static void status_led(bool on)
 {
 	led_set(&led_heavy, on ? 0xFF : 0);
-	led_set(&led_light, 0);
+	led_set(&led_weak, 0);
 }
 
 static void cal_enter(enum cal_state state)
@@ -258,7 +258,7 @@ static void cal_enter(enum cal_state state)
 	cal.state = state;
 	cal.ms = 0;
 	if (state == CAL_IDLE) {
-		input_set_rumble(rumble_heavy, rumble_light); /* LEDs back to rumble */
+		input_set_rumble(rumble_heavy, rumble_weak); /* LEDs back to rumble */
 	}
 }
 
@@ -476,7 +476,7 @@ int input_init(void)
 		}
 	}
 
-	if (!pwm_is_ready_dt(&led_heavy) || !pwm_is_ready_dt(&led_light)) {
+	if (!pwm_is_ready_dt(&led_heavy) || !pwm_is_ready_dt(&led_weak)) {
 		return -ENODEV;
 	}
 	input_set_rumble(0, 0);
@@ -569,12 +569,12 @@ static void led_set(const struct pwm_dt_spec *led, uint8_t level)
 	pwm_set_pulse_dt(led, pulse);
 }
 
-void input_set_rumble(uint8_t heavy, uint8_t light)
+void input_set_rumble(uint8_t heavy, uint8_t weak)
 {
 	rumble_heavy = heavy;
-	rumble_light = light;
+	rumble_weak = weak;
 	if (cal.state == CAL_IDLE) {
 		led_set(&led_heavy, heavy);
-		led_set(&led_light, light);
+		led_set(&led_weak, weak);
 	}
 }

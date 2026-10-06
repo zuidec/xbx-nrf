@@ -87,14 +87,14 @@ static struct player *xslot_player(uint8_t xslot)
 }
 
 /* XInput: 2 motors */
-static void xinput_rumble(uint8_t slot, uint8_t heavy, uint8_t light)
+static void xinput_rumble(uint8_t slot, uint8_t heavy, uint8_t weak)
 {
 	k_spinlock_key_t key = k_spin_lock(&host_lock);
 	struct player *p = xslot_player(slot);
 
 	if (p) {
 		p->host_rumble[XBX_RUMBLE_HEAVY] = heavy;
-		p->host_rumble[XBX_RUMBLE_LIGHT] = light;
+		p->host_rumble[XBX_RUMBLE_WEAK] = weak;
 	}
 	k_spin_unlock(&host_lock, key);
 }
@@ -147,7 +147,7 @@ static void output_update(uint8_t link)
 		uint8_t pid = hid_pid_strength(k_uptime_get_32());
 
 		rumble[XBX_RUMBLE_HEAVY] = MAX(rumble[XBX_RUMBLE_HEAVY], pid);
-		rumble[XBX_RUMBLE_LIGHT] = MAX(rumble[XBX_RUMBLE_LIGHT], pid);
+		rumble[XBX_RUMBLE_WEAK] = MAX(rumble[XBX_RUMBLE_WEAK], pid);
 	}
 	radio_set_output(link, rumble, led);
 }

@@ -116,7 +116,7 @@ Locked decisions: [README](README.md). Not yet locked:
       SoC, 100 kΩ pull-down).
 - [x] Trigger sensor supply `TRG+`: U9 TLV70732 from 3.3 V as a switch;
       pulsed, 125 Hz, 17 % duty.
-- [x] Rumble drivers: 2× A3910 (U4: LT + Heavy, U5: RT + Light)
+- [x] Rumble drivers: 2× A3910 (U4: LT + Heavy, U5: RT + Weak)
       ([[docs/a3910#Stock wiring (bottom board)]]).
 - [ ] Motor pad positions, VBB decoupling, CR1–CR4 parts
       ([[docs/a3910#To verify]]).
@@ -207,7 +207,7 @@ Locked decisions: [README](README.md). Not yet locked:
 
 ### Rumble
 [[docs/a3910|A3910 notes]]
-- [x] Stock wiring: 2× A3910, 8 GPIOs (LIN to GND on Heavy/Light frees 2).
+- [x] Stock wiring: 2× A3910, 8 GPIOs (LIN to GND on Heavy/Weak frees 2).
 - [ ] Schematic block ([[docs/a3910#Schematic checklist]]).
 - [ ] A3910 symbol (draw, or `easyeda2kicad` C150818).
 - [ ] Motor pads at the stock positions.
@@ -390,13 +390,13 @@ USB modes, in order; one active at a time.
 	      no gamepad until a controller connects.
 	- [x] Slot 0 bridge: radio → 360 report, connect on link up,
 	      disconnect after the link timeout. Test: `evtest`, Steam.
-	- [x] Output: rumble → heavy/light separately, LED pattern → Guide
+	- [x] Output: rumble → heavy/weak separately, LED pattern → Guide
 	      LED, power-off command. Test: `fftest`, `sdl-rumble` low/high.
 	- [x] XInput section in `protocol.md`.
 3. [x] **HID PID force feedback** (HID mode game rumble via `hid-pidff`).
        Sine only: the kernel emulates `FF_RUMBLE` as a sine (⅔ strong +
        ⅓ weak), so SDL/Steam rumble works but as one blended strength;
-       separate heavy/light needs XInput. Engine on the dongle:
+       separate heavy/weak needs XInput. Engine on the dongle:
        output = 4 motor levels in the existing output report, no radio
        change; trigger mixing stays controller-side
        ([[#Trigger rumble (controller-side)]]).
@@ -540,11 +540,11 @@ Adafruit nRF52 UF2 bootloader on both boards, unsigned
 
 ### Trigger rumble (controller-side)
 Games rarely drive the trigger motors, and XInput can't (2 motors only).
-- **Rumble mixing:** feed part of the heavy/light rumble into the trigger
+- **Rumble mixing:** feed part of the heavy/weak rumble into the trigger
   motors when the host sends only 2 values. Configurable strength.
 - **Local trigger effects:** click when a trigger crosses a threshold, buzz at a
   trigger stop; generated on the controller, pairs with hair-trigger mode.
-- **4-value output report:** exists (HID vendor report: heavy, light, LT,
+- **4-value output report:** exists (HID vendor report: heavy, weak, LT,
   RT); games and Steam don't use it.
 
 ### GIP dongle mode

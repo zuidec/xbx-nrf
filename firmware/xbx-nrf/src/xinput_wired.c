@@ -163,7 +163,7 @@ static void handle_out(const uint8_t *d, size_t len)
 {
 	if (len >= 5 && d[0] == 0x00 && d[1] == 0x08) {
 		if (rumble_cb) {
-			rumble_cb(d[3], d[4]); /* strong (heavy), weak (light) */
+			rumble_cb(d[3], d[4]); /* strong (heavy), weak */
 		}
 	} else if (len >= 3 && d[0] == 0x01 && d[1] == 0x03) {
 		LOG_INF("LED pattern %u", d[2]);

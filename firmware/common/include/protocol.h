@@ -96,7 +96,7 @@ struct xbx_input_report {
 struct xbx_output_report {
 	uint8_t type;      /* XBX_MSG_OUTPUT */
 	uint8_t seq;
-	uint8_t rumble[4]; /* heavy, light, LT, RT: 0..255 */
+	uint8_t rumble[4]; /* heavy, weak, LT, RT: 0..255 */
 	uint8_t led;       /* Guide LED brightness 0..255 */
 	uint8_t flags;     /* XBX_OUT_FLAG_* */
 	/* time slot (v2) */
@@ -141,7 +141,7 @@ struct xbx_pair_done {
 
 enum xbx_rumble_motor {
 	XBX_RUMBLE_HEAVY = 0,
-	XBX_RUMBLE_LIGHT = 1,
+	XBX_RUMBLE_WEAK = 1,
 	XBX_RUMBLE_LT = 2,
 	XBX_RUMBLE_RT = 3,
 };

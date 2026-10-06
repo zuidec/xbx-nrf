@@ -88,7 +88,7 @@ static const uint8_t report_desc[] = {
 		/* force feedback (PID page, report IDs 0x11..0x23) */
 		HID_PID_DESC,
 
-		/* output: rumble heavy, light, LT, RT, Guide LED */
+		/* output: rumble heavy, weak, LT, RT, Guide LED */
 		HID_REPORT_ID(OUT_REPORT_ID),
 		HID_USAGE_PAGE16(0xFF00),
 		HID_USAGE(0x01),

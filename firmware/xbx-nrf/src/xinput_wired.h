@@ -14,7 +14,7 @@ struct xbx_input_report;
 /* Host rumble (0..255 each), called from the USB stack's thread; (0, 0) when
  * the host goes away.
  */
-typedef void (*xinput_wired_rumble_cb_t)(uint8_t heavy, uint8_t light);
+typedef void (*xinput_wired_rumble_cb_t)(uint8_t heavy, uint8_t weak);
 void xinput_wired_set_rumble_cb(xinput_wired_rumble_cb_t cb);
 
 /* New input state; the newest wins. */

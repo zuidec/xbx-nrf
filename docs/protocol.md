@@ -87,7 +87,7 @@ through:
 |---|---|---|---|
 | 0 | 1 | `type` | `0x02` (`XBX_MSG_OUTPUT`) |
 | 1 | 1 | `seq` | +1 per report queued |
-| 2 | 4 | `rumble[4]` | Heavy, light, LT, RT; 0…255 |
+| 2 | 4 | `rumble[4]` | Heavy, weak, LT, RT; 0…255 |
 | 6 | 1 | `led` | Guide LED brightness, 0…255 |
 | 7 | 1 | `flags` | Bit 0: dongle full (no slot free, retry slowly) |
 | 8 | 1 | `slot` | Time slot, 0…; `0xFF` = none yet |
@@ -402,7 +402,7 @@ bits become the hat value.
 | Offset | Size | Field | HID usage |
 |---|---|---|---|
 | 0 | 1 | Report ID `0x02` | |
-| 1 | 4 | Rumble heavy, light, LT, RT (0…255) | Vendor page `0xFF00`, usage `0x01` |
+| 1 | 4 | Rumble heavy, weak, LT, RT (0…255) | Vendor page `0xFF00`, usage `0x01` |
 | 5 | 1 | Guide LED (0…255) | Vendor page `0xFF00`, usage `0x01` |
 
 Maps 1:1 onto the radio output report: the dongle forwards the values in the
@@ -423,7 +423,7 @@ effect table, engine), `bridge.c` (mixing).
 **Sine only.** The input core emulates `FF_RUMBLE` on any device with periodic
 effects: each rumble becomes a sine with magnitude ⅔ strong + ⅓ weak (50 ms
 period). SDL, Steam and Proton use `FF_RUMBLE`, so games rumble, but with one
-blended strength: heavy/light separation needs XInput mode. Other effect types
+blended strength: heavy/weak separation needs XInput mode. Other effect types
 (constant, ramp, conditions) only serve DirectInput wheel/joystick games.
 `hid-pidff` needs Set Envelope for any periodic effect, so it's included.
 
@@ -458,7 +458,7 @@ magnitude with the envelope applied × effect gain × device gain; effects end
 after duration × loop count. Playing effects add up, capped at 255; 0 while
 actuators are disabled or paused.
 
-**Mixing:** heavy and light each take the larger of the PID strength and the
+**Mixing:** heavy and weak each take the larger of the PID strength and the
 vendor report; LT, RT and the LED are vendor-only. Trigger rumble mixing is
 controller-side ([[todo#Trigger rumble (controller-side)]]).
 
@@ -524,7 +524,7 @@ The commands `xpad` sends; others are ignored.
 
 | Bytes | Command | Dongle action |
 |---|---|---|
-| `00 01 0F C0 00 <strong> <weak> …` | Rumble | Heavy = strong, light = weak |
+| `00 01 0F C0 00 <strong> <weak> …` | Rumble | Heavy = `strong`, weak = `weak` |
 | `00 00 08 4<n> …` | LED pattern `n` (0–15) | Guide LED: 0 = off, anything else = on |
 | `00 00 08 C0 …` | Power off (Guide held 5 s) | Logged ([[todo#Controller]]) |
 | `08 00 0F C0 …` | Presence query (at bind) | Repeat the presence packet |
@@ -536,7 +536,7 @@ The commands `xpad` sends; others are ignored.
 - **Newest wins:** one IN transfer in flight per slot; a newer report replaces
   one not yet sent. Presence packets go first.
 - **Rumble:** native `FF_RUMBLE` (`xpad` via the kernel's memoryless FF helper),
-  heavy and light separate. The helper also emulates periodic effects on both
+  heavy and weak separate. The helper also emulates periodic effects on both
   motors. Off when the interface goes down or the link is lost; LT/RT motors
   stay 0 (XInput has only 2).
 - **LED:** `xpad` sets the player pattern when it adds the gamepad (again
@@ -566,7 +566,7 @@ its USB-C port), no dongle. Code: `firmware/xbx-nrf/src/usb.c` (device, mode),
 
 | Held at boot | Mode | VID / PID | Rumble |
 |---|---|---|---|
-| X | Wired XInput (Xbox 360 pad) | `0x1209` / `0x0004` | Heavy / light via `xpad` |
+| X | Wired XInput (Xbox 360 pad) | `0x1209` / `0x0004` | Heavy / weak via `xpad` |
 | B | HID gamepad + PID | `0x1209` / `0x0003` | Blended strength ([[#Force feedback (PID)]]) |
 | Neither | Stored mode (settings key `usb/mode`), default HID | | |
 
@@ -575,7 +575,7 @@ set up; flash is written only when the mode changes. Read at boot only for now
 (plugged in while running: [[todo#Controller]]).
 
 **HID mode** is the dongle's HID mode ([[#USB HID mode]]): same shared code
-and reports, device name "XBX-NRF Gamepad". Heavy and light each take the
+and reports, device name "XBX-NRF Gamepad". Heavy and weak each take the
 larger of the vendor report and the PID strength.
 
 ### Wired XInput
@@ -592,7 +592,7 @@ Input report, 20 bytes: `00 14`, buttons (XInput `wButtons`, = radio
 
 | Bytes (PC → pad) | Command | Controller action |
 |---|---|---|
-| `00 08 00 <strong> <weak> …` | Rumble | Heavy = strong, light = weak |
+| `00 08 00 <strong> <weak> …` | Rumble | Heavy = `strong`, weak = `weak` |
 | `01 03 <n>` | LED pattern | Logged (Guide LED later) |
 | Vendor IN request `0x01` (to the interface) | `xpad`'s start-up request | Answered with 20 zero bytes |
 
