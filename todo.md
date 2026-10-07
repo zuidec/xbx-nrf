@@ -58,7 +58,7 @@ Locked decisions: [README](README.md). Not yet locked:
 	      after release. One early reading held ~3 s (not repeated).
 	- [x] Pin 9 pulled high (1 kΩ to 3.3 V) keeps power after release (Guide
 	      and Pair); removing it turns it off.
-- [ ] Trace R25's source.
+- [x] Trace R25's source: J3 pin 11 (battery switch status, see J3 pinout).
 - [x] Q8 and Q14 polarity: both PNP (measured).
 - [x] Pin 9 holds power *and* resets the PCAL6416 (R4/EG2): low → no ACK
       at `0x21` (measured, top board on USB).
@@ -68,8 +68,8 @@ Locked decisions: [README](README.md). Not yet locked:
 - [x] Standby current from the AAs, controller off: < 0.1 µA (meter reads
       0.0 µA; top board alone). Held on, no bottom board: 0.35 mA.
 - [x] USB plugged in: all rails up without a button; pin 9 has no effect.
-	- [ ] AA side still sees ~0.25 mA (likely 5vB → R21 → R23 into the
-	      battery): check the direction.
+	- [ ] AA side still sees ~0.25 mA: source unclear (the gate network,
+	      R21 220 kΩ + R23 10 kΩ, would pass only ~10 µA); check direction.
 
 ### J3/J5 connector (top ↔ bottom)
 - [x] Connector pitch and geometry: 2 × 7, 1.27 mm; J3 male (top board), J5
@@ -80,8 +80,9 @@ Locked decisions: [README](README.md). Not yet locked:
 	- [ ] Measure the stock J5 pad span against the KiCad footprint (5.7 mm
 	      outer edge to outer edge).
 - [x] Full pinout vs. schematic:
-	- [x] Pin 11: J7 pin 1 (0.1 Ω) and SoC pin 1; 2.4 kΩ to GND; not a rail
-	      or GND. Probably Play & Charge detect.
+	- [x] Pin 11: battery switch status, R25 (25.5 kΩ) from Q9's drain: VBAT
+	      = off, 0 V = on (measured). Also J7 pin 1 and SoC pin 1; protection
+	      diode to GND on the bottom board (not a resistor).
 	- [x] Pin 13: Pair sense (measured).
 - [x] Pin 2 (Guide) active-low, pull-up on our side (read on the test
       controller).
@@ -121,9 +122,12 @@ Locked decisions: [README](README.md). Not yet locked:
 - [ ] Motor pad positions, VBB decoupling, CR1–CR4 parts
       ([[docs/a3910#To verify]]).
 - [ ] Headset jack on this board? Position and footprint.
-- [ ] **J7** (Play & Charge: VBUS / SDA2 / SCL2): footprint and position.
+- [ ] **J7** (Play & Charge: 1 status, 2 SCL2, 3 SDA2, 4 VBUS): footprint and
+      position. 4 contacts over ~5 mm: pitch 1.27 or 1.5 mm, to confirm.
 	- [ ] Sniff I2C2 with a pack: does it need commands to charge?
 - [ ] **J8** (expansion port) pinout.
+- [ ] **J3 ground spring** (J2 next to it is unfitted; both to GND): find
+      where it touches the top board or shell, and copy it on our board.
 - [ ] Mounting holes, outline, keep-outs (calipers, from a datum hole).
 
 ---
@@ -214,9 +218,11 @@ Locked decisions: [README](README.md). Not yet locked:
 
 ### Connectors
 - [ ] J3 mating connector.
-- [ ] J7 Play & Charge contacts (if used).
-- [ ] J3 pin 11 (P&C detect?) to a free digital GPIO through a 0 Ω / DNP
-      footprint, input without pull: ready for P&C experiments later.
+- [ ] Source the Play & Charge contacts (our J4, stock J7): placeholder
+      footprint for now. Prepared, inactive: VBUS and status via open
+      jumpers, I2C2 parts DNP.
+- [x] J3 pin 11: no load on our side (a pull-down partly turns on Q6/Q7);
+      only the jumper to J4.
 - [ ] J8 expansion port: keep or drop?
 
 ---
@@ -570,5 +576,5 @@ trigger view, guided calibration, deadzone / curve / trigger-stop settings.
 
 ## Open questions
 
-- What does J3 pin 11 (Play & Charge detect?) signal with a pack inserted?
+- What does a Play & Charge pack do with J7 pin 1 (power status)?
 - Does a Play & Charge pack need I2C commands to charge?

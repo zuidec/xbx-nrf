@@ -49,8 +49,12 @@ bootloader, or early in boot
 
 With USB plugged in, all rails (`3v/B+`, 3.3 V, 3.6 V) are up without a
 button press, and pin 9 has no effect: firmware needs its own "off" state on
-USB. The AA side still sees ~0.25 mA, probably 5vB → R21 → R23 into the
-battery through Q6/Q7's gate network (direction not yet checked).
+USB. The AA side still sees ~0.25 mA (source unclear: through the gate
+network it would be only ~10 µA).
+
+Latch network (top board, measured): R23 10 kΩ from the Q6/Q7 gate node to
+the battery, R21 220 kΩ to 5vB, R22/R26 0 Ω, R25 25.5 kΩ to J3 pin 11. Held
+on, ~0.24 mA flows through R23 and Q9.
 
 ## J3: top ↔ bottom board connector
 
@@ -66,7 +70,7 @@ battery through Q6/Q7's gate network (direction not yet checked).
 | 8 | USB D+ | Bidirectional | From the USB-C port |
 | 9 | ~RESET / power hold | Output | High = power held (measured) + expander out of reset (*verify*). No effect on USB |
 | 10 | USB D− | Bidirectional | |
-| 11 | Play & Charge detect? | Input | J7 pin 1 (0.1 Ω), SoC pin 1; 2.4 kΩ to GND on the bottom board; not a rail or GND |
+| 11 | Battery switch status | Input | Q9 drain via R25 (25.5 kΩ): VBAT = off, 0 V = on (measured). Also J7 pin 1 and SoC pin 1. Leave unloaded: a pull-down partly turns on Q6/Q7 |
 | 12 | VBUS | Input | USB detection |
 | 13 | Pair sense via D30 | Input | Active-low: low while Pair is pressed, not Guide (measured) |
 | 14 | GND | — | |
