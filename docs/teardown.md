@@ -69,6 +69,47 @@ use the resistors below, never a direct short.
       (direction not checked).
 - [ ] `3v/B+` voltage on USB (TP34): must stay below 3.6 V for the battery
       sense input.
-- [x] Pin 11: 0.1 Ω to J7 pin 1, 2.4 kΩ to GND; no continuity to GND or any
-      rail. Rails show a slowly climbing resistance: decoupling caps
-      charging, normal.
+- [x] Pin 11: 0.1 Ω to J7 pin 1; no continuity to GND or any rail (the
+      "2.4 kΩ" first read was a protection diode to GND on the bottom board).
+      Battery switch status: VBAT when off, 0 V when held on (Guide or pin 9).
+      Rails show a slowly climbing resistance: decoupling caps charging,
+      normal.
+
+### Layout positions (stock bottom board)
+
+Tip: a 600 dpi flatbed scan of both sides is true to scale (0.042 mm per
+pixel); import it into KiCad or FreeCAD, align it on two mounting holes and
+place footprints over the stock parts. Calipers then only for heights.
+
+Datum: centre of the left M2.5 hole. View: the side facing the top board.
+Positions are part centres (pin 1 for connectors); note the rotation.
+
+Critical:
+- [ ] Board thickness: → ___ mm (ours: 1.6 mm)
+- [ ] J5: pin 1 → (___, ___); row direction ___; pad span, outer edges →
+      ___ mm (KiCad footprint: 5.7 mm)
+- [ ] Left stick: lever axis → (___, ___); VR1 pins face ___
+- [ ] Right stick: lever axis → (___, ___); VR1 pins face ___
+- [ ] LT sensor (A1304): centre → (___, ___); rotation ___; board side ___;
+      branded face up / down
+- [ ] RT sensor (A1304): centre → (___, ___); rotation ___; board side ___;
+      branded face up / down
+- [ ] Mounting holes match our outline; screw boss diameter → ___ mm
+
+Contacts:
+- [ ] B contact: centre → (___, ___); finger direction ___
+- [ ] Motor pads SQ1–SQ8: centres and pad size → ___ (wires have little
+      slack, so keep the stock positions)
+- [ ] J3 ground spring: position → (___, ___); pad size ___; mates with ___
+      (marker on the tip, assemble, look for the imprint)
+- [ ] J7 (Play & Charge): pin 1 → (___, ___); pitch ___ mm; contact height
+      ___ mm; pad size ___
+
+Clearances:
+- [ ] Old SoC board area: free height above → ___ mm, below → ___ mm
+      (Raytac module + u.FL plug)
+- [ ] Maximum part height by zone (sketch or photo with notes)
+- [ ] Expansion port opening / bottom edge: area to keep clear → ___
+- [ ] Antenna: top board connector for `ANT` / `ANT1` → (___, ___); pigtail
+      length ___ mm
+- [ ] Photos of both sides with a ruler in frame (fallback)
