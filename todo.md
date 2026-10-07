@@ -121,11 +121,12 @@ Locked decisions: [README](README.md). Not yet locked:
       ([[docs/a3910#Stock wiring (bottom board)]]).
 - [ ] Motor pad positions, VBB decoupling, CR1–CR4 parts
       ([[docs/a3910#To verify]]).
-- [ ] Headset jack on this board? Position and footprint.
+- [x] Headset jack: dropped for v1 (no audio; I/O is short).
 - [ ] **J7** (Play & Charge: 1 status, 2 SCL2, 3 SDA2, 4 VBUS): footprint and
       position. 4 contacts over ~5 mm: pitch 1.27 or 1.5 mm, to confirm.
 	- [ ] Sniff I2C2 with a pack: does it need commands to charge?
-- [ ] **J8** (expansion port) pinout.
+- [x] **J8** (expansion port): dropped for v1. Stock: 1/12 GND, 2 SDA2, 3
+      SCL2, 6 3.3 V, the rest likely digital audio. Keep its opening clear.
 - [ ] **J3 ground spring** (J2 next to it is unfitted; both to GND): find
       where it touches the top board or shell, and copy it on our board.
 - [ ] Mounting holes, outline, keep-outs (calipers, from a datum hole).
@@ -223,7 +224,7 @@ Locked decisions: [README](README.md). Not yet locked:
       jumpers, I2C2 parts DNP.
 - [x] J3 pin 11: no load on our side (a pull-down partly turns on Q6/Q7);
       only the jumper to J4.
-- [ ] J8 expansion port: keep or drop?
+- [x] J8 expansion port: dropped for v1.
 
 ---
 
