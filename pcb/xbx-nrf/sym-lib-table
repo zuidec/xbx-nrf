@@ -2,4 +2,5 @@
 	(version 7)
 	(lib (name "rkjxv122400r") (type "KiCad") (uri "${KIPRJMOD}/lib/RKJXV122400R/RKJXV122400R.kicad_sym") (options "") (descr ""))
 	(lib (name "usbc-16p-receptacle-amphenol") (type "KiCad") (uri "${KIPRJMOD}/lib/USB_C_Receptacle_16P_Amphenol_10155435-00011LF/USB_C_Receptacle_16P_Amphenol_10155435-00011LF.kicad_sym") (options "") (descr ""))
+	(lib (name "xbx-nrf") (type "KiCad") (uri "${KIPRJMOD}/lib/xbx-nrf.kicad_sym") (options "") (descr ""))
 )

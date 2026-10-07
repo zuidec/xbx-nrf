@@ -52,6 +52,18 @@ SPDX-FileCopyrightText = [
 ]
 SPDX-License-Identifier = "CC-BY-SA-4.0 WITH KiCad-libraries-exception"
 
+# Controller symbol library: KiCad power symbols, a SnapMagic symbol and our
+# own (see pcb/xbx-nrf/lib/ATTRIBUTION.md)
+[[annotations]]
+path = ["pcb/xbx-nrf/lib/xbx-nrf.kicad_sym", "pcb/xbx-nrf/lib/ATTRIBUTION.md"]
+precedence = "override"
+SPDX-FileCopyrightText = [
+  "KiCad library contributors",
+  "SnapMagic (SnapEDA) and the original authors",
+  "2026 zuidec",
+]
+SPDX-License-Identifier = "CC-BY-SA-4.0 WITH KiCad-libraries-exception AND CC-BY-SA-4.0"
+
 # Documentation
 [[annotations]]
 path = ["docs/**", "*.md", "references/README.md"]
