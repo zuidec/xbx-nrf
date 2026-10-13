@@ -112,14 +112,14 @@
 	(constraint hole_clearance (min 0.3mm)))
 
 # --- Project: xbx-nrf controller ---------------------------------------------
-# MDBT50Q module: an LGA with staggered pad rows, 0.4 mm between outer-row
+# MDBT50Q (U7) is an LGA with staggered pad rows: 0.4 mm between outer-row
 # pads. Narrower track and clearance inside its courtyard only, so inner-row
-# pads can escape between outer ones (0.15 + 2 x 0.12 = 0.39 mm). Taken from
-# the dongle, where it's U3. Uncomment once the module is placed and set its
-# reference; keep it last so it wins over the general rules. Widen the track
-# to 0.2 mm once clear of the module.
+# pads can escape between outer ones (0.15 + 2 x 0.12 = 0.39 mm). Last in the
+# file so it wins over the general rules; widen the track to 0.2 mm once clear
+# of the module. Zones are excluded: a pour over the module
+# intersects its courtyard and would take the 0.12 mm board-wide.
 
-# (rule "MDBT50Q fan-out"
-# 	(condition "A.intersectsCourtyard('U?') || B.intersectsCourtyard('U?')")
-# 	(constraint clearance (min 0.12mm))
-# 	(constraint track_width (min 0.15mm) (opt 0.15mm)))
+(rule "MDBT50Q fan-out"
+	(condition "(A.intersectsCourtyard('U7') && A.Type != 'Zone') || (B.intersectsCourtyard('U7') && B.Type != 'Zone')")
+	(constraint clearance (min 0.12mm))
+	(constraint track_width (min 0.15mm) (opt 0.15mm)))
