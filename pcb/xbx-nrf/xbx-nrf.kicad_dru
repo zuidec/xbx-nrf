@@ -28,11 +28,12 @@
 	(constraint edge_clearance (min 0.2mm)))
 
 # --- Vias -------------------------------------------------------------------
-# 0.15 mm holes are possible but cost extra; 0.2 mm is JLC's preferred minimum.
+# Holes down to 0.15 mm are possible, but anything below 0.3 mm adds an
+# engineering fee on JLC's order form, so 0.3 mm is the floor here.
 
 (rule "JLC: via hole"
 	(condition "A.Type == 'Via'")
-	(constraint hole_size (min 0.2mm)))
+	(constraint hole_size (min 0.3mm)))
 
 (rule "JLC: via diameter"
 	(condition "A.Type == 'Via'")
