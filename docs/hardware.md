@@ -102,7 +102,7 @@ Rails on pins 1, 3, 4 measured as expected with the controller on.
 
 **J7 (Play & Charge contacts, bottom board):** 1 → J3 pin 11, 2 SCL2 (via R15,
 0 Ω), 3 SDA2, 4 VBUS. No GND pin: the pack's ground is the AA− contact. Not
-used in v1.
+on our v1 board: no Play & Charge support, charge the AAs externally.
 
 *Verify* / *Unknown*: [[todo#J3/J5 connector (top ↔ bottom)]].
 
@@ -116,8 +116,9 @@ which ([[todo#MCU / radio]]).
 
 ## Controller board
 
-KiCad: `pcb/xbx-nrf/`. Design in progress:
-[[todo#3. Hardware design — controller board]].
+KiCad: `pcb/xbx-nrf/`. Rev1.1 routed; outline and part positions from
+`mech/controller-bottom-board/` (measured, fit-checked in the shell). No Play
+& Charge in v1. Open items: [[todo#3. Hardware design — controller board]].
 
 ### Sticks (RKJXV122400R footprint)
 
@@ -149,7 +150,7 @@ board scans; same for both sticks. Checked on the test controller: wipers
   a 100 kΩ pull-down); ours 1V8_STICK ([[#Supplies]]), on while the
   controller is on. 100 nF from 1.8 V to GND at each stick. The stock SoC
   uses this rail as its ADC reference (ratiometric); the nRF52840 can't, so
-  AIN7 measures it.
+  AIN0 measures it.
 - **Filtering:** per axis, series R + C to GND at the nRF's AIN pin (C
   closest to the pin): 0 Ω + 100 nF, R optional for tuning (up to 1 kΩ). The
   SAADC input is > 1 MΩ, so 1 kΩ costs < 0.1 % gain error (absorbed by
@@ -162,25 +163,25 @@ board scans; same for both sticks. Checked on the test controller: wipers
 
 ### Analog inputs
 
-All 8 SAADC inputs are used; reserve them before assigning digital pins. Any
-AIN can take any signal (reference and gain are per channel, mapping in the
-devicetree), so swap for routing as needed.
+All 8 SAADC inputs are used. Any AIN can take any signal (reference and gain
+are per channel, mapping in the devicetree); the order below is the Rev1.1
+routing.
 
 Unlike an STM32 there is no external reference: each channel's full scale is
 reference ÷ gain, set per channel. Pins never above VDD + 0.3 V regardless.
 
 | AIN | Pin | Signal | Reference | Gain | Full scale |
 |---|---|---|---|---|---|
-| AIN0 | P0.02 | LSX | Internal 0.6 V | 1/3 | 1.8 V |
-| AIN1 | P0.03 | LSY | Internal 0.6 V | 1/3 | 1.8 V |
-| AIN2 | P0.04 | RSX | Internal 0.6 V | 1/3 | 1.8 V |
-| AIN3 | P0.05 | RSY | Internal 0.6 V | 1/3 | 1.8 V |
-| AIN4 | P0.28 | LT (A1304) | VDD/4 | 1/4 | VDD (ratiometric: TRG+ ≈ VDD) |
-| AIN5 | P0.29 | RT (A1304) | VDD/4 | 1/4 | VDD |
+| AIN0 | P0.02 | 1V8_STICK: stick supply | Internal 0.6 V | 1/4 | 2.4 V (rail at ~75 %, no clipping) |
+| AIN1 | P0.03 | RT (A1304) | VDD/4 | 1/4 | VDD (ratiometric: TRG+ ≈ VDD) |
+| AIN2 | P0.04 | LSY | Internal 0.6 V | 1/3 | 1.8 V |
+| AIN3 | P0.05 | LSX | Internal 0.6 V | 1/3 | 1.8 V |
+| AIN4 | P0.28 | LT (A1304) | VDD/4 | 1/4 | VDD |
+| AIN5 | P0.29 | RSY | Internal 0.6 V | 1/3 | 1.8 V |
 | AIN6 | P0.30 | VBAT: `3v/B+` via 100 kΩ, 100 nF at the pin, no divider | Internal 0.6 V | 1/6 | 3.6 V |
-| AIN7 | P0.31 | 1V8_STICK: stick supply | Internal 0.6 V | 1/4 | 2.4 V (rail at ~75 %, no clipping) |
+| AIN7 | P0.31 | RSX | Internal 0.6 V | 1/3 | 1.8 V |
 
-Sticks are read as a ratio to AIN7 (same reference, so its error cancels;
+Sticks are read as a ratio to AIN0 (same reference, so its error cancels;
 fixed gain differences are absorbed by calibration). Run the SAADC offset
 calibration at start-up.
 
@@ -197,7 +198,7 @@ through reset.
 
 | Rail | Part | From | Enable | Load |
 |---|---|---|---|---|
-| 1V8_STICK | TLV70018DDCR (1.8 V LDO, SOT-23-5) | J3 3.3 V | GPIO high = on, 100 kΩ pull-down | Sticks, AIN7 sense |
+| 1V8_STICK | TLV70018DDCR (1.8 V LDO, SOT-23-5) | J3 3.3 V | GPIO high = on, 100 kΩ pull-down | Sticks, AIN0 sense |
 | TRG+ | P-FET (AO3401A), one for both triggers | J3 3.3 V | GPIO low = on, gate pull-up (off through reset) | 2× A1304 |
 
 - **TLV70018 (DDC):** 1 IN, 2 GND, 3 EN, 4 NC (open or GND), 5 OUT. 1 µF
@@ -213,6 +214,34 @@ through reset.
   ~10 nF, 0 Ω (100 nF + 1 kΩ would take ~0.5 ms to settle).
 - Stock for comparison: U8 TLV70718 (sticks) and U9 TLV70732 from 3.3 V used
   as a switch for TRG+ (EN from the SoC via R38, 100 kΩ pull-down).
+
+### Pins
+
+From the Rev1.1 schematic; analog pins in [[#Analog inputs]]. Buttons switch
+to GND through 1 kΩ: active low, internal pull-up.
+
+| Signal | Pin | Notes |
+|---|---|---|
+| PCAL_SCL / PCAL_SDA | P0.24 / P0.25 | J2 pins 5 / 7, I2C to the PCAL6416; 2.2 kΩ pull-ups (R8, R9) |
+| PWR_HOLD | P1.12 | J2 pin 9: hold power + expander reset |
+| GUIDE_BTN | P1.15 | J2 pin 2, active low |
+| PAIR_BTN | P1.11 | J2 pin 13, active low |
+| GUIDE_LED | P1.13 | J2 pin 6 |
+| JS_EN | P0.15 | 1V8_STICK enable, high = on |
+| TRG_EN | P1.10 | TRG+ enable (Q1), low = on |
+| B / LS / RS buttons | P1.05 / P1.02 / P1.06 | B membrane contact SW2, stick clicks |
+| AUX1–AUX4 | P0.14, P0.13, P1.14, P1.07 | Paddle pads TP9–TP12 (GND: TP5–TP8) |
+| LT_AUX / RT_AUX | P0.22 / P1.04 | Trigger switch pads TP13 / TP15 (GND: TP14, TP16) |
+| RMB_LT HIN / LIN | P0.20 / P0.21 | U5, LT motor (SQ1/SQ2) |
+| RMB_HV HIN / LIN | P0.17 / P0.19 | U5, heavy motor (SQ3/SQ4) |
+| RMB_RT HIN / LIN | P0.06 / P0.07 | U6, RT motor (SQ5/SQ6) |
+| RMB_WK HIN / LIN | P1.08 / P0.08 | U6, weak motor (SQ7/SQ8) |
+| DBG_TX / DBG_RX | P0.27 / P0.26 | J3 UART (JST-SH, Raspberry Pi pinout): pin 1 TX, pin 3 RX |
+| SWCLK / SWDIO | — | J1 SWD (JST-SH, Raspberry Pi pinout) |
+| NRST | P0.18 | SW1 reset button, TP1 |
+| TIMING | P1.09 | TP4 (scope) |
+| SWO | P1.00 | TP3 |
+| XL1 / XL2 | P0.00 / P0.01 | Y1, 32.768 kHz crystal (as the dongle) |
 
 ## Dongle board
 

@@ -77,7 +77,7 @@ Locked decisions: [README](README.md). Not yet locked:
 - [ ] Source the J5 replacement: female, SMT, ~3.5 mm tall, body within the
       9.5 × 3.25 mm shroud, pin 1 chamfer (or the shroud corner gets cut). No
       direct match found yet; test-fit candidates on J3.
-	- [ ] Measure the stock J5 pad span against the KiCad footprint (5.7 mm
+	- [x] Measure the stock J5 pad span against the KiCad footprint (5.7 mm
 	      outer edge to outer edge).
 - [x] Full pinout vs. schematic:
 	- [x] Pin 11: battery switch status, R25 (25.5 kΩ) from Q9's drain: VBAT
@@ -104,7 +104,7 @@ Locked decisions: [README](README.md). Not yet locked:
 - [x] Stick footprint: Alps **RKJXV122400R** (SnapMagic), in
       `pcb/xbx-nrf/lib/RKJXV122400R/`; pads checked against
       [[references/third-party/product_catalog_rkjxv.pdf]].
-- [ ] Stock sticks really are RKJXV122400R (calipers or 1:1 print).
+- [x] Stock sticks really are RKJXV122400R (measured; fit check).
 - [x] Stick pinout: VR1 = X, VR2 = Y; 1.8 V on VR1_3 + VR2_1, GND on
       VR1_1 + VR2_3 ([[docs/hardware#Sticks (RKJXV122400R footprint)]]).
 	- [x] Wipers (TP64/63/112/65) and click (TP42/43): continuity checked.
@@ -112,24 +112,23 @@ Locked decisions: [README](README.md). Not yet locked:
 	      downwards.
 	- [ ] Same with the TMR modules.
 - [x] Push-switch contact pairs: A/C = signal (LSC/RSC), B/D = GND.
-- [ ] A1304 placement relative to the trigger magnets.
+- [x] A1304 placement relative to the trigger magnets.
 - [x] Stick supply `AN+`: U8 TLV70718 (1.8 V LDO from 3.3 V, EN from the
       SoC, 100 kΩ pull-down).
 - [x] Trigger sensor supply `TRG+`: U9 TLV70732 from 3.3 V as a switch;
       pulsed, 125 Hz, 17 % duty.
 - [x] Rumble drivers: 2× A3910 (U4: LT + Heavy, U5: RT + Weak)
       ([[docs/a3910#Stock wiring (bottom board)]]).
-- [ ] Motor pad positions, VBB decoupling, CR1–CR4 parts
+- [x] Motor pad positions, VBB decoupling, CR1–CR4 parts
       ([[docs/a3910#To verify]]).
 - [x] Headset jack: dropped for v1 (no audio; I/O is short).
-- [ ] **J7** (Play & Charge: 1 status, 2 SCL2, 3 SDA2, 4 VBUS): footprint and
-      position. 4 contacts over ~5 mm: pitch 1.27 or 1.5 mm, to confirm.
-	- [ ] Sniff I2C2 with a pack: does it need commands to charge?
+- [x] **J7** (Play & Charge: 1 status, 2 SCL2, 3 SDA2, 4 VBUS): dropped for
+      v1; charge the AAs externally.
 - [x] **J8** (expansion port): dropped for v1. Stock: 1/12 GND, 2 SDA2, 3
       SCL2, 6 3.3 V, the rest likely digital audio. Keep its opening clear.
-- [ ] **J3 ground spring** (J2 next to it is unfitted; both to GND): find
-      where it touches the top board or shell, and copy it on our board.
-- [ ] Mounting holes, outline, keep-outs (calipers, from a datum hole).
+- [x] **J3 ground spring** (J2 next to it is unfitted; both to GND): our J5
+      GND pad takes its place; no spring fitted.
+- [x] Mounting holes, outline, keep-outs (calipers, from a datum hole).
 
 ---
 
@@ -137,12 +136,11 @@ Locked decisions: [README](README.md). Not yet locked:
 
 - [x] Fully constrained FreeCAD outline.
 	- [x] Image scale: the scan was off; corrected from the test print.
-	- [ ] J3, stick centres, trigger sensors, J7 from calipers (needs the
-	      controller).
-- [ ] DXF → KiCad `Edge.Cuts`; holes → MountingHole footprints.
+	- [x] J3, stick centres, trigger sensors from calipers (J7 dropped).
+- [x] DXF → KiCad `Edge.Cuts`; holes → MountingHole footprints.
 - [x] Fit check: 3D-printed 1.6 mm board fits the shell (replaces the 1:1
       paper print).
-- [ ] STEP fit check in the shell.
+- [x] STEP fit check in the shell.
 - [ ] Trigger stops (independent of the side rails):
 	- [ ] Blu-Tack clearance test behind each trigger.
 	- [ ] Fixed stop / adjustable screw (non-magnetic) / modified triggers.
@@ -166,8 +164,8 @@ Locked decisions: [README](README.md). Not yet locked:
 	- [ ] Flat NiMH curve → coarse gauge; maybe coulomb counting.
 	- [ ] Regulated Li-ion AAs: no gauge possible.
 - [ ] VBUS detect (J3 pin 12).
-- [ ] **Charging:** external (default) / VBUS to J7 for Play & Charge / in
-      controller (needs chemistry detection; probably not worth it).
+- [x] **Charging:** external; no Play & Charge in v1 (in-controller charging
+      would need chemistry detection; not worth it).
 - [ ] Stick supply 1V8_STICK: **TLV70018DDCR** with EN on a GPIO and
       100 kΩ pull-down ([[docs/hardware#Supplies]]), on while the controller
       is on, off in sleep. Pulse it around
@@ -180,8 +178,8 @@ Locked decisions: [README](README.md). Not yet locked:
 
 ### MCU / radio
 - [x] MCU: **nRF52840** (no audio in v1).
-- [ ] Module: **Raytac MDBT50Q-U1MV2** preferred (as the dongle; u.FL to the
-      stock antennas via coax); check its size and fit.
+- [x] Module: **Raytac MDBT50Q-U1MV2** (as the dongle; u.FL to the stock
+      antennas via coax); size and fit checked.
 - [ ] **Stock antennas: verify before ordering the PCB (functional check).**
       Top board: `ANT` (Z4, Z5, Z6 → J5/J6), `ANT1` (Z1, Z2, Z3 → J8).
       Stock SoC board: coax J1, J2. Both are 2.4 GHz-band (Xbox Wireless,
@@ -219,11 +217,8 @@ Locked decisions: [README](README.md). Not yet locked:
 
 ### Connectors
 - [ ] J3 mating connector.
-- [ ] Source the Play & Charge contacts (our J4, stock J7): placeholder
-      footprint for now. Prepared, inactive: VBUS and status via open
-      jumpers, I2C2 parts DNP.
-- [x] J3 pin 11: no load on our side (a pull-down partly turns on Q6/Q7);
-      only the jumper to J4.
+- [x] Play & Charge contacts (stock J7): dropped for v1.
+- [x] J3 pin 11: no load on our side (a pull-down partly turns on Q6/Q7).
 - [x] J8 expansion port: dropped for v1.
 
 ---
@@ -439,7 +434,7 @@ USB modes, in order; one active at a time.
 - [ ] PCAL6416 polling ([[docs/pcal6416#Firmware notes]]).
 - [ ] Stick/trigger ADC ([[docs/hardware#Analog inputs]]): sticks on the
       internal 0.6 V reference, gain 1/3 (0–1.8 V), as a ratio to the
-      measured 1.8 V rail (AIN7 at gain 1/4 so it doesn't clip); triggers on
+      measured 1.8 V rail (AIN0 at gain 1/4 so it doesn't clip); triggers on
       VDD/4, gain 1/4 (ratiometric, as TRG+ ≈ VDD). Trigger supply
       pulsed around each sample; stick supply as its hardware item allows.
 - [ ] **Custom board pins:** board definition for the controller (like
@@ -575,7 +570,21 @@ trigger view, guided calibration, deadzone / curve / trigger-stop settings.
 
 ---
 
+## Add-ons (no board change)
+
+Mods on top of the v1 board, using pads that are already there.
+
+### Elite-style paddles
+- [ ] Four steel paddles held by a magnet, switches on the AUX1–AUX4 pads.
+- [x] Magnet near the right stick: a 10 mm cube neodymium magnet under a
+      GuliKit TMR stick (stock Series X) shifted its rest position by ~2.6 %
+      on one axis, the other unchanged; attaching steel changed it only
+      slightly. Calibration and the deadzone cover it.
+- [ ] Mechanical design: magnet position and size, switch mounting.
+- [ ] If paddles shift the centre in use: re-centre slowly while the stick
+      is at rest.
+
 ## Open questions
 
-- What does a Play & Charge pack do with J7 pin 1 (power status)?
-- Does a Play & Charge pack need I2C commands to charge?
+- Play & Charge (after v1): what does a pack do with J7 pin 1 (power
+  status), and does it need I2C commands to charge?
