@@ -45,8 +45,10 @@
 
 		/* LEDs are active-high: normal polarity */
 		pwms = <&pwm0 0 PWM_USEC(1000) PWM_POLARITY_NORMAL>,
-		       <&pwm0 1 PWM_USEC(1000) PWM_POLARITY_NORMAL>;
-		pwm-names = "heavy", "weak";
+		       <&pwm0 1 PWM_USEC(1000) PWM_POLARITY_NORMAL>,
+		       <&pwm0 0 PWM_USEC(1000) PWM_POLARITY_NORMAL>;
+		/* the heavy LED doubles as the pairing indicator */
+		pwm-names = "heavy", "weak", "indicator";
 	};
 };
 

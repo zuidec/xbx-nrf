@@ -1,0 +1,5 @@
+board:
+  name: xbx_controller
+  full_name: xbx-nrf controller
+  socs:
+  - name: nrf52840

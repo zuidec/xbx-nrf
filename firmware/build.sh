@@ -4,6 +4,7 @@
 # Usage (from anywhere; starts the pinned SDK toolchain itself if needed):
 #   ./build.sh <xbx-nrf|dongle> [-r] [-f <device>] [extra west build args]
 #   e.g. ./build.sh xbx-nrf -p                       # pristine rebuild
+#        ./build.sh xbx-nrf -f swd                   # build + flash over SWD
 #        ./build.sh dongle -f /dev/ttyACM0           # build + flash
 #        ./build.sh dongle -r                        # release build
 #
@@ -18,7 +19,6 @@
 # Each app has a default board below. Pass -b <board> to override it.
 # BUILD_DIR=<dir> builds into <app>/<dir> instead (a second configuration,
 # e.g. a fake-input controller, without overwriting the main build).
-# TODO: controller → custom board once it exists (see todo.md, Firmware).
 
 set -euo pipefail
 
@@ -38,7 +38,7 @@ app="$1"
 shift
 
 case "$app" in
-xbx-nrf) board="promicro_nrf52840/nrf52840/uf2" ;; # prototype; later: custom bottom board
+xbx-nrf) board="xbx_controller/nrf52840" ;; # Pro Micro: -b promicro_nrf52840/nrf52840/uf2
 dongle)  board="nrf52840dongle/nrf52840" ;; # PCA10059; Pro Micro: -b promicro_nrf52840/nrf52840/uf2
 *) usage ;;
 esac

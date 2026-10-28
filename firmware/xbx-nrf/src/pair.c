@@ -34,7 +34,7 @@ LOG_MODULE_REGISTER(pair, LOG_LEVEL_INF);
 #define ZEPHYR_USER DT_PATH(zephyr_user)
 
 static const struct gpio_dt_spec pair_pin = GPIO_DT_SPEC_GET(ZEPHYR_USER, pair_gpios);
-static const struct pwm_dt_spec indicator = PWM_DT_SPEC_GET_BY_NAME(ZEPHYR_USER, heavy);
+static const struct pwm_dt_spec indicator = PWM_DT_SPEC_GET_BY_NAME(ZEPHYR_USER, indicator);
 
 struct stored_link {
 	uint8_t version;

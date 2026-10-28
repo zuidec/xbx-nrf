@@ -1,0 +1,51 @@
+&pinctrl {
+	/* J3 debug UART (JST-SH, Raspberry Pi pinout) */
+	uart0_default: uart0_default {
+		group1 {
+			psels = <NRF_PSEL(UART_TX, 0, 27)>;
+		};
+
+		group2 {
+			psels = <NRF_PSEL(UART_RX, 0, 26)>;
+			bias-pull-up;
+		};
+	};
+
+	uart0_sleep: uart0_sleep {
+		group1 {
+			psels = <NRF_PSEL(UART_TX, 0, 27)>,
+				<NRF_PSEL(UART_RX, 0, 26)>;
+			low-power-enable;
+		};
+	};
+
+	/* PCAL6416 on J2 pins 5 / 7; 2.2 kΩ pull-ups on the board */
+	i2c0_default: i2c0_default {
+		group1 {
+			psels = <NRF_PSEL(TWIM_SCL, 0, 24)>,
+				<NRF_PSEL(TWIM_SDA, 0, 25)>;
+		};
+	};
+
+	i2c0_sleep: i2c0_sleep {
+		group1 {
+			psels = <NRF_PSEL(TWIM_SCL, 0, 24)>,
+				<NRF_PSEL(TWIM_SDA, 0, 25)>;
+			low-power-enable;
+		};
+	};
+
+	/* Guide LED (J2 pin 6) */
+	pwm0_default: pwm0_default {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 1, 13)>;
+		};
+	};
+
+	pwm0_sleep: pwm0_sleep {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 1, 13)>;
+			low-power-enable;
+		};
+	};
+};
