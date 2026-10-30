@@ -162,11 +162,16 @@ Locked decisions: [README](README.md). Not yet locked:
       pin, no divider ([[docs/hardware#Analog inputs]]).
 	- [x] Measure `3v/B+` on USB: must stay below 3.6 V. 2.99 V. Rev1.1
 	      reads 2537 mV against 2509 mV on a meter (+1 %).
-	- [ ] NiMH cutoff (~1.0 V/cell = 2.0 V) and warning threshold.
-	      Firmware: 2.0 V for 10 s → off, and the % table; both untuned
-	      (M5).
-	- [ ] Flat NiMH curve → coarse gauge; maybe coulomb counting.
+	- [x] NiMH curve and cutoff (`battery.c`): typical low self-discharge
+	      NiMH data, 2.0 V for 10 s → off; read only while the motors are
+	      off, level only falls per session; no rumble below 25 %. Cutoff
+	      and rumble limit untested (need flat cells).
+	- [ ] Flat NiMH curve → coarse gauge (~1 % per 2 mV mid-range; the ADC
+	      read +1 % on one board); maybe coulomb counting.
 	- [ ] Regulated Li-ion AAs: no gauge possible.
+	- [ ] Lithium primary AAs rest at up to 1.8 V/cell: 3.6 V, the top of
+	      the VBAT range and the pin limit. Support them or not.
+	- Alkaline: no own curve; reads full for about half its life.
 - [ ] VBUS detect (J3 pin 12).
 - [x] **Charging:** external; no Play & Charge in v1 (in-controller charging
       would need chemistry detection; not worth it).
