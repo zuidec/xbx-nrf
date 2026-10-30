@@ -15,7 +15,7 @@
 
 LOG_MODULE_REGISTER(rumble, LOG_LEVEL_INF);
 
-#define BRAKE_MS 20 /* tune on the motors */
+#define BRAKE_MS 40 /* 0 = coast; 0-80 ms felt the same on the Rev1.1 motors */
 
 #define ZEPHYR_USER DT_PATH(zephyr_user)
 #define HAS_MOTORS  DT_PROP_HAS_NAME(ZEPHYR_USER, pwms, motor_heavy)
@@ -71,8 +71,10 @@ void rumble_update(const uint8_t level[4], uint32_t elapsed_ms)
 		if (level[i] != motors[i].level) {
 			if (level[i] == 0) {
 				pwm_set_pulse_dt(&hin[i], 0);
-				gpio_pin_set_dt(&lin[i], 1);
 				motors[i].brake_ms = BRAKE_MS;
+				if (motors[i].brake_ms) {
+					gpio_pin_set_dt(&lin[i], 1);
+				}
 			} else {
 				if (motors[i].brake_ms) {
 					motors[i].brake_ms = 0;
