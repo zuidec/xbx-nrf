@@ -445,9 +445,12 @@ USB modes, in order; one active at a time.
       reset); the stick supply stays on.
 - [x] PCAL6416 polling ([[docs/pcal6416#Firmware notes]]): one 2-byte read
       per 1 ms scan (`pcal6416.c`), pull-ups enabled at boot.
-- [ ] PCAL6416 setup again after failed reads (and a periodic check): an
+- [x] PCAL6416 setup again after failed reads (and a periodic check): an
       expander reset after boot (pin 9 glitch) leaves its inputs floating
-      until the next boot.
+      until the next boot. Caught by a failed read, a low unused input (P02,
+      P06, P16) or the pull-up register (1 s); retried every 100 ms, buttons
+      hold meanwhile. Tested: 5 ms reset pulse, back in 100 ms. The
+      unused-input check is untested.
 - [x] Stick/trigger ADC ([[docs/hardware#Analog inputs]]): sticks on the
       internal 0.6 V reference, gain 1/3 (0–1.8 V), as a ratio to the
       measured 1.8 V rail (AIN0 at gain 1/4 so it doesn't clip); triggers on
