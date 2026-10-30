@@ -6,6 +6,7 @@
 #ifndef XBX_CTRL_RUMBLE_H_
 #define XBX_CTRL_RUMBLE_H_
 
+#include <stdbool.h>
 #include <stdint.h>
 
 /* Motors off (drivers asleep). */
@@ -16,6 +17,9 @@ int rumble_init(void);
  * every report tick (TX thread) with the ms since the last call.
  */
 void rumble_update(const uint8_t level[4], uint32_t elapsed_ms);
+
+/* Any motor driven or braking (it loads the battery). */
+bool rumble_active(void);
 
 /* All motors off at once, no brake: drivers asleep (before power-off). */
 void rumble_off(void);

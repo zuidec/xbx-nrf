@@ -94,6 +94,18 @@ void rumble_update(const uint8_t level[4], uint32_t elapsed_ms)
 #endif
 }
 
+bool rumble_active(void)
+{
+#if HAS_MOTORS
+	for (int i = 0; i < MOTORS; i++) {
+		if (motors[i].level || motors[i].brake_ms) {
+			return true;
+		}
+	}
+#endif
+	return false;
+}
+
 void rumble_off(void)
 {
 #if HAS_MOTORS

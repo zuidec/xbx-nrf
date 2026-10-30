@@ -626,6 +626,9 @@ static void tx_thread(void *p1, void *p2, void *p3)
 		uint8_t motors[4];
 
 		rumble_get(motors);
+		if (!battery_rumble_ok()) {
+			memset(motors, 0, sizeof(motors));
+		}
 		rumble_update(motors, elapsed_ms);
 
 		if (wired) {

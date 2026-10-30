@@ -7,12 +7,16 @@
 #ifndef XBX_CTRL_BATTERY_H_
 #define XBX_CTRL_BATTERY_H_
 
+#include <stdbool.h>
 #include <stdint.h>
 
 int battery_init(void);
 
 /* Call every report tick (TX thread). Returns 0..100 %, 0xFF = unknown. */
 uint8_t battery_tick(uint32_t elapsed_ms);
+
+/* Enough charge for rumble (RUMBLE_MIN_PCT, or the level is unknown). */
+bool battery_rumble_ok(void);
 
 /* Filtered rail voltage, 0 = unknown (for the log). */
 uint16_t battery_mv(void);
