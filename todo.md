@@ -463,13 +463,17 @@ USB modes, in order; one active at a time.
       schematic's: analog inputs, LSC / RSC / B, Guide, Pair, power hold,
       I2C, A3910 inputs, supply enables, LEDs. Board
       `xbx_controller/nrf52840`.
-- [ ] **AUX inputs:** read AUX1–AUX4 (paddle pads; P0.14, P0.13, P1.14,
-      P1.07) and LT_AUX / RT_AUX (trigger switch pads; P0.22, P1.04) like
-      the other GPIO buttons (pull-up, debounce). Needs report bits: the
-      radio report has none for them (`buttons_ext` has room), plus the
-      USB mapping (HID buttons; XInput has no paddles). Decide what the
-      trigger switches do: full trigger, or their own buttons.
-      [[#Elite-style paddles]], [[#2. Mechanical]] (trigger stops).
+- [x] **AUX inputs:** paddles P1–P4 (left upper/lower, right upper/lower;
+      AUX2, AUX1, AUX3, AUX4) in `buttons_ext` bits 2–5 → HID buttons
+      17–20; XInput: each presses mapped buttons (default A, B, X, Y; the
+      dongle flags XInput mode in the ACK). Paddles can be turned off. LT_AUX
+      / RT_AUX force their trigger full. Tested: evtest (both modes), SDL,
+      Steam. [[#Elite-style paddles]], [[#2. Mechanical]] (trigger stops).
+- [ ] Paddle config from the configurator (`input_paddle_config_set()`),
+      stored in flash.
+- [ ] Steam / SDL map Share and the paddles only with the mapping line in
+      [[docs/protocol#Input report (dongle → PC)]]; needs our own USB ID and
+      an SDL_GameControllerDB entry (one per device: dongle, wired).
 - [x] Guide LED: pairing indicator; outside pairing solid while linked,
       slow blink while searching.
 - [ ] Guide LED from the host (output report `led`, XInput LED pattern).
