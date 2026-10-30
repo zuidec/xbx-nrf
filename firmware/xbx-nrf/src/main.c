@@ -36,6 +36,7 @@
 
 #include "hid_pad.h"
 #include "hid_pid.h"
+#include "config.h"
 #include "input.h"
 #include "pair.h"
 #include "battery.h"
@@ -748,6 +749,10 @@ int main(void)
 	if (err) {
 		LOG_ERR("input init failed: %d", err);
 		return 0;
+	}
+	err = config_init();
+	if (err) {
+		LOG_ERR("config init failed: %d", err);
 	}
 #endif
 

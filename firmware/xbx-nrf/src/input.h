@@ -15,9 +15,8 @@ struct xbx_input_report;
 #define INPUT_PADDLES 4
 
 /*
- * Paddles P1..P4 (left upper, left lower, right upper, right lower); set by
- * the configurator later, not stored yet. Default: on, XInput P1..P4 = A, B,
- * X, Y.
+ * Paddles P1..P4 (left upper, left lower, right upper, right lower); stored
+ * and defaulted (on, XInput A, B, X, Y) by config.c.
  */
 struct input_paddle_config {
 	bool enabled;                   /* off: ignored (none fitted) */

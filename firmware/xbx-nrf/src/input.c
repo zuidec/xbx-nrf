@@ -194,10 +194,7 @@ static const struct pwm_dt_spec led_status = PWM_DT_SPEC_GET_BY_NAME(ZEPHYR_USER
 
 static uint32_t pressed;               /* debounced, bit per PIN_* / XBX_BTN_* */
 
-static struct input_paddle_config paddles = {
-	.enabled = true,
-	.xinput = {XBX_BTN_A, XBX_BTN_B, XBX_BTN_X, XBX_BTN_Y},
-};
+static struct input_paddle_config paddles; /* set by config_init() */
 static uint8_t lockout_ms[PIN_BITS];
 
 /* last rumble request, shown on the LEDs whenever not calibrating */
