@@ -121,12 +121,16 @@ static void reset_fn(struct k_work *work)
 	sys_reboot(SYS_REBOOT_COLD);
 }
 
+static bool indicator_held;  /* pair_indicator_hold() */
+static bool indicator_stale; /* released: set it again even if unchanged */
+
 static void indicator_set(bool on)
 {
-	if (on == indicator_on) {
+	if (indicator_held || (on == indicator_on && !indicator_stale)) {
 		return;
 	}
 	indicator_on = on;
+	indicator_stale = false;
 	if (pwm_is_ready_dt(&indicator)) {
 		pwm_set_pulse_dt(&indicator, on ? indicator.period : 0);
 	}
@@ -275,6 +279,12 @@ bool pair_indicator_busy(void)
 void pair_indicate_error(void)
 {
 	atomic_set(&error_request, 1);
+}
+
+void pair_indicator_hold(bool hold)
+{
+	indicator_held = hold;
+	indicator_stale = true;
 }
 
 bool pair_active(void)

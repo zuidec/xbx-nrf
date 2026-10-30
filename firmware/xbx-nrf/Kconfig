@@ -36,6 +36,18 @@ config XBX_LSTICK_INVERT_Y
 	  Report convention: up = positive. Set if the stick reads the wrong
 	  way round.
 
+config XBX_RSTICK_INVERT_X
+	bool "Invert the right stick X axis"
+	depends on !XBX_FAKE_INPUT
+	help
+	  As XBX_LSTICK_INVERT_X, for the right stick.
+
+config XBX_RSTICK_INVERT_Y
+	bool "Invert the right stick Y axis"
+	depends on !XBX_FAKE_INPUT
+	help
+	  As XBX_LSTICK_INVERT_Y, for the right stick.
+
 endmenu
 
 source "Kconfig.zephyr"

@@ -62,6 +62,9 @@ bool pair_active(void);
 /* The indicator LED is showing pairing, an error or a reset (not rumble). */
 bool pair_indicator_busy(void);
 
+/* Another module drives the indicator meanwhile (calibration); TX thread only. */
+void pair_indicator_hold(bool hold);
+
 /* Show the error blink (e.g. the dongle is full); callable from interrupts. */
 void pair_indicate_error(void);
 
