@@ -218,7 +218,10 @@ static void link_lost(uint8_t link)
 			xinput_set_connected(p->xslot, false);
 		}
 	} else if (link == hid_link) {
-		const struct hid_pad_state neutral = {.hat = HID_PAD_HAT_CENTERED};
+		const struct hid_pad_state neutral = {
+			.hat = HID_PAD_HAT_CENTERED,
+			.battery = HID_PAD_BATTERY_UNKNOWN,
+		};
 
 		hid_pad_update(&neutral);
 		hid_pid_stop_all();

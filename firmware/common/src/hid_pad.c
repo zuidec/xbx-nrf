@@ -30,6 +30,9 @@ LOG_MODULE_REGISTER(hid_pad, LOG_LEVEL_INF);
 #define GD_RZ  0x35
 #define GD_HAT 0x39
 
+#define HID_PAGE_GEN_DEV_CTRL 0x06
+#define GDC_BATTERY_STRENGTH  0x20
+
 /* Main item flags */
 #define DATA_VAR_ABS      0x02
 #define DATA_VAR_ABS_NULL 0x42
@@ -84,6 +87,15 @@ static const uint8_t report_desc[] = {
 		HID_REPORT_COUNT(2),
 		HID_INPUT(DATA_VAR_ABS),
 
+		/* battery strength, 0..100 % (Linux: a power_supply device) */
+		HID_USAGE_PAGE(HID_PAGE_GEN_DEV_CTRL),
+		HID_USAGE(GDC_BATTERY_STRENGTH),
+		HID_LOGICAL_MIN8(0),
+		HID_LOGICAL_MAX8(100),
+		HID_REPORT_SIZE(8),
+		HID_REPORT_COUNT(1),
+		HID_INPUT(DATA_VAR_ABS),
+
 		/* force feedback (PID page, report IDs 0x11..0x23) */
 		HID_PID_DESC,
 
@@ -104,6 +116,7 @@ struct in_report {
 	uint8_t buttons_hat[3]; /* buttons 1-20 in bits 0-19, hat in bits 20-23 */
 	int16_t lx, ly, rx, ry;
 	uint16_t lt, rt;
+	uint8_t battery;
 } __packed;
 
 struct out_report {
@@ -141,6 +154,7 @@ static void to_report(struct in_report *r, const struct hid_pad_state *s)
 	r->ly = s->ly;
 	r->rx = s->rx;
 	r->ry = s->ry;
+	r->battery = s->battery;
 	r->lt = s->lt;
 	r->rt = s->rt;
 }
@@ -382,11 +396,15 @@ void hid_pad_from_radio(const struct xbx_input_report *in, struct hid_pad_state 
 	out->ry = invert_axis(in->ry);
 	out->lt = MIN(in->lt, 1023);
 	out->rt = MIN(in->rt, 1023);
+	out->battery = in->battery <= 100 ? in->battery : HID_PAD_BATTERY_UNKNOWN;
 }
 
 int hid_pad_init(void)
 {
-	const struct hid_pad_state neutral = {.hat = HID_PAD_HAT_CENTERED};
+	const struct hid_pad_state neutral = {
+		.hat = HID_PAD_HAT_CENTERED,
+		.battery = HID_PAD_BATTERY_UNKNOWN,
+	};
 
 	if (!device_is_ready(hid_dev)) {
 		return -ENODEV;

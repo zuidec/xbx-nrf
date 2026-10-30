@@ -9,7 +9,7 @@
 		compatible = "zephyr,hid-device";
 		label = "XBX-NRF Dongle";
 		protocol-code = "none";
-		in-report-size = <16>;
+		in-report-size = <17>;
 		in-polling-period-us = <1000>;
 		/*
 		 * Also the OUT endpoint's max packet size: keep it above the 6-byte

@@ -350,7 +350,7 @@ application collection. Tested with `evtest`, SDL and Steam on Linux.
 |---|---|
 | VID / PID | `0x1209` (pid.codes) / **`0x0001`** test PID during development |
 | Interfaces | 1 HID gamepad; + CDC ACM console in development builds (composite) |
-| Reports | Input ID 1, 16 bytes (= `in-report-size` in `usb.overlay`); output ID 2, 6 bytes; PID `0x11`–`0x23` ([[#Force feedback (PID)]]) |
+| Reports | Input ID 1, 17 bytes (= `in-report-size` in `usb.overlay`); output ID 2, 6 bytes; PID `0x11`–`0x23` ([[#Force feedback (PID)]]) |
 | HID endpoints | Interrupt IN 1 ms; interrupt OUT 1 ms (PID uploads send several reports in a row), max packet 64 (must exceed every output report, or reports merge) |
 | Serial number | From the nRF52840 `DEVICEID` |
 | Console | `CONFIG_XBX_USB_CONSOLE`: on in development builds, off in release builds (`release.conf`) |
@@ -375,6 +375,7 @@ Layout chosen so Linux's generic HID driver emits the same event codes as
 | 10 | 2 | Right stick Y (**inverted**) | Ry | `ABS_RY` |
 | 12 | 2 | Left trigger | Z, logical 0…1023 | `ABS_Z` |
 | 14 | 2 | Right trigger | Rz, logical 0…1023 | `ABS_RZ` |
+| 16 | 1 | Battery, 0…100 %; `0xFF` = unknown (no controller, or none measured) | Generic Device Controls: Battery Strength, logical 0…100 (out of range: ignored by Linux) | `power_supply` capacity, not an input event |
 
 | HID button | Control | Linux event |
 |---|---|---|

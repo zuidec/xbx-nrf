@@ -32,12 +32,16 @@
 /* hat: 0 = up, clockwise in 45° steps to 7 = up-left; 8 = centred */
 #define HID_PAD_HAT_CENTERED 8
 
+/* out of the descriptor's 0..100: Linux ignores it */
+#define HID_PAD_BATTERY_UNKNOWN 0xFF
+
 struct hid_pad_state {
 	uint32_t buttons;  /* HID_PAD_BTN_* */
 	uint8_t hat;       /* 0..7, HID_PAD_HAT_CENTERED */
 	int16_t lx, ly;    /* HID convention: Y positive = down */
 	int16_t rx, ry;
 	uint16_t lt, rt;   /* 0..1023 */
+	uint8_t battery;   /* 0..100 %, HID_PAD_BATTERY_UNKNOWN */
 };
 
 /* Register with the HID class; call before usb_start(). */
