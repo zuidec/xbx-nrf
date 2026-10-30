@@ -77,4 +77,7 @@ void radio_link_lost(uint8_t link);
  */
 void radio_set_output(uint8_t link, const uint8_t rumble[4], uint8_t led);
 
+/* Ask the controller to power off; in its ACK payloads until the link is lost. */
+void radio_power_off(uint8_t link);
+
 #endif /* XBX_DONGLE_RADIO_H_ */

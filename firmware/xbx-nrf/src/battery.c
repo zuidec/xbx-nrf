@@ -135,7 +135,7 @@ uint8_t battery_tick(uint32_t elapsed_ms)
 		low_ms += SAMPLE_MS;
 		if (low_ms >= LOW_MS) {
 			LOG_WRN("battery empty: %d mV", mv);
-			power_off();
+			power_off("battery empty");
 		}
 	} else {
 		low_ms = 0;

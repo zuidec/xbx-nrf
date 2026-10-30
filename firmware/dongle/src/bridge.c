@@ -126,10 +126,23 @@ static uint8_t xslot_take(struct player *p)
 	return p->xslot;
 }
 
+/* xpad sends this when Guide is held 5 s */
+static void xinput_power_off(uint8_t slot)
+{
+	k_spinlock_key_t key = k_spin_lock(&host_lock);
+	struct player *p = xslot_player(slot);
+	int link = p ? p - players : -1;
+
+	k_spin_unlock(&host_lock, key);
+	if (link >= 0) {
+		radio_power_off(link);
+	}
+}
+
 static const struct xinput_callbacks xinput_cbs = {
 	.rumble = xinput_rumble,
 	.led = xinput_led,
-	/* power_off: logged by xinput.c; forwarding needs the power state machine */
+	.power_off = xinput_power_off,
 };
 
 /* PID strength drives both main motors of the HID player; trigger motors are host-only */

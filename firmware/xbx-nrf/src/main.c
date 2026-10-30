@@ -613,7 +613,10 @@ static void tx_thread(void *p1, void *p2, void *p3)
 		}
 		rumble_leds_update();
 #endif
-		power_tick(report->buttons & XBX_BTN_GUIDE, elapsed_ms);
+		power_tick(report, wired || slot_held(), pair_active(), elapsed_ms);
+		if (!wired && slot_held() && (last_output.flags & XBX_OUT_FLAG_POWER_OFF)) {
+			power_off("host request");
+		}
 		report->battery = battery_tick(elapsed_ms);
 
 		uint8_t motors[4];

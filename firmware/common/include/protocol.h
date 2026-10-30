@@ -40,6 +40,7 @@
 
 /* xbx_output_report.flags */
 #define XBX_OUT_FLAG_FULL  (1u << 0) /* no slot free: retry slowly */
+#define XBX_OUT_FLAG_POWER_OFF (1u << 1) /* host asked: power off */
 /* Radio TX power in dBm, both ends (the dongle's ACKs too). The nRF52840 maximum is +8.
  * Fixed for now; see todo.md for dynamic power adjustment.
  */
