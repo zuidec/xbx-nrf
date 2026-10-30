@@ -479,10 +479,10 @@ USB modes, in order; one active at a time.
 - [ ] Guide LED from the host (output report `led`, XInput LED pattern).
 - [x] Rumble PWM ([[docs/a3910#Firmware notes]]): HIN on pwm1 at 25 kHz,
       LIN as GPIO; a stopping motor brakes 20 ms (`BRAKE_MS`, untuned),
-      then both inputs low. Heavy, Weak, RT tested (`tools/test-rumble.sh`).
-- [ ] **LT motor doesn't run** (Rev1.1): P0.20 / P0.21 driven correctly
-      (checked over SWD), Heavy on the same U5 works. Check U5 pins 3–5,
-      D2, SQ1 / SQ2 and the motor (scope U5 pin 4 and SQ1 at `lt 128`).
+      then both inputs low. All four motors tested (`tools/test-rumble.sh`).
+- [x] **LT motor didn't run** (Rev1.1): an incomplete U5 joint that looked
+      fine; reflowing U5 fixed it. Firmware was correct throughout (checked
+      over SWD).
 - [x] Rumble safety: rumble/LED values off if no ACK payload for 100 ms
       (`OUTPUT_TIMEOUT_MS`); the motor driver will read these values.
 - [x] Battery monitoring, low-battery shutdown (`battery.c`): level in the
@@ -560,9 +560,9 @@ Adafruit nRF52 UF2 bootloader on both boards, unsigned
       2 at 1 kHz, 3 and 4 at 500 Hz (2 ms frame, 0–0.5 % loss).
 - [x] **M3:** dev board on a stock top board via J3: buttons, Guide, power
       hold/off. Done on the Rev1.1 board instead.
-- [ ] **M4:** first custom board fits; inputs + rumble work. Inputs work
-      (buttons, sticks, triggers; AUX not yet); rumble works but LT (a
-      hardware fault); power on/off works; battery level works.
+- [x] **M4:** first custom board fits; inputs + rumble work. Rev1.1:
+      buttons, sticks, triggers, AUX inputs, all four motors, power on/off
+      and battery level work.
 - [ ] **M5:** battery life on NiMH AAs.
 - [ ] **M6 (later):** Elite Series 2 port (broken 1797 donor, AcidMods scans).
 
