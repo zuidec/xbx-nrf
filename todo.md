@@ -484,7 +484,8 @@ USB modes, in order; one active at a time.
       slow blink while searching.
 - [ ] Guide LED from the host (output report `led`, XInput LED pattern).
 - [x] Rumble PWM ([[docs/a3910#Firmware notes]]): HIN on pwm1 at 25 kHz,
-      LIN as GPIO; a stopping motor brakes 20 ms (`BRAKE_MS`, untuned),
+      LIN as GPIO; a stopping motor brakes 40 ms (`BRAKE_MS`; 0–80 ms
+      felt the same),
       then both inputs low. All four motors tested (`tools/test-rumble.sh`).
 - [x] **LT motor didn't run** (Rev1.1): an incomplete U5 joint that looked
       fine; reflowing U5 fixed it. Firmware was correct throughout (checked
