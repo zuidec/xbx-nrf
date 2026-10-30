@@ -131,6 +131,15 @@
 	pinctrl-0 = <&i2c0_default>;
 	pinctrl-1 = <&i2c0_sleep>;
 	pinctrl-names = "default", "sleep";
+
+	/* top board U4: most buttons; reset = PWR_HOLD, no interrupt line */
+	pcal6416: gpio@21 {
+		compatible = "nxp,pcal6416a";
+		reg = <0x21>;
+		gpio-controller;
+		#gpio-cells = <2>;
+		ngpios = <16>;
+	};
 };
 
 &pwm0 {

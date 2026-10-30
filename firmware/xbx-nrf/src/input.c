@@ -1,7 +1,9 @@
 /*
- * Breadboard input (see input.h). Buttons are polled every 1 ms with an eager
- * debounce: a change is reported at once, then the pin is ignored for
- * DEBOUNCE_MS.
+ * Controller input (see input.h). Buttons (GPIOs, and the PCAL6416 expander on
+ * the controller board) are polled every 1 ms with an eager debounce: a change
+ * is reported at once, then the input is ignored for DEBOUNCE_MS. The stick,
+ * rumble LEDs and VCC switch exist only where the board's zephyr,user node
+ * has them (so far the breadboard's).
  *
  * Stick: with a stored calibration (calib.c) its range is used as it is; the
  * centre measured at boot replaces the stored one if the stick is still and
@@ -28,6 +30,7 @@
 
 #include "calib.h"
 #include "input.h"
+#include "pcal6416.h"
 #include "protocol.h"
 
 LOG_MODULE_REGISTER(input, LOG_LEVEL_INF);
@@ -64,47 +67,91 @@ LOG_MODULE_REGISTER(input, LOG_LEVEL_INF);
 #define PIN_LT  BIT(16)
 #define PIN_RT  BIT(17)
 #define PIN_CAL BIT(18)
+#define PIN_SHARE BIT(19) /* report.buttons_ext */
+#define PIN_BITS  20
 
 #define ZEPHYR_USER DT_PATH(zephyr_user)
 
+#define HAS_EXPANDER   DT_NODE_EXISTS(DT_NODELABEL(pcal6416))
+#define HAS_STICK      DT_NODE_HAS_PROP(ZEPHYR_USER, io_channels)
+#define HAS_LEDS       DT_PROP_HAS_NAME(ZEPHYR_USER, pwms, heavy)
+#define HAS_VCC_ENABLE DT_NODE_HAS_PROP(ZEPHYR_USER, vcc_enable_gpios)
+
+/* the calibration routine shows its state on the heavy rumble LED */
+BUILD_ASSERT(!HAS_STICK || HAS_LEDS, "a stick needs the heavy rumble LED");
+
 struct input_pin {
 	struct gpio_dt_spec gpio;
-	uint32_t bit; /* XBX_BTN_* or PIN_LT/RT */
+	uint32_t bit; /* XBX_BTN_* or PIN_* */
 };
 
-#define PIN(prop, bit) {GPIO_DT_SPEC_GET(ZEPHYR_USER, prop), bit}
+/* only the pins the board's zephyr,user node has */
+#define PIN(prop, bit)                                                                    \
+	IF_ENABLED(DT_NODE_HAS_PROP(ZEPHYR_USER, prop),                                   \
+		   ({GPIO_DT_SPEC_GET(ZEPHYR_USER, prop), bit},))
 
 static const struct input_pin pins[] = {
-	PIN(a_gpios, XBX_BTN_A),
-	PIN(b_gpios, XBX_BTN_B),
-	PIN(x_gpios, XBX_BTN_X),
-	PIN(y_gpios, XBX_BTN_Y),
-	PIN(lb_gpios, XBX_BTN_LB),
-	PIN(rb_gpios, XBX_BTN_RB),
-	PIN(view_gpios, XBX_BTN_VIEW),
-	PIN(menu_gpios, XBX_BTN_MENU),
-	PIN(dpad_up_gpios, XBX_BTN_DPAD_UP),
-	PIN(dpad_down_gpios, XBX_BTN_DPAD_DOWN),
-	PIN(dpad_left_gpios, XBX_BTN_DPAD_LEFT),
-	PIN(dpad_right_gpios, XBX_BTN_DPAD_RIGHT),
-	PIN(ls_gpios, XBX_BTN_LS),
-	PIN(lt_gpios, PIN_LT),
-	PIN(rt_gpios, PIN_RT),
-#if DT_NODE_HAS_PROP(ZEPHYR_USER, calib_gpios)
-	PIN(calib_gpios, PIN_CAL),
-#endif
+	PIN(a_gpios, XBX_BTN_A)
+	PIN(b_gpios, XBX_BTN_B)
+	PIN(x_gpios, XBX_BTN_X)
+	PIN(y_gpios, XBX_BTN_Y)
+	PIN(lb_gpios, XBX_BTN_LB)
+	PIN(rb_gpios, XBX_BTN_RB)
+	PIN(view_gpios, XBX_BTN_VIEW)
+	PIN(menu_gpios, XBX_BTN_MENU)
+	PIN(guide_gpios, XBX_BTN_GUIDE)
+	PIN(dpad_up_gpios, XBX_BTN_DPAD_UP)
+	PIN(dpad_down_gpios, XBX_BTN_DPAD_DOWN)
+	PIN(dpad_left_gpios, XBX_BTN_DPAD_LEFT)
+	PIN(dpad_right_gpios, XBX_BTN_DPAD_RIGHT)
+	PIN(ls_gpios, XBX_BTN_LS)
+	PIN(rs_gpios, XBX_BTN_RS)
+	PIN(lt_gpios, PIN_LT)
+	PIN(rt_gpios, PIN_RT)
+	PIN(calib_gpios, PIN_CAL)
 };
 
+#if HAS_EXPANDER
+/* expander port bit → button (docs/pcal6416.md); Pair (bit 8) is read by pair.c */
+static const struct {
+	uint8_t port_bit;
+	uint32_t bit;
+} expander_map[] = {
+	{0, PIN_SHARE},
+	{1, XBX_BTN_X},
+	{3, XBX_BTN_Y},
+	{4, XBX_BTN_RB},
+	{5, XBX_BTN_LB},
+	{7, XBX_BTN_MENU},
+	{9, XBX_BTN_DPAD_UP},
+	{10, XBX_BTN_DPAD_RIGHT},
+	{11, XBX_BTN_DPAD_LEFT},
+	{12, XBX_BTN_DPAD_DOWN},
+	{13, XBX_BTN_VIEW},
+	{15, XBX_BTN_A},
+};
+#endif
+
+#if HAS_VCC_ENABLE
 static const struct gpio_dt_spec vcc_enable = GPIO_DT_SPEC_GET(ZEPHYR_USER, vcc_enable_gpios);
+#endif
 
-static const struct adc_dt_spec adc_lx = ADC_DT_SPEC_GET_BY_NAME(ZEPHYR_USER, lx);
-static const struct adc_dt_spec adc_ly = ADC_DT_SPEC_GET_BY_NAME(ZEPHYR_USER, ly);
-
+#if HAS_LEDS
 static const struct pwm_dt_spec led_heavy = PWM_DT_SPEC_GET_BY_NAME(ZEPHYR_USER, heavy);
 static const struct pwm_dt_spec led_weak = PWM_DT_SPEC_GET_BY_NAME(ZEPHYR_USER, weak);
 
-static uint32_t pressed;                   /* debounced, bit per input_pin.bit */
-static uint8_t lockout_ms[ARRAY_SIZE(pins)];
+static void led_set(const struct pwm_dt_spec *led, uint8_t level);
+#endif
+
+static uint32_t pressed;               /* debounced, bit per PIN_* / XBX_BTN_* */
+static uint8_t lockout_ms[PIN_BITS];
+
+/* last rumble request, shown on the LEDs whenever not calibrating */
+static uint8_t rumble_heavy, rumble_weak;
+
+#if HAS_STICK
+static const struct adc_dt_spec adc_lx = ADC_DT_SPEC_GET_BY_NAME(ZEPHYR_USER, lx);
+static const struct adc_dt_spec adc_ly = ADC_DT_SPEC_GET_BY_NAME(ZEPHYR_USER, ly);
 
 struct stick_axis {
 	int16_t center, min, max; /* raw counts */
@@ -211,11 +258,6 @@ static struct {
 	struct stick_axis prev_x, prev_y; /* restored on cancel */
 	bool armed; /* start request released: the next press confirms */
 } cal;
-
-/* last rumble request, shown on the LEDs whenever not calibrating */
-static uint8_t rumble_heavy, rumble_weak;
-
-static void led_set(const struct pwm_dt_spec *led, uint8_t level);
 
 /* use the stored calibration for this axis, if there is one */
 static bool axis_load(struct stick_axis *axis, enum calib_axis_id id)
@@ -461,6 +503,7 @@ static int stick_init(void)
 	}
 	return 0;
 }
+#endif /* HAS_STICK */
 
 int input_init(void)
 {
@@ -476,22 +519,66 @@ int input_init(void)
 		}
 	}
 
+#if HAS_EXPANDER
+	/* not fatal: without the expander the other buttons still work */
+	if (pcal6416_init() != 0) {
+		LOG_WRN("expander buttons unavailable");
+	}
+#endif
+
+#if HAS_LEDS
 	if (!pwm_is_ready_dt(&led_heavy) || !pwm_is_ready_dt(&led_weak)) {
 		return -ENODEV;
 	}
 	input_set_rumble(0, 0);
+#endif
 
+#if HAS_VCC_ENABLE
 	err = gpio_pin_configure_dt(&vcc_enable, GPIO_OUTPUT_ACTIVE);
 	if (err) {
 		return err;
 	}
 	k_msleep(20); /* let VCC and the pots settle before calibrating */
+#endif
 
+#if HAS_STICK
 	err = calib_init();
 	if (err) {
 		LOG_WRN("calibration storage unavailable: %d", err);
 	}
 	return stick_init();
+#else
+	return 0;
+#endif
+}
+
+/* every input's level now, bit per PIN_* / XBX_BTN_*; not debounced */
+static uint32_t buttons_now(void)
+{
+	uint32_t now = 0;
+
+	for (size_t i = 0; i < ARRAY_SIZE(pins); i++) {
+		if (gpio_pin_get_dt(&pins[i].gpio) > 0) {
+			now |= pins[i].bit;
+		}
+	}
+#if HAS_EXPANDER
+	uint16_t exp;
+
+	if (pcal6416_read(&exp) == 0) {
+		for (size_t i = 0; i < ARRAY_SIZE(expander_map); i++) {
+			if (exp & BIT(expander_map[i].port_bit)) {
+				now |= expander_map[i].bit;
+			}
+		}
+	} else {
+		/* read failed: its buttons keep their state */
+		for (size_t i = 0; i < ARRAY_SIZE(expander_map); i++) {
+			now |= pressed & expander_map[i].bit;
+		}
+	}
+#endif
+	return now;
 }
 
 #define BOOT_HOLD_SAMPLES 20 /* 1 ms apart: longer than any bounce */
@@ -501,14 +588,7 @@ uint16_t input_held_at_boot(void)
 	uint32_t held = UINT32_MAX;
 
 	for (int n = 0; n < BOOT_HOLD_SAMPLES; n++) {
-		uint32_t now = 0;
-
-		for (size_t i = 0; i < ARRAY_SIZE(pins); i++) {
-			if (gpio_pin_get_dt(&pins[i].gpio) > 0) {
-				now |= pins[i].bit;
-			}
-		}
-		held &= now;
+		held &= buttons_now();
 		k_msleep(1);
 	}
 	return held & 0xFFFF;
@@ -516,16 +596,13 @@ uint16_t input_held_at_boot(void)
 
 static void buttons_scan(void)
 {
-	for (size_t i = 0; i < ARRAY_SIZE(pins); i++) {
-		bool now;
+	uint32_t now = buttons_now();
 
+	for (int i = 0; i < PIN_BITS; i++) {
 		if (lockout_ms[i]) {
 			lockout_ms[i]--;
-			continue;
-		}
-		now = gpio_pin_get_dt(&pins[i].gpio) > 0;
-		if (now != !!(pressed & pins[i].bit)) {
-			pressed ^= pins[i].bit;
+		} else if ((now ^ pressed) & BIT(i)) {
+			pressed ^= BIT(i);
 			lockout_ms[i] = DEBOUNCE_MS;
 		}
 	}
@@ -533,9 +610,10 @@ static void buttons_scan(void)
 
 void input_read(struct xbx_input_report *report)
 {
-	int16_t x, y;
-
 	buttons_scan();
+
+#if HAS_STICK
+	int16_t x, y;
 
 	/* on an ADC error the stick holds its last position */
 	if (stick_sample(&x, &y) != 0) {
@@ -546,21 +624,25 @@ void input_read(struct xbx_input_report *report)
 	if (cal.state != CAL_IDLE) {
 		/* neutral while calibrating: nothing moves in-game */
 		report->buttons = 0;
+		report->buttons_ext = 0;
 		report->lx = report->ly = 0;
 		report->lt = report->rt = 0;
 		return;
 	}
-	report->buttons = pressed & 0xFFFF;
-	report->lt = (pressed & PIN_LT) ? TRIGGER_MAX : 0;
-	report->rt = (pressed & PIN_RT) ? TRIGGER_MAX : 0;
 	int32_t lx = axis_norm(&axis_x, x);
 	int32_t ly = axis_norm(&axis_y, y);
 
 	stick_shape(&lx, &ly);
 	report->lx = axis_x.invert ? -lx : lx;
 	report->ly = axis_y.invert ? -ly : ly;
+#endif
+	report->buttons = pressed & 0xFFFF;
+	report->buttons_ext = (pressed & PIN_SHARE) ? XBX_BTN_EXT_SHARE : 0;
+	report->lt = (pressed & PIN_LT) ? TRIGGER_MAX : 0;
+	report->rt = (pressed & PIN_RT) ? TRIGGER_MAX : 0;
 }
 
+#if HAS_LEDS
 static void led_set(const struct pwm_dt_spec *led, uint8_t level)
 {
 	/* squared: closer to perceived brightness */
@@ -568,13 +650,19 @@ static void led_set(const struct pwm_dt_spec *led, uint8_t level)
 
 	pwm_set_pulse_dt(led, pulse);
 }
+#endif
 
 void input_set_rumble(uint8_t heavy, uint8_t weak)
 {
 	rumble_heavy = heavy;
 	rumble_weak = weak;
-	if (cal.state == CAL_IDLE) {
-		led_set(&led_heavy, heavy);
-		led_set(&led_weak, weak);
+#if HAS_STICK
+	if (cal.state != CAL_IDLE) {
+		return; /* the LEDs show the calibration */
 	}
+#endif
+#if HAS_LEDS
+	led_set(&led_heavy, heavy);
+	led_set(&led_weak, weak);
+#endif
 }

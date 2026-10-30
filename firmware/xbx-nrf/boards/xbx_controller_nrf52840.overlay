@@ -1,15 +1,20 @@
 /*
- * xbx-nrf controller (custom board, boards/xbx/xbx_controller/). Bring-up:
- * fake input (xbx_controller_nrf52840.conf) until input.c reads this board's
- * expander, ADC and rumble drivers. The board's console is the J3 UART; the
- * app moves it to a USB serial function, as on the Pro Micro.
+ * xbx-nrf controller (custom board, boards/xbx/xbx_controller/). Buttons on
+ * GPIOs here, the rest on the PCAL6416 (board node pcal6416); sticks,
+ * triggers and rumble not yet. The board's console is the J3 UART; the app
+ * moves it to a USB serial function, as on the Pro Micro.
  */
 
 #include <../boards/common/usb/cdc_acm_serial.dtsi>
 
 / {
 	zephyr,user {
+		/* no pull-ups on the board: Guide, Pair via diodes, B/LS/RS via 1 kΩ */
+		guide-gpios = <&gpio1 15 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
 		pair-gpios = <&gpio1 11 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+		b-gpios = <&gpio1 5 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+		ls-gpios = <&gpio1 2 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+		rs-gpios = <&gpio1 6 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
 
 		/* scope timing pin (TP4) */
 		timing-gpios = <&gpio1 9 GPIO_ACTIVE_HIGH>;
