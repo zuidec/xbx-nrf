@@ -149,6 +149,14 @@
 	pinctrl-names = "default", "sleep";
 };
 
+/* rumble motor HIN pins (A3910 U5, U6) */
+&pwm1 {
+	status = "okay";
+	pinctrl-0 = <&pwm1_default>;
+	pinctrl-1 = <&pwm1_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
 zephyr_udc0: &usbd {
 	compatible = "nordic,nrf-usbd";
 	status = "okay";

@@ -38,6 +38,7 @@
 #include "hid_pid.h"
 #include "input.h"
 #include "pair.h"
+#include "rumble.h"
 #include "xinput_wired.h"
 #include "protocol.h"
 #include "usb.h"
@@ -492,21 +493,24 @@ static void xinput_rumble(uint8_t heavy, uint8_t weak)
 	k_spin_unlock(&host_lock, key);
 }
 
-/* heavy/weak for the motors: from the dongle, or wired from the PC (larger of
- * the vendor report and the PID strength, as on the dongle)
+/* motor levels (XBX_RUMBLE_*): from the dongle, or wired from the PC (heavy and
+ * weak: larger of the vendor report and the PID strength, as on the dongle)
  */
-static void rumble_get(uint8_t *heavy, uint8_t *weak)
+static void rumble_get(uint8_t level[4])
 {
 	if (wired) {
 		uint8_t pid = hid_pid_strength(k_uptime_get_32());
 		k_spinlock_key_t key = k_spin_lock(&host_lock);
 
-		*heavy = MAX(host_rumble[XBX_RUMBLE_HEAVY], pid);
-		*weak = MAX(host_rumble[XBX_RUMBLE_WEAK], pid);
+		memcpy(level, host_rumble, sizeof(host_rumble));
 		k_spin_unlock(&host_lock, key);
+		level[XBX_RUMBLE_HEAVY] = MAX(level[XBX_RUMBLE_HEAVY], pid);
+		level[XBX_RUMBLE_WEAK] = MAX(level[XBX_RUMBLE_WEAK], pid);
 	} else {
-		*heavy = last_output.rumble[XBX_RUMBLE_HEAVY];
-		*weak = last_output.rumble[XBX_RUMBLE_WEAK];
+		unsigned int key = irq_lock(); /* written by the radio interrupt */
+
+		memcpy(level, last_output.rumble, sizeof(last_output.rumble));
+		irq_unlock(key);
 	}
 }
 
@@ -541,6 +545,7 @@ static void rumble_leds_update(void)
 {
 	static uint8_t shown[2];
 	static bool was_pairing;
+	uint8_t level[4];
 	uint8_t heavy, weak;
 
 	if (pair_indicator_busy()) {
@@ -551,7 +556,9 @@ static void rumble_leds_update(void)
 		was_pairing = false;
 		shown[0] = shown[1] = 0xFF; /* force a refresh */
 	}
-	rumble_get(&heavy, &weak);
+	rumble_get(level);
+	heavy = level[XBX_RUMBLE_HEAVY];
+	weak = level[XBX_RUMBLE_WEAK];
 	if (heavy != shown[0] || weak != shown[1]) {
 		input_set_rumble(heavy, weak);
 		shown[0] = heavy;
@@ -605,6 +612,10 @@ static void tx_thread(void *p1, void *p2, void *p3)
 		}
 		rumble_leds_update();
 #endif
+		uint8_t motors[4];
+
+		rumble_get(motors);
+		rumble_update(motors, elapsed_ms);
 
 		if (wired) {
 			if (usb_mode_get() == USB_MODE_XINPUT) {
@@ -739,6 +750,12 @@ int main(void)
 		return 0;
 	}
 
+	err = rumble_init();
+	if (err) {
+		LOG_ERR("rumble init failed: %d", err);
+		return 0;
+	}
+
 	err = hid_pad_init();
 	if (err) {
 		LOG_ERR("HID init failed: %d", err);
@@ -788,12 +805,12 @@ int main(void)
 			last_output.rumble[0], last_output.rumble[1], last_output.rumble[2],
 			last_output.rumble[3], last_output.led);
 		prev_corrections = corrections;
-		uint8_t heavy, weak;
+		uint8_t motors[4];
 
-		rumble_get(&heavy, &weak);
-		LOG_INF("%s  buttons %04x  lx %d ly %d  lt %u rt %u  motors %u %u",
+		rumble_get(motors);
+		LOG_INF("%s  buttons %04x  lx %d ly %d  lt %u rt %u  motors %u %u %u %u",
 			wired ? "wired" : "radio", last_input.buttons, last_input.lx, last_input.ly,
-			last_input.lt, last_input.rt, heavy, weak);
+			last_input.lt, last_input.rt, motors[0], motors[1], motors[2], motors[3]);
 		prev = now;
 	}
 	return 0;

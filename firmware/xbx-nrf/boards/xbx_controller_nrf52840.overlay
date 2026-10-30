@@ -1,7 +1,7 @@
 /*
  * xbx-nrf controller (custom board, boards/xbx/xbx_controller/). Buttons on
  * GPIOs here, the rest on the PCAL6416 (board node pcal6416); sticks and
- * triggers on the SAADC (docs/hardware.md, "Analog inputs"); rumble not yet.
+ * triggers on the SAADC (docs/hardware.md, "Analog inputs"); rumble on pwm1.
  * The board's console is the J3 UART; the app moves it to a USB serial
  * function, as on the Pro Micro.
  */
@@ -36,9 +36,20 @@
 		 * pairing indicator: the Guide LED; outside pairing solid while
 		 * linked, slow blink while searching
 		 */
-		pwms = <&pwm0 0 PWM_MSEC(1) PWM_POLARITY_NORMAL>;
-		pwm-names = "indicator";
+		pwms = <&pwm0 0 PWM_MSEC(1) PWM_POLARITY_NORMAL>,
+		       <&pwm1 0 PWM_USEC(40) PWM_POLARITY_NORMAL>,
+		       <&pwm1 1 PWM_USEC(40) PWM_POLARITY_NORMAL>,
+		       <&pwm1 2 PWM_USEC(40) PWM_POLARITY_NORMAL>,
+		       <&pwm1 3 PWM_USEC(40) PWM_POLARITY_NORMAL>;
+		pwm-names = "indicator", "motor-heavy", "motor-weak", "motor-lt",
+			    "motor-rt";
 		indicator-idle;
+
+		/* rumble: HIN above at 25 kHz (A3910 needs >= 20 kHz), LIN here */
+		motor-lin-gpios = <&gpio0 19 GPIO_ACTIVE_HIGH>,
+				  <&gpio0 8 GPIO_ACTIVE_HIGH>,
+				  <&gpio0 21 GPIO_ACTIVE_HIGH>,
+				  <&gpio0 7 GPIO_ACTIVE_HIGH>;
 	};
 };
 
@@ -87,27 +98,6 @@
 	TRIGGER_CH(4); /* LT */
 	STICK_CH(5);   /* RS_Y */
 	STICK_CH(7);   /* RS_X */
-};
-
-/* A3910 inputs held low (both drivers asleep) until rumble PWM exists */
-&gpio0 {
-	rmb_off0: rmb_off0 {
-		gpio-hog;
-		gpios = <6 GPIO_ACTIVE_HIGH>, <7 GPIO_ACTIVE_HIGH>, <8 GPIO_ACTIVE_HIGH>,
-			<17 GPIO_ACTIVE_HIGH>, <19 GPIO_ACTIVE_HIGH>, <20 GPIO_ACTIVE_HIGH>,
-			<21 GPIO_ACTIVE_HIGH>;
-		output-low;
-		line-name = "RMB";
-	};
-};
-
-&gpio1 {
-	rmb_off1: rmb_off1 {
-		gpio-hog;
-		gpios = <8 GPIO_ACTIVE_HIGH>;
-		output-low;
-		line-name = "RMB";
-	};
 };
 
 /* 1 kHz report timer (TIMER2 is used by ESB) */
