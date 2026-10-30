@@ -93,3 +93,15 @@ void rumble_update(const uint8_t level[4], uint32_t elapsed_ms)
 	ARG_UNUSED(elapsed_ms);
 #endif
 }
+
+void rumble_off(void)
+{
+#if HAS_MOTORS
+	for (int i = 0; i < MOTORS; i++) {
+		pwm_set_pulse_dt(&hin[i], 0);
+		gpio_pin_set_dt(&lin[i], 0);
+		motors[i].level = 0;
+		motors[i].brake_ms = 0;
+	}
+#endif
+}

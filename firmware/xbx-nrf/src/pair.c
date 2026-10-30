@@ -287,6 +287,14 @@ void pair_indicator_hold(bool hold)
 	indicator_stale = true;
 }
 
+void pair_indicator_off(void)
+{
+	indicator_held = false; /* calibration may hold it */
+	indicator_stale = true;
+	indicator_set(false);
+	indicator_held = true;
+}
+
 bool pair_active(void)
 {
 	return state != PAIR_IDLE;

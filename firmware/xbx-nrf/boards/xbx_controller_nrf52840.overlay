@@ -18,6 +18,9 @@
 		ls-gpios = <&gpio1 2 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
 		rs-gpios = <&gpio1 6 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
 
+		/* J2 pin 9 (board gpio-hog raises it); low = off once Guide is up */
+		power-hold-gpios = <&gpio1 12 GPIO_ACTIVE_HIGH>;
+
 		/* 1V8_STICK (U4 EN, 100 kΩ pull-down): on while running */
 		vcc-enable-gpios = <&gpio0 15 GPIO_ACTIVE_HIGH>;
 

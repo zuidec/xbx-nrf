@@ -17,4 +17,7 @@ int rumble_init(void);
  */
 void rumble_update(const uint8_t level[4], uint32_t elapsed_ms);
 
+/* All motors off at once, no brake: drivers asleep (before power-off). */
+void rumble_off(void);
+
 #endif /* XBX_CTRL_RUMBLE_H_ */

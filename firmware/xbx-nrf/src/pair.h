@@ -65,6 +65,9 @@ bool pair_indicator_busy(void);
 /* Another module drives the indicator meanwhile (calibration); TX thread only. */
 void pair_indicator_hold(bool hold);
 
+/* Indicator off for good (power-off); TX thread only. */
+void pair_indicator_off(void);
+
 /* Show the error blink (e.g. the dongle is full); callable from interrupts. */
 void pair_indicate_error(void);
 

@@ -38,6 +38,7 @@
 #include "hid_pid.h"
 #include "input.h"
 #include "pair.h"
+#include "power.h"
 #include "rumble.h"
 #include "xinput_wired.h"
 #include "protocol.h"
@@ -612,6 +613,8 @@ static void tx_thread(void *p1, void *p2, void *p3)
 		}
 		rumble_leds_update();
 #endif
+		power_tick(report->buttons & XBX_BTN_GUIDE, elapsed_ms);
+
 		uint8_t motors[4];
 
 		rumble_get(motors);
@@ -753,6 +756,12 @@ int main(void)
 	err = rumble_init();
 	if (err) {
 		LOG_ERR("rumble init failed: %d", err);
+		return 0;
+	}
+
+	err = power_init();
+	if (err) {
+		LOG_ERR("power init failed: %d", err);
 		return 0;
 	}
 

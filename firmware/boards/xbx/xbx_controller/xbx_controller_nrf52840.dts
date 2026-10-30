@@ -5,7 +5,8 @@
  *
  * PWR_HOLD (J2 pin 9) is raised as soon as the GPIO driver starts: on AAs the
  * top board only keeps 3.3 V up while Guide or Pair is held. It also takes
- * the PCAL6416 out of reset (R10 pulls it low). No power-off yet.
+ * the PCAL6416 out of reset (R10 pulls it low). The app releases it to power
+ * off.
  */
 
 /dts-v1/;
