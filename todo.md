@@ -1,7 +1,7 @@
 ---
 title: xbx-nrf TODO
 created: 2026-09-28
-updated: 2026-09-30
+updated: 2026-10-29
 tags:
   - xbx-nrf
   - todo
@@ -151,28 +151,34 @@ Locked decisions: [README](README.md). Not yet locked:
 ## 3. Hardware design — controller board
 
 ### Power (rechargeable AA)
-- [ ] nRF on J3 3.3 V (VDD, normal voltage mode; max 3.6 V).
+- [x] nRF on J3 3.3 V (VDD, normal voltage mode; max 3.6 V).
 - [ ] Hold / off:
-	- [ ] GPIO → J3 pin 9 (hold + expander reset); low at reset, raised early.
-	- [ ] GPIO ← J3 pin 2 (Guide), pull-up.
+	- [x] GPIO → J3 pin 9 (hold + expander reset); low at reset, raised early.
+	      Rev1.1: P1.12, raised by a GPIO hog at boot; holds power on AAs.
+	- [x] GPIO ← J3 pin 2 (Guide), pull-up (internal; none on the board).
 	- [ ] GPIO ← J3 pin 13 (Pair), pull-up, if confirmed; readable while the
 	      expander is in reset.
 - [ ] Battery sense: `3v/B+` (J3 pin 3) to AIN6 via 100 kΩ, 100 nF at the
       pin, no divider ([[docs/hardware#Analog inputs]]).
-	- [ ] Measure `3v/B+` on USB: must stay below 3.6 V.
+	- [x] Measure `3v/B+` on USB: must stay below 3.6 V. 2.99 V. Rev1.1
+	      reads 2537 mV against 2509 mV on a meter (+1 %).
 	- [ ] NiMH cutoff (~1.0 V/cell = 2.0 V) and warning threshold.
+	      Firmware: 2.0 V for 10 s → off, and the % table; both untuned
+	      (M5).
 	- [ ] Flat NiMH curve → coarse gauge; maybe coulomb counting.
 	- [ ] Regulated Li-ion AAs: no gauge possible.
 - [ ] VBUS detect (J3 pin 12).
 - [x] **Charging:** external; no Play & Charge in v1 (in-controller charging
       would need chemistry detection; not worth it).
-- [ ] Stick supply 1V8_STICK: **TLV70018DDCR** with EN on a GPIO and
+- [x] Stick supply 1V8_STICK: **TLV70018DDCR** with EN on a GPIO and
       100 kΩ pull-down ([[docs/hardware#Supplies]]), on while the controller
       is on, off in sleep. Pulse it around
       samples only if the TMR sticks' start-up time allows (check their
-      1.8 V rating, current and start-up time).
-- [ ] Trigger sensor supply TRG+: **P-FET** from 3.3 V, gate pull-up,
-      GPIO low = on; pulsed (on, ≥ 100 µs, sample, off).
+      1.8 V rating, current and start-up time). Rev1.1: works, on while
+      running; off in sleep with the power state machine.
+- [x] Trigger sensor supply TRG+: **P-FET** from 3.3 V, gate pull-up,
+      GPIO low = on; pulsed (on, ≥ 100 µs, sample, off). Rev1.1: works,
+      100 µs before each 1 ms sample.
 	- [x] FET: AO3401A, one for both triggers.
 - [ ] No back-powering: float GPIOs before a rail goes down.
 
@@ -190,23 +196,23 @@ Locked decisions: [README](README.md). Not yet locked:
 	- [ ] Pick the better of the two: RSSI/loss at distance with a Pro Micro
 	      (VNA sweep optional).
 - [ ] Analog inputs: all 8 used (4 stick, 2 trigger, battery, 1.8 V stick
-      rail); plan in [[docs/hardware#Analog inputs]].
+      rail); plan in [[docs/hardware#Analog inputs]]. Rev1.1: all tested.
 - [ ] RF layout: short 50 Ω CPW to the coax, ground vias, away from motors and
       battery wiring.
-- [ ] SWD header / pads.
-- [ ] USB D+/D− from J3 (90 Ω pair); ESD on the top board?
+- [x] SWD header / pads.
+- [x] USB D+/D− from J3 (90 Ω pair); ESD on the top board?
 
 ### Inputs
 - [x] Sticks: **TMR** (low noise, no wear drift).
-- [ ] Stick directions (right, up = positive) set in firmware: the supply
+- [x] Stick directions (right, up = positive) set in firmware: the supply
       pins are fixed by the stock pinout (never swap them on TMR sticks).
       Measured (stock pots): Y inverted, X not. The breadboard stick reads X
-      reversed.
+      reversed. Rev1.1 TMR sticks: the same, both sticks.
 - [ ] Calibration button on its own GPIO, reachable without opening the
       shell (battery bay?) ([[#Stick and trigger calibration]]).
-- [ ] Triggers: A1304 at the stock positions.
-- [ ] I2C to the PCAL6416 + pull-ups ([[docs/pcal6416#Connections]]).
-- [ ] B, LSC, RSC switches.
+- [x] Triggers: A1304 at the stock positions.
+- [x] I2C to the PCAL6416 + pull-ups ([[docs/pcal6416#Connections]]).
+- [x] B, LSC, RSC switches.
 
 ### Rumble
 [[docs/a3910|A3910 notes]]
@@ -272,7 +278,8 @@ Code: `firmware/{xbx-nrf,dongle}/src/main.c`,
 > channel hopping.
 
 - [ ] **Update the default boards in `build.sh`** as hardware moves
-      on: dongle → PCA10059 done; controller → custom board when it exists.
+      on: dongle → PCA10059 done; controller → `xbx_controller/nrf52840`
+      done.
       Custom dongle board: `xbx_dongle/nrf52840` becomes the default once
       Rev1.1 works; PCA10059 stays supported.
 - [x] Test firmware: ESB 2 Mbps, 1 ms fake reports, ACK payloads, stats,
@@ -421,30 +428,55 @@ USB modes, in order; one active at a time.
        own once the repo is public; our bootloader builds need IDs too.
 
 ### Controller
-- [ ] Power state machine: hold pin 9 early → PCAL6416 setup → run;
-      long-press Guide / idle / no dongle / low battery → release hold.
+- [x] Power-off: Guide held 6 s releases the hold (`power.c`); a press held
+      since power-on doesn't count. Tested on AAs and USB.
+- [ ] Auto power-off: idle / no dongle / low battery.
 - [ ] Boot reason: Guide / Pair (→ pairing) / USB.
 - [ ] Power-off from the PC: the dongle already decodes XInput power-off
       (`00 00 08 C0`, sent by `xpad` when Guide is held 5 s); forward it as
-      a bit in the output report `flags` → controller shuts down (needs the
-      power state machine). HID mode has no such command.
+      a bit in the output report `flags` → controller shuts down
+      (`power.c`). HID mode has no such command.
 - [ ] Find out how Steam turns controllers off: it can over Bluetooth;
       unknown whether it does for `xpad` / USB receivers.
-- [ ] USB-powered "off" state.
-- [ ] PCAL6416 polling ([[docs/pcal6416#Firmware notes]]).
-- [ ] Stick/trigger ADC ([[docs/hardware#Analog inputs]]): sticks on the
+- [ ] USB-powered "off" state: System OFF for now (Guide wakes it, as a
+      reset); the stick supply stays on.
+- [x] PCAL6416 polling ([[docs/pcal6416#Firmware notes]]): one 2-byte read
+      per 1 ms scan (`pcal6416.c`), pull-ups enabled at boot.
+- [ ] PCAL6416 setup again after failed reads (and a periodic check): an
+      expander reset after boot (pin 9 glitch) leaves its inputs floating
+      until the next boot.
+- [x] Stick/trigger ADC ([[docs/hardware#Analog inputs]]): sticks on the
       internal 0.6 V reference, gain 1/3 (0–1.8 V), as a ratio to the
       measured 1.8 V rail (AIN0 at gain 1/4 so it doesn't clip); triggers on
       VDD/4, gain 1/4 (ratiometric, as TRG+ ≈ VDD). Trigger supply
       pulsed around each sample; stick supply as its hardware item allows.
-- [ ] **Custom board pins:** board definition for the controller (like
+      Triggers: rest measured at boot, travel grows to the furthest pull
+      (calibration: [[#Stick and trigger calibration]]).
+- [x] **Custom board pins:** board definition for the controller (like
       `xbx_dongle`), replacing the Pro Micro overlay's pins with the
       schematic's: analog inputs, LSC / RSC / B, Guide, Pair, power hold,
-      I2C, A3910 inputs, supply enables, LEDs.
-- [ ] Rumble PWM ([[docs/a3910#Firmware notes]]).
+      I2C, A3910 inputs, supply enables, LEDs. Board
+      `xbx_controller/nrf52840`.
+- [ ] **AUX inputs:** read AUX1–AUX4 (paddle pads; P0.14, P0.13, P1.14,
+      P1.07) and LT_AUX / RT_AUX (trigger switch pads; P0.22, P1.04) like
+      the other GPIO buttons (pull-up, debounce). Needs report bits: the
+      radio report has none for them (`buttons_ext` has room), plus the
+      USB mapping (HID buttons; XInput has no paddles). Decide what the
+      trigger switches do: full trigger, or their own buttons.
+      [[#Elite-style paddles]], [[#2. Mechanical]] (trigger stops).
+- [x] Guide LED: pairing indicator; outside pairing solid while linked,
+      slow blink while searching.
+- [ ] Guide LED from the host (output report `led`, XInput LED pattern).
+- [x] Rumble PWM ([[docs/a3910#Firmware notes]]): HIN on pwm1 at 25 kHz,
+      LIN as GPIO; a stopping motor brakes 20 ms (`BRAKE_MS`, untuned),
+      then both inputs low. Heavy, Weak, RT tested (`tools/test-rumble.sh`).
+- [ ] **LT motor doesn't run** (Rev1.1): P0.20 / P0.21 driven correctly
+      (checked over SWD), Heavy on the same U5 works. Check U5 pins 3–5,
+      D2, SQ1 / SQ2 and the motor (scope U5 pin 4 and SQ1 at `lt 128`).
 - [x] Rumble safety: rumble/LED values off if no ACK payload for 100 ms
       (`OUTPUT_TIMEOUT_MS`); the motor driver will read these values.
-- [ ] Battery monitoring, low-battery shutdown.
+- [x] Battery monitoring, low-battery shutdown (`battery.c`): level in the
+      report, 100 % on USB. Shutdown untested (needs flat cells).
 - [ ] **Wired USB gamepad mode:** a PC enumerating the controller = wired
       (radio off); a charger alone keeps it wireless. `CONFIG_XBX_WIRED`
       (default on) off for wireless tests with the USB console attached.
@@ -466,8 +498,8 @@ USB modes, in order; one active at a time.
 	      by interface class?).
 
 ### Stick and trigger calibration
-Framework now on the breadboard (raw ADC counts, board-independent); tune the
-constants (deadzone, drift window, settle time) on the real TMR sticks.
+Raw ADC counts, board-independent; both sticks on the controller board. Tune
+the constants (deadzone, drift window, settle time) on the TMR sticks.
 - [x] Calibration data in flash (Zephyr settings on the storage partition):
       per axis min / centre / max and direction.
 - [x] On-device routine: calibration button → move sticks and triggers
@@ -516,9 +548,11 @@ Adafruit nRF52 UF2 bootloader on both boards, unsigned
 - [x] **M2b:** pairing; 2 controllers at 1 kHz, then 4 at 500 Hz
       ([[#Pairing & multiple controllers (protocol v3)]]). Done: pairing,
       2 at 1 kHz, 3 and 4 at 500 Hz (2 ms frame, 0–0.5 % loss).
-- [ ] **M3:** dev board on a stock top board via J3: buttons, Guide, power
-      hold/off.
-- [ ] **M4:** first custom board fits; inputs + rumble work.
+- [x] **M3:** dev board on a stock top board via J3: buttons, Guide, power
+      hold/off. Done on the Rev1.1 board instead.
+- [ ] **M4:** first custom board fits; inputs + rumble work. Inputs work
+      (buttons, sticks, triggers; AUX not yet); rumble works but LT (a
+      hardware fault); power on/off works; battery level works.
 - [ ] **M5:** battery life on NiMH AAs.
 - [ ] **M6 (later):** Elite Series 2 port (broken 1797 donor, AcidMods scans).
 
