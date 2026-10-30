@@ -64,6 +64,7 @@ static bool running;
 static bool pipe0_open; /* pairing address: only while pairing */
 static uint8_t slots_used; /* bit n = slot n taken */
 static uint8_t frame_slots = RADIO_SLOTS_FAST;
+static bool xinput_host;
 
 /* links with a report not yet returned by radio_wait_input() */
 static atomic_t fresh;
@@ -98,7 +99,8 @@ static void queue_ack_payload(uint8_t link)
 	memcpy(out->rumble, l->out_rumble, sizeof(out->rumble));
 	out->led = l->out_led;
 	out->flags = (l->full ? XBX_OUT_FLAG_FULL : 0) |
-		     (l->power_off ? XBX_OUT_FLAG_POWER_OFF : 0);
+		     (l->power_off ? XBX_OUT_FLAG_POWER_OFF : 0) |
+		     (xinput_host ? XBX_OUT_FLAG_XINPUT : 0);
 	out->slot = l->slot;
 	out->slots = frame_slots;
 	out->sync_seq = l->sync_seq;
@@ -578,6 +580,11 @@ void radio_set_output(uint8_t link, const uint8_t rumble[4], uint8_t led)
 	memcpy(links[link].out_rumble, rumble, sizeof(links[link].out_rumble));
 	links[link].out_led = led;
 	irq_unlock(key);
+}
+
+void radio_set_xinput(bool xinput)
+{
+	xinput_host = xinput;
 }
 
 void radio_power_off(uint8_t link)

@@ -243,6 +243,7 @@ static void link_lost(uint8_t link)
 static void bridge_thread(void *p1, void *p2, void *p3)
 {
 	xinput_mode = usb_mode_get() == USB_MODE_XINPUT;
+	radio_set_xinput(xinput_mode);
 
 	while (true) {
 		uint32_t fresh = radio_wait_input(K_MSEC(POLL_MS));

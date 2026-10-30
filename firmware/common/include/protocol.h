@@ -41,6 +41,7 @@
 /* xbx_output_report.flags */
 #define XBX_OUT_FLAG_FULL  (1u << 0) /* no slot free: retry slowly */
 #define XBX_OUT_FLAG_POWER_OFF (1u << 1) /* host asked: power off */
+#define XBX_OUT_FLAG_XINPUT    (1u << 2) /* dongle in XInput mode: map the paddles */
 /* Radio TX power in dBm, both ends (the dongle's ACKs too). The nRF52840 maximum is +8.
  * Fixed for now; see todo.md for dynamic power adjustment.
  */
@@ -81,6 +82,10 @@ enum xbx_pair_status {
 /* buttons_ext: buttons XInput has no bit for */
 #define XBX_BTN_EXT_SHARE  (1u << 0)
 #define XBX_BTN_EXT_PAIR   (1u << 1)
+#define XBX_BTN_EXT_P1     (1u << 2) /* paddles P1..P4: left up, left low, right up, right low */
+#define XBX_BTN_EXT_P2     (1u << 3)
+#define XBX_BTN_EXT_P3     (1u << 4)
+#define XBX_BTN_EXT_P4     (1u << 5)
 
 struct xbx_input_report {
 	uint8_t type;          /* XBX_MSG_INPUT */

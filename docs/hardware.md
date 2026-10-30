@@ -230,7 +230,7 @@ to GND through 1 kΩ: active low, internal pull-up.
 | JS_EN | P0.15 | 1V8_STICK enable, high = on |
 | TRG_EN | P1.10 | TRG+ enable (Q1), low = on |
 | B / LS / RS buttons | P1.05 / P1.02 / P1.06 | B membrane contact SW2, stick clicks |
-| AUX1–AUX4 | P0.14, P0.13, P1.14, P1.07 | Paddle pads TP9–TP12 (GND: TP5–TP8) |
+| AUX1–AUX4 | P0.14, P0.13, P1.14, P1.07 | Paddle pads TP9–TP12 (GND: TP5–TP8); held face-up, AUX1/2 are on the left, AUX3/4 on the right (tested); AUX1 and AUX4 are the lower paddles. Firmware P1–P4 = AUX2, AUX1, AUX3, AUX4 |
 | LT_AUX / RT_AUX | P0.22 / P1.04 | Trigger switch pads TP13 / TP15 (GND: TP14, TP16) |
 | RMB_LT HIN / LIN | P0.20 / P0.21 | U5, LT motor (SQ1/SQ2) |
 | RMB_HV HIN / LIN | P0.17 / P0.19 | U5, heavy motor (SQ3/SQ4) |

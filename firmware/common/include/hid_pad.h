@@ -24,12 +24,16 @@
 #define HID_PAD_BTN_LS     HID_PAD_BTN(14)
 #define HID_PAD_BTN_RS     HID_PAD_BTN(15)
 #define HID_PAD_BTN_SHARE  HID_PAD_BTN(16)
+#define HID_PAD_BTN_P1     HID_PAD_BTN(17) /* paddles */
+#define HID_PAD_BTN_P2     HID_PAD_BTN(18)
+#define HID_PAD_BTN_P3     HID_PAD_BTN(19)
+#define HID_PAD_BTN_P4     HID_PAD_BTN(20)
 
 /* hat: 0 = up, clockwise in 45° steps to 7 = up-left; 8 = centred */
 #define HID_PAD_HAT_CENTERED 8
 
 struct hid_pad_state {
-	uint16_t buttons;  /* HID_PAD_BTN_* */
+	uint32_t buttons;  /* HID_PAD_BTN_* */
 	uint8_t hat;       /* 0..7, HID_PAD_HAT_CENTERED */
 	int16_t lx, ly;    /* HID convention: Y positive = down */
 	int16_t rx, ry;

@@ -18,6 +18,17 @@
 		ls-gpios = <&gpio1 2 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
 		rs-gpios = <&gpio1 6 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
 
+		/*
+		 * switch pads to GND, nothing fitted yet. Paddles, held face-up:
+		 * P1 left upper, P2 left lower, P3 right upper, P4 right lower.
+		 */
+		p1-gpios = <&gpio0 13 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>; /* AUX2, TP10 */
+		p2-gpios = <&gpio0 14 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>; /* AUX1, TP9 */
+		p3-gpios = <&gpio1 14 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>; /* AUX3, TP11 */
+		p4-gpios = <&gpio1 7 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;  /* AUX4, TP12 */
+		lt-aux-gpios = <&gpio0 22 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+		rt-aux-gpios = <&gpio1 4 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+
 		/* J2 pin 9 (board gpio-hog raises it); low = off once Guide is up */
 		power-hold-gpios = <&gpio1 12 GPIO_ACTIVE_HIGH>;
 

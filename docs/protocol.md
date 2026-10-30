@@ -63,7 +63,7 @@ overlapping another stays starved (measured: ~40 of 1000 reports/s).
 | 11 | 2 | `ry` | Right stick Y, up = positive |
 | 13 | 2 | `lt` | Left trigger, 0…1023 |
 | 15 | 2 | `rt` | Right trigger, 0…1023 |
-| 17 | 1 | `buttons_ext` | bit 0 Share, bit 1 Pair |
+| 17 | 1 | `buttons_ext` | bit 0 Share, bit 1 Pair, bits 2–5 paddles P1–P4 (held face-up: left upper, left lower, right upper, right lower) |
 | 18 | 1 | `battery` | 0…100 %, `0xFF` = unknown |
 | 19 | 4 | `timestamp_us` | Controller uptime at send (latency tests) |
 
@@ -89,7 +89,7 @@ through:
 | 1 | 1 | `seq` | +1 per report queued |
 | 2 | 4 | `rumble[4]` | Heavy, weak, LT, RT; 0…255 |
 | 6 | 1 | `led` | Guide LED brightness, 0…255 |
-| 7 | 1 | `flags` | Bit 0: dongle full (no slot free, retry slowly). Bit 1: power off (host request; set until the link is lost) |
+| 7 | 1 | `flags` | Bit 0: dongle full (no slot free, retry slowly). Bit 1: power off (host request; set until the link is lost). Bit 2: dongle in XInput mode (the controller maps its paddles onto other buttons) |
 | 8 | 1 | `slot` | Time slot, 0…; `0xFF` = none yet |
 | 9 | 1 | `slots` | Slots per frame; frame = `slots` × 500 µs |
 | 10 | 2 | `sync_seq` | Input report `seq` the timing was measured on |
@@ -367,8 +367,8 @@ Layout chosen so Linux's generic HID driver emits the same event codes as
 | Offset | Size | Field | HID usage | Linux event |
 |---|---|---|---|---|
 | 0 | 1 | Report ID `0x01` | | |
-| 1 | 2 | Buttons 1–16 | Button page (see below) | `BTN_*` |
-| 3 | 1 | Hat switch (4 bits, 0–7, 8 = centred) + 4 bits padding | Hat switch: logical 0–7 = 0–315° (unit degrees), Null State | `ABS_HAT0X/Y` |
+| 1 | 2.5 | Buttons 1–20 (bits 0–19) | Button page (see below) | `BTN_*` |
+| 3.5 | 0.5 | Hat switch (bits 20–23: 0–7, 8 = centred) | Hat switch: logical 0–7 = 0–315° (unit degrees), Null State | `ABS_HAT0X/Y` |
 | 4 | 2 | Left stick X | X, logical −32768…32767 | `ABS_X` |
 | 6 | 2 | Left stick Y (**inverted**: HID down = positive) | Y | `ABS_Y` |
 | 8 | 2 | Right stick X | Rx | `ABS_RX` |
@@ -393,6 +393,20 @@ Layout chosen so Linux's generic HID driver emits the same event codes as
 | 14 | LS | `BTN_THUMBL` |
 | 15 | RS | `BTN_THUMBR` |
 | 16 | Share | extra button |
+| 17–20 | Paddles P1–P4 | `BTN_TRIGGER_HAPPY1`–`4` |
+
+SDL's automatic mapping leaves out Share and the paddles. For testing, start
+Steam with this mapping (dongle, test PID; the GUID changes with the VID, PID
+and name). Quit Steam first: a second `steam` only signals the running one,
+which ignores the variable. Tested: Share and the paddles show up on the
+correct sides.
+
+```
+SDL_GAMECONTROLLERCONFIG='03009265091200000100000011010000,zuidec XBX-NRF Dongle,a:b0,b:b1,x:b3,y:b4,back:b10,guide:b12,start:b11,leftstick:b13,rightstick:b14,leftshoulder:b6,rightshoulder:b7,dpup:h0.1,dpdown:h0.4,dpleft:h0.8,dpright:h0.2,leftx:a0,lefty:a1,rightx:a3,righty:a4,lefttrigger:a2,righttrigger:a5,misc1:b15,paddle2:b16,paddle4:b17,paddle1:b18,paddle3:b19,platform:Linux,' steam
+```
+
+SDL's paddle names, held face-up: `paddle1` right upper, `paddle2` left
+upper, `paddle3` right lower, `paddle4` left lower.
 
 The radio `buttons` bits (XInput layout) are remapped to this order; the D-pad
 bits become the hat value.

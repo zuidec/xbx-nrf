@@ -94,7 +94,10 @@ LOG_MODULE_REGISTER(input, LOG_LEVEL_INF);
 #define PIN_RT  BIT(17)
 #define PIN_CAL BIT(18)
 #define PIN_SHARE BIT(19) /* report.buttons_ext */
-#define PIN_BITS  20
+#define PIN_LT_SW BIT(20) /* trigger switches: trigger full */
+#define PIN_RT_SW BIT(21)
+#define PIN_P1    BIT(22) /* paddles P1..P4: report.buttons_ext */
+#define PIN_BITS  26
 
 #define ZEPHYR_USER DT_PATH(zephyr_user)
 
@@ -143,6 +146,12 @@ static const struct input_pin pins[] = {
 	PIN(lt_gpios, PIN_LT)
 	PIN(rt_gpios, PIN_RT)
 	PIN(calib_gpios, PIN_CAL)
+	PIN(lt_aux_gpios, PIN_LT_SW)
+	PIN(rt_aux_gpios, PIN_RT_SW)
+	PIN(p1_gpios, PIN_P1)
+	PIN(p2_gpios, PIN_P1 << 1)
+	PIN(p3_gpios, PIN_P1 << 2)
+	PIN(p4_gpios, PIN_P1 << 3)
 };
 
 #if HAS_EXPANDER
@@ -184,6 +193,11 @@ static const struct pwm_dt_spec led_status = PWM_DT_SPEC_GET_BY_NAME(ZEPHYR_USER
 #endif
 
 static uint32_t pressed;               /* debounced, bit per PIN_* / XBX_BTN_* */
+
+static struct input_paddle_config paddles = {
+	.enabled = true,
+	.xinput = {XBX_BTN_A, XBX_BTN_B, XBX_BTN_X, XBX_BTN_Y},
+};
 static uint8_t lockout_ms[PIN_BITS];
 
 /* last rumble request, shown on the LEDs whenever not calibrating */
@@ -842,10 +856,37 @@ void input_read(struct xbx_input_report *report)
 #endif
 	report->buttons = pressed & 0xFFFF;
 	report->buttons_ext = (pressed & PIN_SHARE) ? XBX_BTN_EXT_SHARE : 0;
+	if (paddles.enabled) {
+		for (int i = 0; i < INPUT_PADDLES; i++) {
+			if (pressed & (PIN_P1 << i)) {
+				report->buttons_ext |= XBX_BTN_EXT_P1 << i;
+			}
+		}
+	}
 #if !HAS_TRIGGERS
 	report->lt = (pressed & PIN_LT) ? TRIGGER_MAX : 0;
 	report->rt = (pressed & PIN_RT) ? TRIGGER_MAX : 0;
 #endif
+	if (pressed & PIN_LT_SW) {
+		report->lt = TRIGGER_MAX;
+	}
+	if (pressed & PIN_RT_SW) {
+		report->rt = TRIGGER_MAX;
+	}
+}
+
+void input_paddle_config_set(const struct input_paddle_config *cfg)
+{
+	paddles = *cfg;
+}
+
+void input_paddles_to_xinput(struct xbx_input_report *report)
+{
+	for (int i = 0; i < INPUT_PADDLES; i++) {
+		if (report->buttons_ext & (XBX_BTN_EXT_P1 << i)) {
+			report->buttons |= paddles.xinput[i];
+		}
+	}
 }
 
 #if HAS_LEDS

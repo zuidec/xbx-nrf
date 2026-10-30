@@ -611,6 +611,10 @@ static void tx_thread(void *p1, void *p2, void *p3)
 		for (uint32_t i = 0; i < elapsed_ms; i++) {
 			input_read(report);
 		}
+		if (wired ? usb_mode_get() == USB_MODE_XINPUT
+			  : (last_output.flags & XBX_OUT_FLAG_XINPUT)) {
+			input_paddles_to_xinput(report);
+		}
 		rumble_leds_update();
 #endif
 		power_tick(report, wired || slot_held(), pair_active(), elapsed_ms);

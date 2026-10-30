@@ -41,14 +41,14 @@ static const uint8_t report_desc[] = {
 	HID_COLLECTION(HID_COLLECTION_APPLICATION),
 		HID_REPORT_ID(IN_REPORT_ID),
 
-		/* buttons 1-16 */
+		/* buttons 1-20 */
 		HID_USAGE_PAGE(HID_USAGE_GEN_BUTTON),
 		HID_USAGE_MIN8(1),
-		HID_USAGE_MAX8(16),
+		HID_USAGE_MAX8(20),
 		HID_LOGICAL_MIN8(0),
 		HID_LOGICAL_MAX8(1),
 		HID_REPORT_SIZE(1),
-		HID_REPORT_COUNT(16),
+		HID_REPORT_COUNT(20),
 		HID_INPUT(DATA_VAR_ABS),
 
 		/* hat switch: 0-7 over 0-315°, out of range = centred (null) */
@@ -63,7 +63,6 @@ static const uint8_t report_desc[] = {
 		HID_REPORT_COUNT(1),
 		HID_INPUT(DATA_VAR_ABS_NULL),
 		HID_ITEM(HID_ITEM_TAG_UNIT, HID_ITEM_TYPE_GLOBAL, 1), 0x00,
-		HID_INPUT(CONST), /* 4 bits padding */
 
 		/* sticks */
 		HID_USAGE(HID_USAGE_GEN_DESKTOP_X),
@@ -102,8 +101,7 @@ static const uint8_t report_desc[] = {
 
 struct in_report {
 	uint8_t id;
-	uint16_t buttons;
-	uint8_t hat;  /* low nibble; high nibble padding */
+	uint8_t buttons_hat[3]; /* buttons 1-20 in bits 0-19, hat in bits 20-23 */
 	int16_t lx, ly, rx, ry;
 	uint16_t lt, rt;
 } __packed;
@@ -136,8 +134,9 @@ static struct k_spinlock lock;
 static void to_report(struct in_report *r, const struct hid_pad_state *s)
 {
 	r->id = IN_REPORT_ID;
-	r->buttons = s->buttons;
-	r->hat = s->hat & 0x0F;
+	r->buttons_hat[0] = s->buttons;
+	r->buttons_hat[1] = s->buttons >> 8;
+	r->buttons_hat[2] = ((s->buttons >> 16) & 0x0F) | (s->hat << 4);
 	r->lx = s->lx;
 	r->ly = s->ly;
 	r->rx = s->rx;
@@ -369,6 +368,11 @@ void hid_pad_from_radio(const struct xbx_input_report *in, struct hid_pad_state 
 	}
 	if (in->buttons_ext & XBX_BTN_EXT_SHARE) {
 		out->buttons |= HID_PAD_BTN_SHARE;
+	}
+	for (int i = 0; i < 4; i++) {
+		if (in->buttons_ext & (XBX_BTN_EXT_P1 << i)) {
+			out->buttons |= HID_PAD_BTN_P1 << i;
+		}
 	}
 
 	out->hat = dpad_to_hat(buttons);
