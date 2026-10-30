@@ -4,7 +4,9 @@
  * Mode: entered by holding Pair (pair-gpios) for PAIR_HOLD_MS, powering on
  * with it held, or booting unpaired; ends when paired or after
  * PAIR_TIMEOUT_MS. The pairing indicator (the "heavy" LED, on-board on the
- * Pro Micro) blinks fast meanwhile.
+ * Pro Micro; the Guide LED on the controller board) blinks fast meanwhile.
+ * With indicator-idle (zephyr,user) it also shows the link outside pairing:
+ * solid while linked, slow blink while searching.
  *
  * Channel: requests cycle through the candidates (XBX_RF_CHANNELS) until one
  * is acknowledged, then stay there (moving on after SCAN_MISSES misses).
@@ -48,8 +50,11 @@ bool pair_link_get(struct pair_link *link);
  */
 bool pair_link_changed(struct pair_link *link);
 
-/* Call every report tick (TX thread) with the ms elapsed since the last call. */
-void pair_tick(uint32_t elapsed_ms);
+/*
+ * Call every report tick (TX thread) with the ms elapsed since the last call;
+ * linked: a slot with the dongle is held, or wired.
+ */
+void pair_tick(uint32_t elapsed_ms, bool linked);
 
 /* Pairing mode active: the radio carries pairing messages, not reports. */
 bool pair_active(void);

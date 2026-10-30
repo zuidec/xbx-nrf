@@ -28,6 +28,7 @@ LOG_MODULE_REGISTER(pair, LOG_LEVEL_INF);
 #define BLINK_MS         100   /* pairing: fast blink, 5 Hz */
 #define ERROR_BLINK_MS   400   /* error: three slow blinks */
 #define ERROR_MS         (6 * ERROR_BLINK_MS)
+#define SEARCH_BLINK_MS  500   /* no link: slow blink, 1 Hz */
 
 #define LINK_VERSION 1
 
@@ -35,6 +36,9 @@ LOG_MODULE_REGISTER(pair, LOG_LEVEL_INF);
 
 static const struct gpio_dt_spec pair_pin = GPIO_DT_SPEC_GET(ZEPHYR_USER, pair_gpios);
 static const struct pwm_dt_spec indicator = PWM_DT_SPEC_GET_BY_NAME(ZEPHYR_USER, indicator);
+
+/* the indicator also shows the link (else it's free for rumble when idle) */
+#define INDICATOR_IDLE DT_NODE_HAS_PROP(ZEPHYR_USER, indicator_idle)
 
 struct stored_link {
 	uint8_t version;
@@ -119,6 +123,9 @@ static void reset_fn(struct k_work *work)
 
 static void indicator_set(bool on)
 {
+	if (on == indicator_on) {
+		return;
+	}
 	indicator_on = on;
 	if (pwm_is_ready_dt(&indicator)) {
 		pwm_set_pulse_dt(&indicator, on ? indicator.period : 0);
@@ -208,8 +215,10 @@ bool pair_link_changed(struct pair_link *link)
 	return true;
 }
 
-void pair_tick(uint32_t elapsed_ms)
+void pair_tick(uint32_t elapsed_ms, bool linked)
 {
+	static uint32_t search_ms;
+
 	if (resetting) {
 		return;
 	}
@@ -242,6 +251,9 @@ void pair_tick(uint32_t elapsed_ms)
 				error_ms = 0;
 				indicator_set(false);
 			}
+		} else if (INDICATOR_IDLE) {
+			search_ms = linked ? 0 : search_ms + elapsed_ms;
+			indicator_set(linked || (search_ms / SEARCH_BLINK_MS) % 2 == 1);
 		} else if (indicator_on) {
 			indicator_set(false);
 		}

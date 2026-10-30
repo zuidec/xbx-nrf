@@ -583,7 +583,7 @@ static void tx_thread(void *p1, void *p2, void *p3)
 		ms += elapsed_ms;
 
 		wired_update();
-		pair_tick(elapsed_ms);
+		pair_tick(elapsed_ms, wired || slot_held());
 
 		/* fires once per outage */
 		atomic_val_t age = atomic_add(&ack_age_ms, elapsed_ms);
