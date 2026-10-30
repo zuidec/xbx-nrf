@@ -430,14 +430,17 @@ USB modes, in order; one active at a time.
 ### Controller
 - [x] Power-off: Guide held 6 s releases the hold (`power.c`); a press held
       since power-on doesn't count. Tested on AAs and USB.
-- [ ] Auto power-off: idle / no dongle / low battery.
+- [x] Auto power-off on AAs (`power.c`): idle 15 min, no dongle 2 min;
+      tested with short timeouts. Low battery: [[#Power (rechargeable AA)]].
 - [ ] Boot reason: Guide / Pair (→ pairing) / USB.
-- [ ] Power-off from the PC: the dongle already decodes XInput power-off
-      (`00 00 08 C0`, sent by `xpad` when Guide is held 5 s); forward it as
-      a bit in the output report `flags` → controller shuts down
-      (`power.c`). HID mode has no such command.
+- [x] Power-off from the PC: the dongle decodes XInput power-off
+      (`00 00 08 C0`, sent by `xpad` when Guide is held 5 s) and sets
+      `flags` bit 1 until the link drops; the controller powers off. Tested
+      by sending the packet with libusb. HID mode has no such command.
 - [ ] Find out how Steam turns controllers off: it can over Bluetooth;
-      unknown whether it does for `xpad` / USB receivers.
+      unknown whether it does for `xpad` / USB receivers. Steam shows no
+      "Turn off" for the dongle (`1209:0002`), likely as its own drivers
+      only know listed IDs.
 - [ ] USB-powered "off" state: System OFF for now (Guide wakes it, as a
       reset); the stick supply stays on.
 - [x] PCAL6416 polling ([[docs/pcal6416#Firmware notes]]): one 2-byte read
