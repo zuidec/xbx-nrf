@@ -1,7 +1,7 @@
 ---
 title: Flashing & debugging the nRF52840 boards
 created: 2026-09-28
-updated: 2026-10-05
+updated: 2026-10-30
 tags:
   - xbx-nrf
   - firmware
@@ -26,13 +26,13 @@ Related: [[docs/building]], [[todo#5. Firmware]].
 |---|---|---|---|
 | Pro Micro nRF52840 (nice!nano clone) | Controller prototype, dongle stand-in | nice!nano UF2 bootloader ✅ | `promicro_nrf52840/nrf52840/uf2` |
 | Nordic nRF52840 Dongle (PCA10059) | Dongle (off-the-shelf option) | Nordic USB DFU bootloader ✅ | `nrf52840dongle/nrf52840` |
-| Custom bottom board | Controller | None; SWD only | TBD |
+| Custom controller board | Controller | None; SWD only (J1, JST-SH) ✅ | `xbx_controller/nrf52840` |
 | Custom dongle board | Dongle | None; SWD only (J1, JST-SH) | `xbx_dongle/nrf52840` |
 
 | Debug probe | Notes |
 |---|---|
 | **ST-Link** (on hand) | OpenOCD / pyOCD / probe-rs. May not unlock a locked chip ([[#Locked chip (APPROTECT)]]) |
-| Raspberry Pi Debug Probe | ~$12 CMSIS-DAP fallback that can ([[#Raspberry Pi Debug Probe (CMSIS-DAP)]]) |
+| Raspberry Pi Debug Probe | ~$12 CMSIS-DAP fallback that can ([[#Raspberry Pi Debug Probe (CMSIS-DAP)]]); used for the custom boards ✅ |
 
 Neither works with Nordic's J-Link-only tools (`nrfutil device`, nRF Connect
 Programmer over SWD, the nRF Connect VS Code debugger).
@@ -56,7 +56,8 @@ An official ST-Link won't connect without the target 3.3 V on its sense pin.
 - **PCA10059:** pads on the underside (*nRF52840 Dongle User Guide*).
 - **Custom dongle:** J1 (JST-SH, Raspberry Pi Debug Probe cable). `west flash`
   defaults to OpenOCD with CMSIS-DAP (the Pi probe).
-- **Custom controller board:** SWD header or pads, TBD ([[todo#MCU / radio]]).
+- **Custom controller board:** J1 (JST-SH, Raspberry Pi Debug Probe cable),
+  as the dongle ([[#Custom boards (SWD)]]).
 
 > [!warning] SWD flashing erases the bootloader
 > A full erase or recover wipes the UF2 / Nordic USB bootloader; restore it with
@@ -137,6 +138,28 @@ udev rules.
 picocom -b 115200 /dev/ttyACM1   # the probe's UART; see `ls /dev/ttyACM*`
 ```
 Needs the Zephyr console on the UART pins wired to the probe.
+
+## Custom boards (SWD)
+
+Both custom boards (`xbx_controller`, `xbx_dongle`) flash over J1 with the
+Pi Debug Probe; `west flash` runs OpenOCD with CMSIS-DAP. From `firmware/`:
+```sh
+./build.sh xbx-nrf -f swd   # controller ✅
+./build.sh dongle -b xbx_dongle/nrf52840 -f swd
+```
+
+- **Controller: flash on USB power.** Reset drops the power hold (J2 pin 9),
+  so on AAs 3.3 V goes with it.
+- **Logs:** the apps log over their USB serial port; J3 (UART) is the board
+  console for samples.
+- **Reading registers while it runs:** OpenOCD's `mdw` prints nothing inside
+  `-c`; use `echo [mdw <addr>]`. Commands that run code on the target (e.g.
+  `verify_image`) leave it halted: end with `resume`.
+  ```sh
+  openocd -f interface/cmsis-dap.cfg -c "transport select swd" \
+          -f target/nrf52.cfg -c init -c "echo [mdw 0x50000504]" \
+          -c shutdown
+  ```
 
 ## Locked chip (APPROTECT)
 
@@ -221,3 +244,4 @@ it, build for `nrf52840dongle/nrf52840/bare` instead.
 | `west flash`: no matching UF2 partition | Drive not mounted |
 | No `/dev/ttyACM*` after flashing | App crashed early; user not in `dialout` |
 | Board overlay has no effect | Wrong filename ([[docs/building#Board overlays]]) |
+| Controller stops after an OpenOCD command | CPU left halted: add `resume`, or power-cycle |

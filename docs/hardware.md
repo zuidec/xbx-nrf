@@ -1,7 +1,7 @@
 ---
 title: Hardware (stock top board, J3, controller and dongle boards)
 created: 2026-09-29
-updated: 2026-10-05
+updated: 2026-10-30
 tags:
   - xbx-nrf
   - reference
@@ -61,14 +61,14 @@ on, ~0.24 mA flows through R23 and Q9.
 | Pin | Signal | Direction (bottom board) | Notes |
 |---|---|---|---|
 | 1 | 3.6 V | Power in | Rumble supply |
-| 2 | GU (Guide) via D27 | Input | Active-low; pull-up on our board (measured) |
+| 2 | GU (Guide) via D27 | Input | Active-low; needs a pull-up on our side (the nRF's internal one) |
 | 3 | 3v/B+ | Power in | Switched battery rail; battery sense |
 | 4 | 3.3 V | Power in | nRF supply |
 | 5 | SCL | Output | I2C to the PCAL6416; no pull-up on the top board (ours required) |
 | 6 | LED control | Output | Guide LED (Q3) |
 | 7 | SDA | Bidirectional | I2C to the PCAL6416; no pull-up on the top board |
 | 8 | USB D+ | Bidirectional | From the USB-C port |
-| 9 | ~RESET / power hold | Output | High = power held (measured) + expander out of reset (*verify*). No effect on USB |
+| 9 | ~RESET / power hold | Output | High = power held + expander out of reset (both measured). Power: no effect on USB; the expander reset still applies |
 | 10 | USB D− | Bidirectional | |
 | 11 | Battery switch status | Input | Q9 drain via R25 (25.5 kΩ): VBAT = off, 0 V = on (measured). Also J7 pin 1 and SoC pin 1. Leave unloaded: a pull-down partly turns on Q6/Q7 |
 | 12 | VBUS | Input | USB detection |
@@ -116,9 +116,13 @@ which ([[todo#MCU / radio]]).
 
 ## Controller board
 
-KiCad: `pcb/xbx-nrf/`. Rev1.1 routed; outline and part positions from
-`mech/controller-bottom-board/` (measured, fit-checked in the shell). No Play
-& Charge in v1. Open items: [[todo#3. Hardware design — controller board]].
+KiCad: `pcb/xbx-nrf/`. Rev1.1 built and working; outline and part positions
+from `mech/controller-bottom-board/` (measured, fit-checked in the shell). No
+Play & Charge in v1. Open items: [[todo#3. Hardware design — controller board]].
+
+Board target `xbx_controller/nrf52840` (`firmware/boards/xbx/xbx_controller/`,
+the default in `build.sh`); flashing over J1 (SWD):
+[[docs/flashing#Custom boards (SWD)]].
 
 ### Sticks (RKJXV122400R footprint)
 
@@ -217,8 +221,10 @@ through reset.
 
 ### Pins
 
-From the Rev1.1 schematic; analog pins in [[#Analog inputs]]. Buttons switch
-to GND through 1 kΩ: active low, internal pull-up.
+From the Rev1.1 schematic; analog pins in [[#Analog inputs]]. All buttons
+are active low on the nRF's internal pull-up (none on the board): B, LS, RS
+and the AUX pads switch to GND through 1 kΩ; Guide and Pair come from the top
+board through its diodes (D27, D30).
 
 | Signal | Pin | Notes |
 |---|---|---|

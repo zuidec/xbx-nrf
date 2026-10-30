@@ -1,7 +1,7 @@
 ---
 title: Building the firmware
 created: 2026-09-29
-updated: 2026-10-05
+updated: 2026-10-30
 tags:
   - xbx-nrf
   - firmware
@@ -92,8 +92,9 @@ cd ~/Projects/xbx-nrf/firmware
   ```sh
   BUILD_DIR=build-p2 ./build.sh xbx-nrf -p -- -DCONFIG_XBX_FAKE_INPUT=y
   ```
-- Default boards live in `build.sh`; update them when the real hardware
-  exists ([[todo#Link]]).
+- Default boards live in `build.sh`: `xbx_controller/nrf52840` for the
+  controller, the PCA10059 for the dongle until the custom one is tested
+  ([[todo#5. Firmware]]).
 - Plain `west build` also works but skips the version check, and needs `-b`
   again after `-p`.
 
@@ -118,6 +119,7 @@ Name them after the **full** board target, `/` → `_`:
 | `promicro_nrf52840/nrf52840/uf2` | `promicro_nrf52840_nrf52840_uf2.overlay` |
 | `nrf52840dongle/nrf52840` | `nrf52840dongle_nrf52840.overlay` |
 | `xbx_dongle/nrf52840` | `xbx_dongle_nrf52840.overlay` |
+| `xbx_controller/nrf52840` | `xbx_controller_nrf52840.overlay` |
 
 Shorter names are **silently ignored**; look for `-- Found devicetree overlay:`
 in the build log.
