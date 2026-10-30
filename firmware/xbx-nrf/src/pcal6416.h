@@ -10,11 +10,16 @@
 
 /*
  * Enable the pull-ups (the inputs float until then). Call after the power hold
- * is up: it is also the expander's reset, which clears the setting.
+ * is up: it is also the expander's reset, which clears the setting. On failure
+ * pcal6416_read() keeps retrying.
  */
 int pcal6416_init(void);
 
-/* Port 0 in bits 0..7, port 1 in bits 8..15; 1 = pressed (active-low inputs). */
+/*
+ * Port 0 in bits 0..7, port 1 in bits 8..15; 1 = pressed (active-low inputs).
+ * Fails (keep the last state) while the expander is missing or being set up
+ * again after a reset.
+ */
 int pcal6416_read(uint16_t *pressed);
 
 #endif /* XBX_CTRL_PCAL6416_H_ */
