@@ -398,10 +398,14 @@ static void report_period_set(const struct device *dev, uint32_t us)
 	struct counter_top_cfg top = {
 		.ticks = counter_us_to_ticks(dev, us),
 		.callback = report_tick,
-		.flags = COUNTER_TOP_CFG_DONT_RESET,
+		.flags = COUNTER_TOP_CFG_DONT_RESET | COUNTER_TOP_CFG_RESET_WHEN_LATE,
 	};
 
-	/* just after a wrap: the counter is far below any new top */
+	/*
+	 * Just after a wrap the counter is far below any new top. A late ISR
+	 * (flash erase, debugger halt) can find it past the top: restart the
+	 * period then, instead of counting through the whole 32-bit range.
+	 */
 	counter_set_top_value(dev, &top);
 }
 
