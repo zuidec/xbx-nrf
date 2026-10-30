@@ -164,8 +164,9 @@ Locked decisions: [README](README.md). Not yet locked:
 	      reads 2537 mV against 2509 mV on a meter (+1 %).
 	- [x] NiMH curve and cutoff (`battery.c`): typical low self-discharge
 	      NiMH data, 2.0 V for 10 s → off; read only while the motors are
-	      off, level only falls per session; no rumble below 25 %. Cutoff
-	      and rumble limit untested (need flat cells).
+	      off, level only falls per session; no rumble below 25 %. Both
+	      tested on a worn pack run flat: rumble cut at 14 %, then the
+	      controller switched itself off.
 	- [ ] Flat NiMH curve → coarse gauge (~1 % per 2 mV mid-range; the ADC
 	      read +1 % on one board); maybe coulomb counting.
 	- [ ] Regulated Li-ion AAs: no gauge possible.
@@ -491,7 +492,14 @@ USB modes, in order; one active at a time.
 - [x] Rumble safety: rumble/LED values off if no ACK payload for 100 ms
       (`OUTPUT_TIMEOUT_MS`); the motor driver will read these values.
 - [x] Battery monitoring, low-battery shutdown (`battery.c`): level in the
-      report, 100 % on USB. Shutdown untested (needs flat cells).
+      report, 100 % on USB. Shutdown tested.
+- [x] Battery on the PC (HID mode): Battery Strength in the HID input report
+      → Linux `power_supply` → UPower / the tray (tested). The last value
+      stays after the controller goes off. XInput: none (`xpad` has no
+      battery support).
+- [ ] Steam / SDL don't show it: SDL's Linux joystick backend never reads
+      `power_supply` (SDL2 reports "unknown"). Look into an upstream SDL
+      patch; pairs with our own USB ID and an SDL_GameControllerDB entry.
 - [ ] **Wired USB gamepad mode:** a PC enumerating the controller = wired
       (radio off); a charger alone keeps it wireless. `CONFIG_XBX_WIRED`
       (default on) off for wireless tests with the USB console attached.
