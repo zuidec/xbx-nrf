@@ -475,8 +475,9 @@ USB modes, in order; one active at a time.
       dongle flags XInput mode in the ACK). Paddles can be turned off. LT_AUX
       / RT_AUX force their trigger full. Tested: evtest (both modes), SDL,
       Steam. [[#Elite-style paddles]], [[#2. Mechanical]] (trigger stops).
-- [ ] Paddle config from the configurator (`input_paddle_config_set()`),
-      stored in flash.
+- [x] Paddle config stored in flash: `config.c` (`config/data`,
+      versioned); the configurator calls `config_set()` /
+      `config_reset()`. Tested: save, load after power-cycle, reset.
 - [ ] Steam / SDL map Share and the paddles only with the mapping line in
       [[docs/protocol#Input report (dongle → PC)]]; needs our own USB ID and
       an SDL_GameControllerDB entry (one per device: dongle, wired).
@@ -484,9 +485,9 @@ USB modes, in order; one active at a time.
       slow blink while searching.
 - [ ] Guide LED from the host (output report `led`, XInput LED pattern).
 - [x] Rumble PWM ([[docs/a3910#Firmware notes]]): HIN on pwm1 at 25 kHz,
-      LIN as GPIO; a stopping motor brakes 40 ms (`BRAKE_MS`; 0–80 ms
-      felt the same),
-      then both inputs low. All four motors tested (`tools/test-rumble.sh`).
+      LIN as GPIO; a stopping motor brakes 40 ms (`BRAKE_MS`; 0–80 ms felt
+      the same), then both inputs low. All four motors tested
+      (`tools/test-rumble.sh`).
 - [x] **LT motor didn't run** (Rev1.1): an incomplete U5 joint that looked
       fine; reflowing U5 fixed it. Firmware was correct throughout (checked
       over SWD).
@@ -606,6 +607,11 @@ Games rarely drive the trigger motors, and XInput can't (2 motors only).
   trigger stop; generated on the controller, pairs with hair-trigger mode.
 - **4-value output report:** exists (HID vendor report: heavy, weak, LT,
   RT); games and Steam don't use it.
+- [ ] **Tune trigger rumble / impulse-trigger feel:** level → PWM curve
+  (lowest level that still spins, perceived steps), response to short
+  pulses (impulse effects are brief clicks and ticks), and how the mixing
+  and local effects above feel. Test with SDL trigger rumble and, later,
+  [[#GIP dongle mode]] games.
 
 ### GIP dongle mode
 Optional third USB mode speaking Microsoft's protocol ([[docs/gip]]). Gains:
