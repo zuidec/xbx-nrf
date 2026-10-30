@@ -27,10 +27,10 @@
 		/* TRG+ (Q1 gate, pull-up): on around each sample */
 		trg-enable-gpios = <&gpio1 10 GPIO_ACTIVE_LOW>;
 
-		/* channel n = AINn; AIN6 (VBAT) for battery monitoring later */
+		/* channel n = AINn */
 		io-channels = <&adc 0>, <&adc 1>, <&adc 2>, <&adc 3>, <&adc 4>,
-			      <&adc 5>, <&adc 7>;
-		io-channel-names = "v18", "rt", "ly", "lx", "lt", "ry", "rx";
+			      <&adc 5>, <&adc 6>, <&adc 7>;
+		io-channel-names = "v18", "rt", "ly", "lx", "lt", "ry", "vbat", "rx";
 
 		/* scope timing pin (TP4) */
 		timing-gpios = <&gpio1 9 GPIO_ACTIVE_HIGH>;
@@ -101,6 +101,16 @@
 	TRIGGER_CH(4); /* LT */
 	STICK_CH(5);   /* RS_Y */
 	STICK_CH(7);   /* RS_X */
+
+	/* VBAT (3v/B+): 0..3.6 V, read alone by battery.c */
+	channel@6 {
+		reg = <6>;
+		zephyr,gain = "ADC_GAIN_1_6";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,input-positive = <NRF_SAADC_AIN6>;
+		zephyr,resolution = <12>;
+	};
 };
 
 /* 1 kHz report timer (TIMER2 is used by ESB) */

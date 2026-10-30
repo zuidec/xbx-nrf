@@ -19,4 +19,7 @@ int power_init(void);
  */
 void power_tick(bool guide, uint32_t elapsed_ms);
 
+/* Power off now (e.g. low battery); TX thread. Returns only without a hold. */
+void power_off(void);
+
 #endif /* XBX_CTRL_POWER_H_ */

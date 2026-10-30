@@ -38,6 +38,7 @@
 #include "hid_pid.h"
 #include "input.h"
 #include "pair.h"
+#include "battery.h"
 #include "power.h"
 #include "rumble.h"
 #include "xinput_wired.h"
@@ -584,7 +585,6 @@ static void tx_thread(void *p1, void *p2, void *p3)
 
 	memset(report, 0, sizeof(*report));
 	report->type = XBX_MSG_INPUT;
-	report->battery = 0xFF;
 
 	while (true) {
 		uint32_t elapsed_ms;
@@ -614,6 +614,7 @@ static void tx_thread(void *p1, void *p2, void *p3)
 		rumble_leds_update();
 #endif
 		power_tick(report->buttons & XBX_BTN_GUIDE, elapsed_ms);
+		report->battery = battery_tick(elapsed_ms);
 
 		uint8_t motors[4];
 
@@ -765,6 +766,12 @@ int main(void)
 		return 0;
 	}
 
+	err = battery_init();
+	if (err) {
+		LOG_ERR("battery init failed: %d", err);
+		return 0;
+	}
+
 	err = hid_pad_init();
 	if (err) {
 		LOG_ERR("HID init failed: %d", err);
@@ -817,9 +824,11 @@ int main(void)
 		uint8_t motors[4];
 
 		rumble_get(motors);
-		LOG_INF("%s  buttons %04x  lx %d ly %d  lt %u rt %u  motors %u %u %u %u",
+		LOG_INF("%s  buttons %04x  lx %d ly %d  lt %u rt %u  motors %u %u %u %u  "
+			"battery %u mV %u %%",
 			wired ? "wired" : "radio", last_input.buttons, last_input.lx, last_input.ly,
-			last_input.lt, last_input.rt, motors[0], motors[1], motors[2], motors[3]);
+			last_input.lt, last_input.rt, motors[0], motors[1], motors[2], motors[3],
+			battery_mv(), last_input.battery);
 		prev = now;
 	}
 	return 0;

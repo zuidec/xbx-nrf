@@ -24,7 +24,7 @@ static const struct gpio_dt_spec guide = GPIO_DT_SPEC_GET(ZEPHYR_USER, guide_gpi
 static bool armed; /* Guide released since power-on */
 static uint32_t held_ms;
 
-static FUNC_NORETURN void power_off(void)
+static FUNC_NORETURN void shutdown(void)
 {
 	LOG_INF("power off");
 	rumble_off();
@@ -70,10 +70,17 @@ void power_tick(bool guide_pressed, uint32_t elapsed_ms)
 	}
 	held_ms += elapsed_ms;
 	if (held_ms >= POWER_OFF_HOLD_MS) {
-		power_off();
+		shutdown();
 	}
 #else
 	ARG_UNUSED(guide_pressed);
 	ARG_UNUSED(elapsed_ms);
+#endif
+}
+
+void power_off(void)
+{
+#if HAS_HOLD
+	shutdown();
 #endif
 }
