@@ -48,9 +48,9 @@ channel's usage page; lists every one found.
 |---|---|
 | Info | Firmware version, USB mode, serial, board, link (paired or not) |
 | Input test | Live buttons, paddles, sticks (raw and calibrated, with the range), triggers, battery |
-| Rumble test (suggested) | Each motor at a chosen level for a moment |
+| Rumble test | Each motor at a chosen level for a moment |
 | Stick calibration | Guided: centre at rest → sweep → save, with live coverage; cancel, erase |
-| Trigger calibration (suggested) | Rest and full pull (now auto-ranging at boot) |
+| Trigger calibration | Guided: rest → full pull → save; alone or with the sticks |
 | Paddles | On / off; XInput binding per paddle (any button or none) |
 | LED brightness | Guide LED |
 | USB mode (suggested) | Stored default, HID or XInput (now: X / B held at boot) |
@@ -138,10 +138,10 @@ is dropped. Input-test data comes unrequested as `STREAM` reports (command
 | `0x01` | `INFO` | Both | → [[#INFO result]] |
 | `0x02` | `SETTING_GET` | Both | id → id, value ([[#Settings]]); id 0 → count, the ids this firmware has |
 | `0x03` | `SETTING_SET` | Both | id, value → applied at once, saved to flash 1 s after the last change (sliders don't wear flash) |
-| `0x04` | `STREAM` | Controller | rate (0 = off, up to 100 Hz; 100 Hz is enough for the display) |
-| `0x05` | `CALIBRATE` | Controller | step: start (centre at rest), save, cancel, erase |
-| `0x06` | `RUMBLE` | Controller | 4 levels, duration (≤ 2 s) |
-| `0x07` | `FACTORY_RESET` | Both | scope bits: settings, calibration, pairing; then restart |
+| `0x04` | `STREAM` | Controller | rate in Hz (0 = off, ≤ 100); stops when the interface goes down ([[#STREAM report]]) |
+| `0x05` | `CALIBRATE` | Controller | step, targets → [[#CALIBRATE result]] |
+| `0x06` | `RUMBLE` | Controller | levels heavy, weak, LT, RT (u8), duration ms (u16 LE, ≤ 2000, 0 stops); overrides the host while it runs |
+| `0x07` | `FACTORY_RESET` | Both | scope bits: `0x01` settings (with the stored USB mode), `0x02` calibration, `0x04` pairing; then restart |
 | `0x08` | `BOOTLOADER` | Both | → ok, then `GPREGRET = 0x57` and reset |
 | `0x09` | `REBOOT` | Both | → ok, then reset |
 
@@ -158,9 +158,55 @@ Resets come 100 ms after the response, after pending settings are written.
 | 10–17 | Serial (chip DEVICEID, as the USB serial number) |
 | 18– | Board target, NUL-terminated (e.g. `xbx_controller/nrf52840/uf2`) |
 
-`STREAM` report: the radio input report (buttons, `buttons_ext`, sticks,
-triggers), raw ADC counts per axis, calibration step and range, battery mV,
-motor levels.
+### STREAM report
+
+Command `0x80`, byte 1 counts reports, byte 2 is 0. Values LE.
+
+| Byte | Field |
+|---|---|
+| 3–4 | `buttons` (`XBX_BTN_*`) |
+| 5 | `buttons_ext` (`XBX_BTN_EXT_*`) |
+| 6–13 | lx, ly, rx, ry (i16, shaped) |
+| 14–17 | lt, rt (u16, 0–1023) |
+| 18–29 | Raw ADC counts lx, ly, rx, ry, lt, rt (i16) |
+| 30 | Calibration state: 0 idle, 1 measuring rest, 2 sweep, 3 saved |
+| 31 | Flags: `0x01` wired, `0x02` linked to the dongle, `0x04` calibration save refused |
+| 32–33 | Battery mV (0 = unknown) |
+| 34 | Battery % (`0xFF` = unknown) |
+| 35–38 | Motor levels heavy, weak, LT, RT |
+
+Buttons and axes are the report before the XInput paddle mapping. Live
+coverage while calibrating comes from the raw counts.
+
+### CALIBRATE
+
+The on-device routine ([[todo#Stick and trigger calibration]]), driven by
+the app; the button combos still work.
+
+| Step | Does | Allowed in |
+|---|---|---|
+| 0 | Status only | Any state |
+| 1 | Start; targets `0x01` sticks, `0x02` triggers, 0 = all there are | Idle |
+| 2 | Save (refused: an axis is flagged, keep going) | Sweep |
+| 3 | Cancel (previous calibration back) | Rest, sweep |
+| 4 | Erase (back to auto-ranging) | Idle |
+
+Wrong state: "busy"; triggers without analog triggers: "unsupported here".
+Saving keeps the stored axes not calibrated now. A trigger is refused when
+its pull is under 1/16 of the ADC range, or when it moved both ways from
+rest (pulled while the rest was measured). It reports full from 95 % of its
+travel (`TRG_FULL_PCT`), so a pull a little short still reaches full.
+
+### CALIBRATE result
+
+| Byte | Field |
+|---|---|
+| 3 | State (as in the stream) |
+| 4 | Targets being calibrated |
+| 5 | Axes the last save refused (bit per axis: lx, ly, rx, ry, lt, rt) |
+| 6 | Axes stored in flash (same bits) |
+| 7 | Full pull threshold, % of the trigger travel |
+| 8–43 | Per axis min, centre, max (i16 LE, raw counts; triggers: centre = rest). While sweeping: seen so far |
 
 ### Settings
 

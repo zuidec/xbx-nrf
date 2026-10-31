@@ -20,10 +20,6 @@ LOG_MODULE_REGISTER(config, LOG_LEVEL_INF);
 #define CFG_KEY     "config/data"
 #define SAVE_DELAY  K_SECONDS(1)
 
-/* configurator setting ids (docs/configurator.md, "Settings") */
-#define SETTING_PADDLES  0x01
-#define SETTING_BINDINGS 0x02
-
 /* any one XBX_BTN_* or a combination; bit 11 is unused */
 #define BINDABLE (0xFFFFu & ~BIT(11))
 
@@ -146,16 +142,16 @@ void config_flush(void)
 	}
 }
 
-static int setting_get(uint8_t id, uint8_t *value, size_t size)
+int config_setting_get(uint8_t id, uint8_t *value, size_t size)
 {
 	struct config_data cfg;
 
 	config_get(&cfg);
 	switch (id) {
-	case SETTING_PADDLES:
+	case CFG_SETTING_PADDLES:
 		value[0] = cfg.paddles.enabled;
 		return 1;
-	case SETTING_BINDINGS:
+	case CFG_SETTING_BINDINGS:
 		if (size < 2 * INPUT_PADDLES) {
 			return -EINVAL;
 		}
@@ -168,19 +164,19 @@ static int setting_get(uint8_t id, uint8_t *value, size_t size)
 	}
 }
 
-static int setting_set(uint8_t id, const uint8_t *value, size_t len)
+int config_setting_set(uint8_t id, const uint8_t *value, size_t len)
 {
 	struct config_data cfg;
 
 	config_get(&cfg);
 	switch (id) {
-	case SETTING_PADDLES:
+	case CFG_SETTING_PADDLES:
 		if (len < 1 || value[0] > 1) {
 			return -EINVAL;
 		}
 		cfg.paddles.enabled = value[0];
 		break;
-	case SETTING_BINDINGS:
+	case CFG_SETTING_BINDINGS:
 		if (len < 2 * INPUT_PADDLES) {
 			return -EINVAL;
 		}
@@ -199,13 +195,3 @@ static int setting_set(uint8_t id, const uint8_t *value, size_t len)
 	config_set(&cfg);
 	return 0;
 }
-
-static const uint8_t setting_ids[] = {SETTING_PADDLES, SETTING_BINDINGS};
-
-const struct config_usb_settings config_usb_settings = {
-	.ids = setting_ids,
-	.id_count = ARRAY_SIZE(setting_ids),
-	.get = setting_get,
-	.set = setting_set,
-	.flush = config_flush,
-};

@@ -9,8 +9,13 @@
 
 #include <stdint.h>
 
-#include "config_usb.h"
+#include <stddef.h>
+
 #include "input.h"
+
+/* configurator setting ids (docs/configurator.md, "Settings") */
+#define CFG_SETTING_PADDLES  0x01
+#define CFG_SETTING_BINDINGS 0x02
 
 struct config_data {
 	uint8_t version;
@@ -35,7 +40,8 @@ void config_reset(void);
 /* Write a pending change now (before a reset or power-off). */
 void config_flush(void);
 
-/* The configurator's settings: paddles on, paddle XInput bindings. */
-extern const struct config_usb_settings config_usb_settings;
+/* Configurator settings (struct config_usb_app's get and set). */
+int config_setting_get(uint8_t id, uint8_t *value, size_t size);
+int config_setting_set(uint8_t id, const uint8_t *value, size_t len);
 
 #endif /* XBX_CTRL_CONFIG_H_ */

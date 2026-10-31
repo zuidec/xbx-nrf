@@ -37,6 +37,8 @@
 #include "hid_pad.h"
 #include "hid_pid.h"
 #include "config.h"
+#include "config_usb.h"
+#include "configurator.h"
 #include "input.h"
 #include "pair.h"
 #include "battery.h"
@@ -612,6 +614,7 @@ static void tx_thread(void *p1, void *p2, void *p3)
 		for (uint32_t i = 0; i < elapsed_ms; i++) {
 			input_read(report);
 		}
+		configurator_tick(report, wired, slot_held(), elapsed_ms);
 		if (wired ? usb_mode_get() == USB_MODE_XINPUT
 			  : (last_output.flags & XBX_OUT_FLAG_XINPUT)) {
 			input_paddles_to_xinput(report);
@@ -627,6 +630,9 @@ static void tx_thread(void *p1, void *p2, void *p3)
 		uint8_t motors[4];
 
 		rumble_get(motors);
+#if !defined(CONFIG_XBX_FAKE_INPUT)
+		configurator_rumble(motors, elapsed_ms);
+#endif
 		if (!battery_rumble_ok()) {
 			memset(motors, 0, sizeof(motors));
 		}
@@ -797,7 +803,7 @@ int main(void)
 #if defined(CONFIG_XBX_FAKE_INPUT)
 	err = config_usb_init(usb_mode_get(), NULL);
 #else
-	err = config_usb_init(usb_mode_get(), &config_usb_settings);
+	err = configurator_init();
 #endif
 	if (err) {
 		LOG_ERR("configurator channel init failed: %d", err);

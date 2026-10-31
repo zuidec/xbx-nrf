@@ -23,6 +23,9 @@ enum usb_mode {
 void usb_mode_init(uint16_t held);
 enum usb_mode usb_mode_get(void);
 
+/* Erase the stored mode (factory reset): HID from the next boot. */
+void usb_mode_forget(void);
+
 /* Build the USB device and enable it; call after hid_pad_init() and config_usb_init(). */
 int usb_start(void);
 

@@ -112,6 +112,11 @@ enum usb_mode usb_mode_get(void)
 	return mode;
 }
 
+void usb_mode_forget(void)
+{
+	settings_delete("usb/mode");
+}
+
 static atomic_t configured;
 static atomic_t suspended;
 

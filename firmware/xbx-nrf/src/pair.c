@@ -125,6 +125,11 @@ static void reset_fn(struct k_work *work)
 	sys_reboot(SYS_REBOOT_COLD);
 }
 
+void pair_forget(void)
+{
+	settings_delete("pair/link");
+}
+
 static bool indicator_held;  /* pair_indicator_hold() */
 static bool indicator_stale; /* released: set it again even if unchanged */
 

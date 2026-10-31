@@ -9,7 +9,7 @@ project(xbx_controller)
 target_sources(app PRIVATE src/main.c src/battery.c src/pair.c src/power.c src/rumble.c src/usb.c src/xinput_wired.c ../common/src/config_usb.c ../common/src/hid_pad.c ../common/src/hid_pid.c)
 target_compile_definitions(app PRIVATE XBX_DEVICE=XBX_DEVICE_CONTROLLER) # image marker
 zephyr_linker_sources(RODATA ../common/image_marker.ld)
-target_sources_ifndef(CONFIG_XBX_FAKE_INPUT app PRIVATE src/input.c src/calib.c src/config.c)
+target_sources_ifndef(CONFIG_XBX_FAKE_INPUT app PRIVATE src/input.c src/calib.c src/config.c src/configurator.c)
 dt_nodelabel(pcal6416 NODELABEL pcal6416)
 if(pcal6416 AND NOT CONFIG_XBX_FAKE_INPUT)
   target_sources(app PRIVATE src/pcal6416.c)

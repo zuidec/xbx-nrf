@@ -1,14 +1,16 @@
 /*
  * Configurator channel (see config_usb.h). Requests come from the USB
  * stack's thread and are handled on the system work queue, one at a time: a
- * request arriving before the last response went out is dropped. The class
- * sends zero-copy, so the response buffer stays untouched until
+ * request arriving before the last response went out is dropped. Responses
+ * and STREAM reports share the IN endpoint; a waiting response goes first.
+ * The class sends zero-copy, so a buffer being sent stays untouched until
  * input_report_done.
  */
 
 #include <zephyr/drivers/hwinfo.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/spinlock.h>
 #include <zephyr/sys/reboot.h>
 #include <zephyr/usb/class/hid.h>
 #include <zephyr/usb/class/usbd_hid.h>
@@ -26,21 +28,23 @@ LOG_MODULE_REGISTER(config_usb, LOG_LEVEL_INF);
 #error "XBX_DEVICE (enum xbx_device) must be set by the app's CMakeLists"
 #endif
 
-#define MSG_SIZE 64
-#define REQ_ARGS 2 /* cmd, seq, then arguments */
-#define RSP_DATA 3 /* cmd, seq, status, then the result */
+#define MSG_SIZE CFG_USB_MSG_SIZE
 
 #define VENDOR_PAGE 0xFF00
 
 #define DFU_MAGIC_UF2_RESET 0x57 /* GPREGRET: Adafruit bootloader stays in UF2 mode */
 #define RESET_DELAY_MS      100  /* the host polls every 10 ms: response out first */
 
+#define RESET_SCOPES (CFG_USB_RESET_SETTINGS | CFG_USB_RESET_CALIBRATION | CFG_USB_RESET_PAIRING)
+
 enum cmd {
 	CMD_INFO = 0x01,
 	CMD_SETTING_GET = 0x02,
 	CMD_SETTING_SET = 0x03,
+	CMD_FACTORY_RESET = 0x07,
 	CMD_BOOTLOADER = 0x08,
 	CMD_REBOOT = 0x09,
+	CMD_STREAM_REPORT = 0x80,
 };
 
 enum status {
@@ -75,7 +79,7 @@ static const uint8_t report_desc[] = {
 
 static const struct device *const hid_dev = DEVICE_DT_GET(DT_NODELABEL(hid_dev_1));
 
-static const struct config_usb_settings *settings;
+static const struct config_usb_app *app;
 static uint8_t usb_mode;
 
 static uint8_t req[MSG_SIZE];
@@ -83,11 +87,55 @@ static uint8_t rsp[MSG_SIZE] __aligned(sizeof(void *));
 static atomic_t busy; /* req taken until rsp is sent */
 static bool to_bootloader;
 
+/* IN endpoint: guarded by lock */
+static struct k_spinlock lock;
+static bool iface_up;
+static const uint8_t *in_flight;
+static bool rsp_pending;
+static bool stream_pending;
+static uint8_t stream_next[MSG_SIZE];
+static uint8_t stream_tx[MSG_SIZE] __aligned(sizeof(void *));
+static uint8_t stream_seq;
+
+static void try_submit(void)
+{
+	k_spinlock_key_t key = k_spin_lock(&lock);
+	const uint8_t *buf = NULL;
+	int err;
+
+	if (iface_up && !in_flight) {
+		if (rsp_pending) {
+			rsp_pending = false;
+			buf = rsp;
+		} else if (stream_pending) {
+			stream_pending = false;
+			memcpy(stream_tx, stream_next, sizeof(stream_tx));
+			buf = stream_tx;
+		}
+		in_flight = buf;
+	}
+	k_spin_unlock(&lock, key);
+	if (!buf) {
+		return;
+	}
+
+	err = hid_device_submit_report(hid_dev, MSG_SIZE, buf);
+	if (err) {
+		LOG_WRN("%s not sent: %d", buf == rsp ? "response" : "stream report", err);
+		key = k_spin_lock(&lock);
+		in_flight = NULL;
+		k_spin_unlock(&lock, key);
+		if (buf == rsp) {
+			atomic_clear(&busy);
+		}
+	}
+}
+
 static void reset_fn(struct k_work *work)
 {
 	ARG_UNUSED(work);
-	if (settings && settings->flush) {
-		settings->flush();
+	if (app && app->flush) {
+		app->flush();
 	}
 	LOG_INF("reset%s", to_bootloader ? " into the bootloader" : "");
 	if (to_bootloader) {
@@ -98,7 +146,25 @@ static void reset_fn(struct k_work *work)
 
 static K_WORK_DELAYABLE_DEFINE(reset_work, reset_fn);
 
-/* INFO result: docs/configurator.md, "Commands" */
+static void reset_soon(bool bootloader)
+{
+	to_bootloader = bootloader;
+	k_work_reschedule(&reset_work, K_MSEC(RESET_DELAY_MS));
+}
+
+static enum status status_of(int ret)
+{
+	switch (ret) {
+	case -ENOTSUP:
+		return ST_UNSUPPORTED;
+	case -EBUSY:
+		return ST_BUSY;
+	default:
+		return ret < 0 ? ST_BAD_ARG : ST_OK;
+	}
+}
+
+/* INFO result: docs/configurator.md, "INFO result" */
 static void info(uint8_t *out)
 {
 	size_t n = 0;
@@ -115,54 +181,52 @@ static void info(uint8_t *out)
 	n += 8;
 
 	/* board target, NUL-terminated (truncated to fit) */
-	strncpy((char *)&out[n], CONFIG_BOARD_TARGET, MSG_SIZE - RSP_DATA - n - 1);
+	strncpy((char *)&out[n], CONFIG_BOARD_TARGET, CFG_USB_DATA_SIZE - n - 1);
 }
 
 /* result: id, value; id 0: count, ids */
 static enum status setting_get(uint8_t id, uint8_t *out)
 {
-	int ret;
-
 	if (id == 0) {
-		size_t count = settings ? MIN(settings->id_count, MSG_SIZE - RSP_DATA - 1) : 0;
+		size_t count = app ? MIN(app->id_count, CFG_USB_DATA_SIZE - 1) : 0;
 
 		out[0] = count;
 		if (count) {
-			memcpy(&out[1], settings->ids, count);
+			memcpy(&out[1], app->ids, count);
 		}
 		return ST_OK;
 	}
-	if (!settings || !settings->get) {
+	if (!app || !app->get) {
 		return ST_UNSUPPORTED;
 	}
 	out[0] = id;
-	ret = settings->get(id, &out[1], MSG_SIZE - RSP_DATA - 1);
-	if (ret < 0) {
-		return ret == -ENOTSUP ? ST_UNSUPPORTED : ST_BAD_ARG;
-	}
-	return ST_OK;
+	return status_of(app->get(id, &out[1], CFG_USB_DATA_SIZE - 1));
 }
 
-static enum status setting_set(uint8_t id, const uint8_t *value, size_t len)
+static enum status factory_reset(uint8_t scope)
 {
-	int ret;
+	enum status status;
 
-	if (!settings || !settings->set) {
+	if (scope == 0 || (scope & ~RESET_SCOPES)) {
+		return ST_BAD_ARG;
+	}
+	if (!app || !app->factory_reset) {
 		return ST_UNSUPPORTED;
 	}
-	ret = settings->set(id, value, len);
-	if (ret == -ENOTSUP) {
-		return ST_UNSUPPORTED;
+	status = status_of(app->factory_reset(scope));
+	if (status == ST_OK) {
+		LOG_WRN("factory reset (scope 0x%02x)", scope);
+		reset_soon(false);
 	}
-	return ret ? ST_BAD_ARG : ST_OK;
+	return status;
 }
 
 static void request_fn(struct k_work *work)
 {
-	const uint8_t *args = &req[REQ_ARGS];
-	uint8_t *out = &rsp[RSP_DATA];
+	const uint8_t *args = &req[CFG_USB_ARGS];
+	uint8_t *out = &rsp[CFG_USB_RESULT];
 	enum status status = ST_OK;
-	int err;
+	k_spinlock_key_t key;
 
 	ARG_UNUSED(work);
 	memset(rsp, 0, sizeof(rsp));
@@ -178,12 +242,22 @@ static void request_fn(struct k_work *work)
 		break;
 	case CMD_SETTING_SET:
 		/* args: id, value (the rest of the message; each setting knows its size) */
-		status = setting_set(args[0], &args[1], MSG_SIZE - REQ_ARGS - 1);
+		status = app && app->set ? status_of(app->set(args[0], &args[1],
+							      CFG_USB_ARGS_SIZE - 1))
+					 : ST_UNSUPPORTED;
+		break;
+	case CFG_USB_CMD_STREAM:
+	case CFG_USB_CMD_CALIBRATE:
+	case CFG_USB_CMD_RUMBLE:
+		status = app && app->command ? status_of(app->command(req[0], args, out))
+					     : ST_UNSUPPORTED;
+		break;
+	case CMD_FACTORY_RESET:
+		status = factory_reset(args[0]);
 		break;
 	case CMD_BOOTLOADER:
 	case CMD_REBOOT:
-		to_bootloader = req[0] == CMD_BOOTLOADER;
-		k_work_reschedule(&reset_work, K_MSEC(RESET_DELAY_MS));
+		reset_soon(req[0] == CMD_BOOTLOADER);
 		break;
 	default:
 		status = ST_UNKNOWN;
@@ -191,18 +265,35 @@ static void request_fn(struct k_work *work)
 	}
 	rsp[2] = status;
 
-	err = hid_device_submit_report(hid_dev, sizeof(rsp), rsp);
-	if (err) {
-		LOG_WRN("response not sent: %d", err);
-		atomic_clear(&busy);
-	}
+	key = k_spin_lock(&lock);
+	rsp_pending = true;
+	k_spin_unlock(&lock, key);
+	try_submit();
 }
 
 static K_WORK_DEFINE(request_work, request_fn);
 
+int config_usb_stream(const uint8_t *data, size_t len)
+{
+	k_spinlock_key_t key = k_spin_lock(&lock);
+
+	if (!iface_up) {
+		k_spin_unlock(&lock, key);
+		return -ENOTCONN;
+	}
+	memset(stream_next, 0, sizeof(stream_next));
+	stream_next[0] = CMD_STREAM_REPORT;
+	stream_next[1] = stream_seq++;
+	memcpy(&stream_next[CFG_USB_RESULT], data, MIN(len, CFG_USB_DATA_SIZE));
+	stream_pending = true;
+	k_spin_unlock(&lock, key);
+	try_submit();
+	return 0;
+}
+
 static void take_request(const uint8_t *buf, uint16_t len)
 {
-	if (len < REQ_ARGS) {
+	if (len < CFG_USB_ARGS) {
 		return;
 	}
 	if (!atomic_cas(&busy, 0, 1)) {
@@ -216,10 +307,15 @@ static void take_request(const uint8_t *buf, uint16_t len)
 
 static void cfg_iface_ready(const struct device *dev, const bool ready)
 {
+	k_spinlock_key_t key = k_spin_lock(&lock);
+
 	ARG_UNUSED(dev);
-	if (!ready) {
-		atomic_clear(&busy);
-	}
+	iface_up = ready;
+	in_flight = NULL;
+	rsp_pending = false;
+	stream_pending = false;
+	k_spin_unlock(&lock, key);
+	atomic_clear(&busy);
 }
 
 static int cfg_get_report(const struct device *dev, const uint8_t type, const uint8_t id,
@@ -255,9 +351,15 @@ static void cfg_output_report(const struct device *dev, const uint16_t len,
 
 static void cfg_input_report_done(const struct device *dev, const uint8_t *const report)
 {
+	k_spinlock_key_t key = k_spin_lock(&lock);
+
 	ARG_UNUSED(dev);
-	ARG_UNUSED(report);
-	atomic_clear(&busy);
+	in_flight = NULL;
+	k_spin_unlock(&lock, key);
+	if (report == rsp) {
+		atomic_clear(&busy);
+	}
+	try_submit();
 }
 
 static const struct hid_device_ops cfg_ops = {
@@ -268,12 +370,12 @@ static const struct hid_device_ops cfg_ops = {
 	.input_report_done = cfg_input_report_done,
 };
 
-int config_usb_init(uint8_t mode, const struct config_usb_settings *app_settings)
+int config_usb_init(uint8_t mode, const struct config_usb_app *app_part)
 {
 	if (!device_is_ready(hid_dev)) {
 		return -ENODEV;
 	}
 	usb_mode = mode;
-	settings = app_settings;
+	app = app_part;
 	return hid_device_register(hid_dev, report_desc, sizeof(report_desc), &cfg_ops);
 }

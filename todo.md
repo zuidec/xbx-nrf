@@ -557,8 +557,13 @@ the constants (deadzone, drift window, settle time) on the TMR sticks.
 - [x] Radial inner deadzone, outer saturation (full deflection = ±32767).
 - [x] Boot-time centre check: re-centre within a small window of the stored
       centre, else keep it (stick held at power-up).
-- [ ] Triggers on the same data: stops, remapping, hair trigger.
-- [ ] Commands for the host program ([[#Calibration program]]).
+- [x] Trigger calibration in the same routine: rest, full pull and
+      direction stored; refused if too short or moved both ways from rest;
+      full from 95 % of the travel (`TRG_FULL_PCT`).
+- [ ] Test trigger calibration on Rev1.1; tune `CAL_MIN_TRAVEL`,
+      `TRG_FULL_PCT`.
+- [ ] Triggers: stops, remapping, hair trigger.
+- [x] Commands for the host program: `CALIBRATE` ([[#Configurator]]).
 - [ ] User page `docs/controller.md`: wired / wireless, X / B mode,
       calibration controls. Write once the calibration button and Guide LED
       exist (the routine's controls change with the hardware).
@@ -607,8 +612,11 @@ Linux first.
       every USB mode; `INFO`, `SETTING_GET` / `SET` (paddles, bindings),
       `REBOOT`, `BOOTLOADER`; image marker; save 1 s after the last change.
       Tested in HID and XInput mode.
-- [ ] Firmware: `STREAM`, `CALIBRATE`, `RUMBLE`, `FACTORY_RESET`; LED
-      brightness and stored USB mode settings (`config.c` version 2).
+- [x] Firmware: `STREAM`, `CALIBRATE` (sticks and triggers, status),
+      `RUMBLE`, `FACTORY_RESET` on the controller. Rumble tested; stream,
+      calibration and factory reset not yet.
+- [ ] Firmware: LED brightness and stored USB mode settings (`config.c`
+      version 2).
 - [ ] Firmware: the same channel on the dongle (LED brightness: PWM on the
       LED pins); check the IN endpoint budget in XInput mode.
 - [ ] App: protocol module and CLI, then the Tkinter tabs.

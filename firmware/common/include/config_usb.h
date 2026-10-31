@@ -13,7 +13,23 @@
 #include <stdint.h>
 
 #define CFG_USB_VERSION_MAJOR 1
-#define CFG_USB_VERSION_MINOR 0
+#define CFG_USB_VERSION_MINOR 1
+
+#define CFG_USB_MSG_SIZE  64
+#define CFG_USB_ARGS      2  /* request: cmd, seq, then the arguments */
+#define CFG_USB_RESULT    3  /* response: cmd, seq, status, then the result */
+#define CFG_USB_ARGS_SIZE (CFG_USB_MSG_SIZE - CFG_USB_ARGS)
+#define CFG_USB_DATA_SIZE (CFG_USB_MSG_SIZE - CFG_USB_RESULT)
+
+/* commands the app handles (config_usb_app.command) */
+#define CFG_USB_CMD_STREAM    0x04
+#define CFG_USB_CMD_CALIBRATE 0x05
+#define CFG_USB_CMD_RUMBLE    0x06
+
+/* FACTORY_RESET scope */
+#define CFG_USB_RESET_SETTINGS    0x01
+#define CFG_USB_RESET_CALIBRATION 0x02
+#define CFG_USB_RESET_PAIRING     0x04
 
 enum xbx_device {
 	XBX_DEVICE_CONTROLLER = 1,
@@ -30,22 +46,36 @@ struct xbx_image_marker {
 	uint8_t version[3]; /* major, minor, patch */
 };
 
-/* The app's settings (docs/configurator.md, "Settings"); any may be NULL. */
-struct config_usb_settings {
-	const uint8_t *ids; /* the ids this firmware has, for SETTING_GET id 0 */
+/*
+ * The app's part (docs/configurator.md). Any member may be NULL: "unsupported
+ * here". Callbacks run on the system work queue; errors: -ENOTSUP
+ * (unsupported here), -EINVAL (bad argument), -EBUSY.
+ */
+struct config_usb_app {
+	const uint8_t *ids; /* setting ids this firmware has, for SETTING_GET id 0 */
 	size_t id_count;
-	/* Copy setting id into value (size bytes free): length, or -ENOTSUP. */
+	/* Copy setting id into value (size bytes free): its length. */
 	int (*get)(uint8_t id, uint8_t *value, size_t size);
-	/* Apply setting id: 0, -ENOTSUP (unknown id) or -EINVAL (bad value). */
+	/* Apply setting id; value: the rest of the request (len bytes). */
 	int (*set)(uint8_t id, const uint8_t *value, size_t len);
 	/* Before a reset: write pending changes to flash now. */
 	void (*flush)(void);
+	/* Erase what scope (CFG_USB_RESET_*) names; the restart follows. */
+	int (*factory_reset)(uint8_t scope);
+	/* CFG_USB_CMD_*: args CFG_USB_ARGS_SIZE, result CFG_USB_DATA_SIZE bytes. */
+	int (*command)(uint8_t cmd, const uint8_t *args, uint8_t *result);
 };
 
 /*
  * Register the interface's report descriptor. usb_mode: for INFO (0 HID,
- * 1 XInput). settings: NULL answers "unsupported here".
+ * 1 XInput).
  */
-int config_usb_init(uint8_t usb_mode, const struct config_usb_settings *settings);
+int config_usb_init(uint8_t usb_mode, const struct config_usb_app *app);
+
+/*
+ * Queue a STREAM report (up to CFG_USB_DATA_SIZE bytes); replaces one not
+ * sent yet. -ENOTCONN: the interface is down (stop streaming).
+ */
+int config_usb_stream(const uint8_t *data, size_t len);
 
 #endif /* XBX_CONFIG_USB_H_ */
