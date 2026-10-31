@@ -1,0 +1,161 @@
+/*
+ * xbx-nrf controller bottom board, Rev1.1 (pcb/xbx-nrf/), shared by both
+ * variants. Raytac MDBT50Q-U1MV2 on the top board's 3.3 V (J2 pin 4), normal
+ * voltage mode: REG0 is unused, the module carries the REG1 DC/DC inductors.
+ *
+ * PWR_HOLD (J2 pin 9) is raised as soon as the GPIO driver starts: on AAs the
+ * top board only keeps 3.3 V up while Guide or Pair is held. It also takes
+ * the PCAL6416 out of reset (R10 pulls it low). The app releases it to power
+ * off.
+ */
+
+#include <nordic/nrf52840_qiaa.dtsi>
+#include "xbx_controller_nrf52840-pinctrl.dtsi"
+#include <zephyr/dt-bindings/input/input-event-codes.h>
+#include <zephyr/dt-bindings/gpio/nordic-nrf-gpio.h>
+#include <zephyr/dt-bindings/pwm/pwm.h>
+
+/ {
+	model = "xbx-nrf controller";
+	compatible = "xbx-nrf,controller";
+
+	chosen {
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+		zephyr,console = &uart0;
+		zephyr,shell-uart = &uart0;
+	};
+
+	pwmleds {
+		compatible = "pwm-leds";
+
+		/* drives Q3 on the top board; polarity not verified */
+		guide_led: guide_led {
+			pwms = <&pwm0 0 PWM_MSEC(1) PWM_POLARITY_NORMAL>;
+			label = "GUIDE_LED";
+		};
+	};
+
+	/*
+	 * No pull-ups on the board: Guide and Pair come from the top board
+	 * through diodes (D27, D30), the others switch to GND through 1 kΩ.
+	 */
+	buttons {
+		compatible = "gpio-keys";
+
+		guide_btn: guide_btn {
+			gpios = <&gpio1 15 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+			label = "GUIDE_BTN";
+			zephyr,code = <INPUT_BTN_MODE>;
+		};
+
+		pair_btn: pair_btn {
+			gpios = <&gpio1 11 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+			label = "PAIR_BTN";
+			zephyr,code = <INPUT_KEY_0>;
+		};
+
+		b_btn: b_btn {
+			gpios = <&gpio1 5 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+			label = "B_BTN";
+			zephyr,code = <INPUT_BTN_EAST>;
+		};
+
+		ls_btn: ls_btn {
+			gpios = <&gpio1 2 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+			label = "LS_BTN";
+			zephyr,code = <INPUT_BTN_THUMBL>;
+		};
+
+		rs_btn: rs_btn {
+			gpios = <&gpio1 6 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+			label = "RS_BTN";
+			zephyr,code = <INPUT_BTN_THUMBR>;
+		};
+	};
+
+	aliases {
+		sw0 = &pair_btn;
+		led0 = &guide_led;
+		pwm-led0 = &guide_led;
+		watchdog0 = &wdt0;
+	};
+};
+
+&reg1 {
+	regulator-initial-mode = <NRF5X_REG_MODE_DCDC>;
+};
+
+&uicr {
+	gpio-as-nreset;
+};
+
+&adc {
+	status = "okay";
+};
+
+&gpiote {
+	status = "okay";
+};
+
+&gpio0 {
+	status = "okay";
+};
+
+&gpio1 {
+	status = "okay";
+
+	pwr_hold: pwr_hold {
+		gpio-hog;
+		gpios = <12 GPIO_ACTIVE_HIGH>;
+		output-high;
+		line-name = "PWR_HOLD";
+	};
+};
+
+&uart0 {
+	compatible = "nordic,nrf-uarte";
+	status = "okay";
+	current-speed = <115200>;
+	pinctrl-0 = <&uart0_default>;
+	pinctrl-1 = <&uart0_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&i2c0 {
+	compatible = "nordic,nrf-twim";
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_FAST>;
+	pinctrl-0 = <&i2c0_default>;
+	pinctrl-1 = <&i2c0_sleep>;
+	pinctrl-names = "default", "sleep";
+
+	/* top board U4: most buttons; reset = PWR_HOLD, no interrupt line */
+	pcal6416: gpio@21 {
+		compatible = "nxp,pcal6416a";
+		reg = <0x21>;
+		gpio-controller;
+		#gpio-cells = <2>;
+		ngpios = <16>;
+	};
+};
+
+&pwm0 {
+	status = "okay";
+	pinctrl-0 = <&pwm0_default>;
+	pinctrl-1 = <&pwm0_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+/* rumble motor HIN pins (A3910 U5, U6) */
+&pwm1 {
+	status = "okay";
+	pinctrl-0 = <&pwm1_default>;
+	pinctrl-1 = <&pwm1_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+zephyr_udc0: &usbd {
+	compatible = "nordic,nrf-usbd";
+	status = "okay";
+};

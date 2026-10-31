@@ -3,3 +3,5 @@ board:
   full_name: xbx-nrf controller
   socs:
   - name: nrf52840
+    variants:
+    - name: uf2

@@ -1,0 +1,2 @@
+/* UF2 bootloader variant: same as the plain board */
+#include "xbx_controller_nrf52840.overlay"

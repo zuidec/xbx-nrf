@@ -1,0 +1,15 @@
+identifier: xbx_controller/nrf52840/uf2
+name: xbx-nrf controller (UF2 bootloader)
+type: mcu
+arch: arm
+ram: 256
+flash: 1024
+toolchain:
+  - zephyr
+supported:
+  - adc
+  - gpio
+  - usbd
+  - i2c
+  - pwm
+  - watchdog
