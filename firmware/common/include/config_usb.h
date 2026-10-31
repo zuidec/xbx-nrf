@@ -13,7 +13,7 @@
 #include <stdint.h>
 
 #define CFG_USB_VERSION_MAJOR 1
-#define CFG_USB_VERSION_MINOR 1
+#define CFG_USB_VERSION_MINOR 2
 
 #define CFG_USB_MSG_SIZE  64
 #define CFG_USB_ARGS      2  /* request: cmd, seq, then the arguments */
