@@ -449,6 +449,10 @@ USB modes, in order; one active at a time.
        and SDL/Steam cache drivers and mappings per VID:PID). Apply for our
        own once the repo is public, bootloaders too (now `0x0005` dongle,
        `0x0006` controller).
+7. [ ] **LED brightness from the configurator** (custom dongle): one level
+       for the pair, player and power LEDs, stored in flash like the
+       controller's `config.c`. Needs PWM on the LED pins (GPIO on/off
+       now).
 
 ### Controller
 - [x] Power-off: Guide held 6 s releases the hold (`power.c`); a press held
@@ -585,11 +589,29 @@ Adafruit nRF52 UF2 bootloader on both boards, unsigned
 - [x] Controller DFU entry: LS + RS held at power-on; `board_init2()`
       reads them (internal pull-ups) and sets `GPREGRET = 0x57` before
       `check_dfu_mode()`. Tested on USB and AAs.
-- [ ] App entry: button combo → `GPREGRET = 0x57` + reset (not View + Menu +
-      LS, the erase combo).
+- [ ] App entry: the configurator's `BOOTLOADER` command → `GPREGRET =
+      0x57` + reset, controller and dongle ([[#Configurator]]).
 - [ ] Measure power-on to pin 9 high (the 500 ms double-reset wait only
       follows a reset-pin reset).
 
+
+### Configurator
+Python + Tkinter desktop app over a vendor HID channel, direct USB only
+([[docs/configurator]]). Code: `tools/configurator/`, one code base;
+`build.sh` makes one file per OS in `build/` (`xbx-config-<os>-<cpu>`).
+Linux first.
+- [ ] Review the design ([[docs/configurator]]): tabs, commands, settings
+      ids, open questions.
+- [ ] Firmware: vendor HID interface (`config_usb.c`) on the controller in
+      every USB mode; `INFO`, `SETTING_GET` / `SET`, `REBOOT`,
+      `BOOTLOADER`.
+- [ ] Firmware: `STREAM`, `CALIBRATE`, `RUMBLE`, `FACTORY_RESET`; LED
+      brightness and stored USB mode settings (`config.c` version 2).
+- [ ] Firmware: the same channel on the dongle (LED brightness: PWM on the
+      LED pins); check the IN endpoint budget in XInput mode.
+- [ ] App: protocol module and CLI, then the Tkinter tabs.
+- [ ] Linux build (PyInstaller one-file), bundling `files/` (udev rule as
+      the real file); Windows and macOS later.
 ---
 
 ## 6. Prototyping milestones
