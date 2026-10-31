@@ -21,7 +21,7 @@ Related: [[docs/flashing|Flashing & debugging]], [[todo#5. Firmware]].
 | App | Folder | Default board | Also supported |
 |---|---|---|---|
 | Controller | `firmware/xbx-nrf` | `promicro_nrf52840/nrf52840/uf2` | Later: custom board definition |
-| Dongle | `firmware/dongle` | `nrf52840dongle/nrf52840` (PCA10059, off the shelf) | `xbx_dongle/nrf52840` (custom board), `promicro_nrf52840/nrf52840/uf2` |
+| Dongle | `firmware/dongle` | `nrf52840dongle/nrf52840` (PCA10059, off the shelf) | `xbx_dongle/nrf52840/uf2` (custom board, `xbx-dongle` target; `xbx_dongle/nrf52840` without bootloader), `promicro_nrf52840/nrf52840/uf2` |
 
 Standalone Zephyr apps, outside the SDK folder. Shared code:
 `firmware/common/include/` (e.g. `protocol.h`). Our own board definitions:
@@ -70,7 +70,8 @@ cd ~/Projects/xbx-nrf/firmware
 ./build.sh dongle -p                # pristine
 ./build.sh dongle -f /dev/ttyACM0   # build, then flash
 ./build.sh dongle -r                # release build
-./build.sh xbx-dongle -f swd        # custom dongle, flash over SWD
+./build.sh xbx-dongle -f /dev/sdX    # custom dongle, UF2 drive
+./build.sh xbx-dongle-bootloader    # its bootloader ([[#Bootloader]])
 ```
 
 - Runs from any folder and shell: outside `ncs-shell` it restarts itself in
@@ -95,7 +96,7 @@ cd ~/Projects/xbx-nrf/firmware
   ```
 - Default boards live in `build.sh`: `xbx_controller/nrf52840` for the
   controller, the PCA10059 for `dongle`. `xbx-dongle` is the dongle app on
-  `xbx_dongle/nrf52840`, built into `dongle/build-xbx/` (`-r`:
+  `xbx_dongle/nrf52840/uf2`, built into `dongle/build-xbx/` (`-r`:
   `build-xbx-release/`) so both dongle builds coexist.
 - Plain `west build` also works but skips the version check, and needs `-b`
   again after `-p`.
@@ -121,6 +122,7 @@ Name them after the **full** board target, `/` → `_`:
 | `promicro_nrf52840/nrf52840/uf2` | `promicro_nrf52840_nrf52840_uf2.overlay` |
 | `nrf52840dongle/nrf52840` | `nrf52840dongle_nrf52840.overlay` |
 | `xbx_dongle/nrf52840` | `xbx_dongle_nrf52840.overlay` |
+| `xbx_dongle/nrf52840/uf2` | `xbx_dongle_nrf52840_uf2.overlay` (includes the one above) |
 | `xbx_controller/nrf52840` | `xbx_controller_nrf52840.overlay` |
 
 Shorter names are **silently ignored**; look for `-- Found devicetree overlay:`
@@ -130,6 +132,24 @@ in the build log.
 
 Sysbuild resolves the board before reading the app, so `set(BOARD …)` in an
 app's `CMakeLists.txt` has no effect.
+
+## Bootloader
+
+`firmware/bootloader/`: the Adafruit nRF52 Bootloader, fetched at a pinned
+tag (`TAG` in `bootloader/build.sh`) into `src/` (gitignored), plus our
+board folders in `boards/`. `./build.sh xbx-dongle-bootloader` builds into
+`bootloader/build/<board>/`; `-f swd` installs it ([[docs/flashing]]).
+
+| File | Use |
+|---|---|
+| `<board>_bootloader-<tag>_s140_6.1.1.hex` | Full install over SWD |
+| `update-<board>_bootloader-<tag>_nosd.uf2` | Bootloader update, copied onto its own drive |
+
+- Needs the **Arm GNU Toolchain** (`ARM_GCC_DIR`, default
+  `~/.local/opt/arm-gnu-toolchain-14.2.rel1-x86_64-arm-none-eabi`). openSUSE's
+  newlib links a semihosting `crt0` that faults without a debugger.
+- USB IDs: pid.codes test PIDs `1209:0005` (dongle), `1209:0006`
+  (controller, reserved).
 
 ## Versions
 

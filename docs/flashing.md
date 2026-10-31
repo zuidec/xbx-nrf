@@ -145,7 +145,7 @@ Both custom boards (`xbx_controller`, `xbx_dongle`) flash over J1 with the
 Pi Debug Probe; `west flash` runs OpenOCD with CMSIS-DAP. From `firmware/`:
 ```sh
 ./build.sh xbx-nrf -f swd      # controller ✅
-./build.sh xbx-dongle -f swd   # custom dongle ✅
+./build.sh xbx-dongle -f swd   # custom dongle: app only, bootloader stays ✅
 ```
 
 - **Controller: flash on USB power.** Reset drops the power hold (J2 pin 9),
@@ -206,6 +206,25 @@ app after the SoftDevice area it expects.
 > On nice!nano-style boards P0.13 switches the `VCC` pin (low = on). Drive it
 > low when powering sticks or sensors from `VCC`, or use `3.3V` instead.
 
+## Custom dongle — UF2 bootloader ✅
+
+Adafruit nRF52 bootloader with our `xbx_dongle` board
+([[docs/building#Bootloader]]). The `xbx-dongle` target builds the `uf2`
+variant: app at `0x26000`, after the SoftDevice area the bootloader expects.
+
+1. Install it once over SWD, from `firmware/` (full erase: app and pairings
+   go):
+   ```sh
+   ./build.sh xbx-dongle-bootloader -f swd
+   ```
+2. Enter it: hold **Pair** while pressing reset or plugging in (a reset
+   double tap also works, 500 ms window). The pair LED pulses and an
+   `XBXDONGLE` drive appears (`1209:0005`). Without an app it stays there.
+3. Flash the app:
+   ```sh
+   ./build.sh xbx-dongle -f /dev/sdX
+   ```
+
 ## nRF52840 Dongle (PCA10059) — USB DFU (no probe) ✅
 
 1. Press the sideways **RESET** button (red LED pulses).
@@ -230,6 +249,7 @@ it, build for `nrf52840dongle/nrf52840/bare` instead.
           -c "init; reset halt; nrf5 mass_erase" \
           -c "program $BL verify reset exit"
   ```
+- **Custom dongle:** `./build.sh xbx-dongle-bootloader -f swd`.
 - **PCA10059:** nRF5 SDK `examples/dfu/open_bootloader/pca10059_usb_debug`,
   over SWD.
 

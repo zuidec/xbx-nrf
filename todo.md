@@ -363,6 +363,8 @@ Up to 7 paired (least recently connected replaced), 4 connected; 1 kHz for
       acknowledged; the link stores the channel. Tested: existing pairings
       kept 76; after a dongle reset the scan picks a channel and both
       controllers find it when re-paired and after a power cycle.
+- [ ] Pairing success: dongle pair LED and controller Guide LED blink a
+      couple of times when the exchange completes.
 - [x] Step 2, TDMA (protocol v2): 1 ms dongle frame (TIMER3), 2 slots, first
       free slot per link; timing error in ACKs, controller shifts one
       TIMER3 period; no retries. Two Pro Micros: both 971–1001/s (was ~40
@@ -444,7 +446,8 @@ USB modes, in order; one active at a time.
 6. [ ] USB IDs: pid.codes test PIDs `0x0001`–`0x0004` for now (dongle HID /
        XInput, controller HID / XInput: one per interface set, since Windows
        and SDL/Steam cache drivers and mappings per VID:PID). Apply for our
-       own once the repo is public; our bootloader builds need IDs too.
+       own once the repo is public, bootloaders too (now `0x0005` dongle,
+       `0x0006` controller).
 
 ### Controller
 - [x] Power-off: Guide held 6 s releases the hold (`power.c`); a press held
@@ -565,13 +568,16 @@ the constants (deadzone, drift window, settle time) on the TMR sticks.
 ### Bootloader
 Adafruit nRF52 UF2 bootloader on both boards, unsigned
 ([[docs/signing|why not signed]]).
-- [ ] Build setup: upstream at a pinned tag plus our board folders in
-      `tools/bootloader/`, built by a script.
-- [ ] `xbx_dongle` board: PAIR_LED as the bootloader LED, own names, test
-      PID. Zephyr `xbx_dongle/nrf52840/uf2` variant (app after the
-      SoftDevice area, UF2 output).
-- [ ] `xbx_controller` board: raise power hold (pin 9) in `board_init2()`;
-      check teardown leaves it high and the app configures it active.
+- [x] Build setup: `firmware/bootloader/` (upstream `0.11.0` plus our
+      board folders), `./build.sh xbx-dongle-bootloader`; needs the Arm GNU
+      Toolchain ([[docs/building#Bootloader]]).
+- [x] `xbx_dongle` board: PAIR_LED, Pair held at boot enters it,
+      `1209:0005`, `XBXDONGLE` drive. Zephyr `xbx_dongle/nrf52840/uf2`
+      (app at `0x26000`), the `xbx-dongle` default. Tested: install, UF2
+      flash, entry with Pair + reset / plug-in.
+- [ ] `xbx_controller` board (`1209:0006`, `xbx-nrf-bootloader` target):
+      raise power hold (pin 9) in `board_init2()`; check teardown leaves it
+      high and the app configures it active.
 - [ ] Controller DFU entry: LS + RS held at power-on. Patch `main.c`, or set
       `GPREGRET` from `board_init2()` if `main.c` reads it later. Check
       the pull-ups on LS / RS.
