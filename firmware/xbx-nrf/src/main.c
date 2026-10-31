@@ -794,6 +794,15 @@ int main(void)
 	}
 	hid_pad_set_output_cb(host_output);
 	xinput_wired_set_rumble_cb(xinput_rumble);
+#if defined(CONFIG_XBX_FAKE_INPUT)
+	err = config_usb_init(usb_mode_get(), NULL);
+#else
+	err = config_usb_init(usb_mode_get(), &config_usb_settings);
+#endif
+	if (err) {
+		LOG_ERR("configurator channel init failed: %d", err);
+		return 0;
+	}
 	err = usb_start();
 	if (err) {
 		LOG_ERR("USB start failed: %d", err);

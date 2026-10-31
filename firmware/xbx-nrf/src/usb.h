@@ -1,7 +1,8 @@
 /*
  * Controller USB device for wired mode: identity (pid.codes test IDs),
  * strings, serial number, and its functions: the HID gamepad with PID or the
- * wired XInput pad (chosen at boot); console in development builds.
+ * wired XInput pad (chosen at boot), the configurator channel; console in
+ * development builds.
  */
 
 #ifndef XBX_CTRL_USB_H_
@@ -22,7 +23,7 @@ enum usb_mode {
 void usb_mode_init(uint16_t held);
 enum usb_mode usb_mode_get(void);
 
-/* Build the USB device and enable it; call after hid_pad_init(). */
+/* Build the USB device and enable it; call after hid_pad_init() and config_usb_init(). */
 int usb_start(void);
 
 /* A PC has the device configured and the bus isn't suspended (wired mode). */

@@ -18,4 +18,15 @@
 		out-report-size = <64>;
 		out-polling-period-us = <1000>; /* PID uploads send several reports in a row */
 	};
+
+	/* configurator channel (config_usb.c) */
+	hid_dev_1: hid_dev_1 {
+		compatible = "zephyr,hid-device";
+		label = "XBX-NRF Config";
+		protocol-code = "none";
+		in-report-size = <64>;
+		in-polling-period-us = <10000>;
+		out-report-size = <64>;
+		out-polling-period-us = <10000>;
+	};
 };

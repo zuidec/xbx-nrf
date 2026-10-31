@@ -8,6 +8,7 @@
 #include <zephyr/sys/poweroff.h>
 #include <hal/nrf_power.h>
 
+#include "config.h"
 #include "pair.h"
 #include "power.h"
 #include "rumble.h"
@@ -39,6 +40,9 @@ static struct xbx_input_report seen; /* input at the last activity */
 static FUNC_NORETURN void shutdown(const char *why)
 {
 	LOG_INF("power off: %s", why);
+#if !defined(CONFIG_XBX_FAKE_INPUT)
+	config_flush();
+#endif
 	rumble_off();
 	pair_indicator_off();
 	gpio_pin_set_dt(&hold, 0);

@@ -9,6 +9,7 @@
 
 #include <stdint.h>
 
+#include "config_usb.h"
 #include "input.h"
 
 struct config_data {
@@ -23,12 +24,18 @@ int config_init(void);
 void config_get(struct config_data *out);
 
 /*
- * Apply now and save on the system work queue (flash writes stall the CPU,
- * so the caller doesn't wait for them).
+ * Apply now and save on the system work queue 1 s after the last change
+ * (flash writes stall the CPU; a slider doesn't wear the flash).
  */
 void config_set(const struct config_data *cfg);
 
 /* Apply the defaults and erase the stored entry. */
 void config_reset(void);
+
+/* Write a pending change now (before a reset or power-off). */
+void config_flush(void);
+
+/* The configurator's settings: paddles on, paddle XInput bindings. */
+extern const struct config_usb_settings config_usb_settings;
 
 #endif /* XBX_CTRL_CONFIG_H_ */

@@ -589,8 +589,9 @@ Adafruit nRF52 UF2 bootloader on both boards, unsigned
 - [x] Controller DFU entry: LS + RS held at power-on; `board_init2()`
       reads them (internal pull-ups) and sets `GPREGRET = 0x57` before
       `check_dfu_mode()`. Tested on USB and AAs.
-- [ ] App entry: the configurator's `BOOTLOADER` command → `GPREGRET =
-      0x57` + reset, controller and dongle ([[#Configurator]]).
+- [x] App entry, controller: the configurator's `BOOTLOADER` command →
+      `GPREGRET = 0x57` + reset ([[#Configurator]]). Tested.
+- [ ] App entry, dongle: the same, with the dongle's channel.
 - [ ] Measure power-on to pin 9 high (the 500 ms double-reset wait only
       follows a reset-pin reset).
 
@@ -602,9 +603,10 @@ Python + Tkinter desktop app over a vendor HID channel, direct USB only
 Linux first.
 - [ ] Review the design ([[docs/configurator]]): tabs, commands, settings
       ids, open questions.
-- [ ] Firmware: vendor HID interface (`config_usb.c`) on the controller in
-      every USB mode; `INFO`, `SETTING_GET` / `SET`, `REBOOT`,
-      `BOOTLOADER`.
+- [x] Firmware: vendor HID interface (`config_usb.c`) on the controller in
+      every USB mode; `INFO`, `SETTING_GET` / `SET` (paddles, bindings),
+      `REBOOT`, `BOOTLOADER`; image marker; save 1 s after the last change.
+      Tested in HID and XInput mode.
 - [ ] Firmware: `STREAM`, `CALIBRATE`, `RUMBLE`, `FACTORY_RESET`; LED
       brightness and stored USB mode settings (`config.c` version 2).
 - [ ] Firmware: the same channel on the dongle (LED brightness: PWM on the

@@ -7,6 +7,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/settings/settings.h>
 #include <zephyr/spinlock.h>
+#include <zephyr/sys/byteorder.h>
 
 #include <string.h>
 
@@ -17,6 +18,14 @@ LOG_MODULE_REGISTER(config, LOG_LEVEL_INF);
 
 #define CFG_VERSION 1
 #define CFG_KEY     "config/data"
+#define SAVE_DELAY  K_SECONDS(1)
+
+/* configurator setting ids (docs/configurator.md, "Settings") */
+#define SETTING_PADDLES  0x01
+#define SETTING_BINDINGS 0x02
+
+/* any one XBX_BTN_* or a combination; bit 11 is unused */
+#define BINDABLE (0xFFFFu & ~BIT(11))
 
 static const struct config_data defaults = {
 	.version = CFG_VERSION,
@@ -105,7 +114,7 @@ static void save_work_fn(struct k_work *work)
 	LOG_INF("config %s", erase ? "erased" : "saved");
 }
 
-static K_WORK_DEFINE(save_work, save_work_fn);
+static K_WORK_DELAYABLE_DEFINE(save_work, save_work_fn);
 
 static void apply(const struct config_data *cfg, bool erase)
 {
@@ -116,7 +125,7 @@ static void apply(const struct config_data *cfg, bool erase)
 	erase_pending = erase;
 	k_spin_unlock(&lock, key);
 	input_paddle_config_set(&cfg->paddles);
-	k_work_submit(&save_work);
+	k_work_reschedule(&save_work, SAVE_DELAY);
 }
 
 void config_set(const struct config_data *cfg)
@@ -128,3 +137,75 @@ void config_reset(void)
 {
 	apply(&defaults, true);
 }
+
+void config_flush(void)
+{
+	if (k_work_delayable_is_pending(&save_work)) {
+		k_work_cancel_delayable(&save_work);
+		save_work_fn(NULL);
+	}
+}
+
+static int setting_get(uint8_t id, uint8_t *value, size_t size)
+{
+	struct config_data cfg;
+
+	config_get(&cfg);
+	switch (id) {
+	case SETTING_PADDLES:
+		value[0] = cfg.paddles.enabled;
+		return 1;
+	case SETTING_BINDINGS:
+		if (size < 2 * INPUT_PADDLES) {
+			return -EINVAL;
+		}
+		for (size_t i = 0; i < INPUT_PADDLES; i++) {
+			sys_put_le16(cfg.paddles.xinput[i], &value[2 * i]);
+		}
+		return 2 * INPUT_PADDLES;
+	default:
+		return -ENOTSUP;
+	}
+}
+
+static int setting_set(uint8_t id, const uint8_t *value, size_t len)
+{
+	struct config_data cfg;
+
+	config_get(&cfg);
+	switch (id) {
+	case SETTING_PADDLES:
+		if (len < 1 || value[0] > 1) {
+			return -EINVAL;
+		}
+		cfg.paddles.enabled = value[0];
+		break;
+	case SETTING_BINDINGS:
+		if (len < 2 * INPUT_PADDLES) {
+			return -EINVAL;
+		}
+		for (size_t i = 0; i < INPUT_PADDLES; i++) {
+			uint16_t b = sys_get_le16(&value[2 * i]);
+
+			if (b & ~BINDABLE) {
+				return -EINVAL;
+			}
+			cfg.paddles.xinput[i] = b;
+		}
+		break;
+	default:
+		return -ENOTSUP;
+	}
+	config_set(&cfg);
+	return 0;
+}
+
+static const uint8_t setting_ids[] = {SETTING_PADDLES, SETTING_BINDINGS};
+
+const struct config_usb_settings config_usb_settings = {
+	.ids = setting_ids,
+	.id_count = ARRAY_SIZE(setting_ids),
+	.get = setting_get,
+	.set = setting_set,
+	.flush = config_flush,
+};
