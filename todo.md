@@ -620,14 +620,14 @@ Linux first.
       Tested in HID and XInput mode.
 - [x] Firmware: `STREAM`, `CALIBRATE` (sticks and triggers, status),
       `RUMBLE`, `FACTORY_RESET` on the controller; Pair in the report for the
-      input test. Tested except factory reset.
-- [ ] Test factory reset (each scope).
+      input test. Tested.
+- [x] Test factory reset (each scope). Tested.
 - [ ] Firmware: LED brightness and stored USB mode settings (`config.c`).
 - [x] Firmware: the channel on the dongle (`dongle/src/configurator.c`):
       `INFO`, `BOOTLOADER`, `REBOOT`, `FACTORY_RESET` (pairing), image
       marker. Firmware update through the app tested.
-- [ ] Test the dongle channel in XInput mode (with the console it takes the
-      7th and last IN endpoint) and factory reset.
+- [x] Test the dongle channel in XInput mode (with the console it takes the
+      7th and last IN endpoint) and factory reset. Tested.
 - [ ] Firmware: LED brightness on the dongle (PWM on the LED pins, setting
       `0x03`, stored).
 - [x] App: protocol module, CLI, window (controller: info, input test,

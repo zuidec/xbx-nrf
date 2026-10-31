@@ -331,6 +331,8 @@ class ResetPanel(Panel):
         what = "\n".join(f"• {t}" for v, _, t in self.vars if v.get())
         if messagebox.askyesno("Factory reset", f"Erase:\n{what}\n\nThe device restarts.",
                                parent=self):
+            for v, _, _ in self.vars:
+                v.set(False)
             self.call("factory_reset", scope)
 
 
