@@ -18,7 +18,7 @@
  * range grows to the furthest position seen: rotate the sticks once.
  *
  * Triggers: calibrated, rest to full pull in the stored direction; the pull
- * reports full from TRG_FULL_PCT of it (the full pull threshold: a pull that
+ * reports full from a % of it (the full pull threshold, a setting: a pull that
  * falls a little short still reaches full). The rest measured at boot
  * replaces the stored one as for the sticks. Uncalibrated: rest measured at
  * boot, the travel grows to the furthest pull seen, either direction counts
@@ -91,7 +91,6 @@ LOG_MODULE_REGISTER(input, LOG_LEVEL_INF);
 #define CAL_MIN_SPAN       (ADC_MAX / 8) /* per side, raw counts */
 #define CAL_MIN_TRAVEL     (ADC_MAX / 16) /* trigger, rest to full pull; tune */
 #define CAL_MAX_BACK       (ADC_MAX / 50) /* trigger, the far side of rest: noise only */
-#define TRG_FULL_PCT       95 /* of the calibrated travel: reports full */
 #define CAL_DONE_MS        1000
 #define CAL_ERROR_MS       1000
 
@@ -203,6 +202,7 @@ static const struct pwm_dt_spec led_status = PWM_DT_SPEC_GET_BY_NAME(ZEPHYR_USER
 static uint32_t pressed;               /* debounced, bit per PIN_* / XBX_BTN_* */
 
 static struct input_paddle_config paddles; /* set by config_init() */
+static uint8_t trg_full_pct[2] = {INPUT_TRG_FULL_DEFAULT, INPUT_TRG_FULL_DEFAULT};
 static uint8_t lockout_ms[PIN_BITS];
 
 /* last rumble request, shown on the LEDs whenever not calibrating */
@@ -412,7 +412,7 @@ static uint16_t trigger_norm(struct trigger *t, int16_t raw)
 
 	if (t->dir) {
 		d = MAX(d * t->dir, 0);
-		full = t->travel * TRG_FULL_PCT / 100;
+		full = t->travel * trg_full_pct[t - triggers] / 100;
 	} else {
 		d = abs(d);
 		t->travel = MAX(t->travel, d);
@@ -678,7 +678,7 @@ static void cal_finish(void)
 		c->flags = dir[t] < 0 ? CALIB_FLAG_INVERT : 0;
 		data.valid |= BIT(i);
 		LOG_INF("calibration: storing %s rest %d, full pull %d (full from %d %%)",
-			axis_name[i], c->center, dir[t] > 0 ? c->max : c->min, TRG_FULL_PCT);
+			axis_name[i], c->center, dir[t] > 0 ? c->max : c->min, trg_full_pct[t]);
 	}
 	calib_save(&data);
 	cal_enter(CAL_DONE);
@@ -1033,6 +1033,9 @@ void input_read(struct xbx_input_report *report)
 #endif
 	report->buttons = pressed & 0xFFFF;
 	report->buttons_ext = (pressed & PIN_SHARE) ? XBX_BTN_EXT_SHARE : 0;
+	if (pair_button()) {
+		report->buttons_ext |= XBX_BTN_EXT_PAIR; /* for the input test; pair.c acts on it */
+	}
 	if (paddles.enabled) {
 		for (int i = 0; i < INPUT_PADDLES; i++) {
 			if (pressed & (PIN_P1 << i)) {
@@ -1078,8 +1081,8 @@ void input_raw_get(struct input_raw *out)
 	out->cal_targets = cal.state == CAL_IDLE ? 0 : cal.targets;
 	out->cal_bad = cal.state == CAL_SWEEP ? cal.bad : 0;
 	out->stored = calib_get(&data) ? data.valid : 0;
-	out->full_pct = TRG_FULL_PCT;
 #endif
+	memcpy(out->full_pct, trg_full_pct, sizeof(out->full_pct));
 }
 
 int input_cal_request(uint8_t step, uint8_t targets)
@@ -1118,6 +1121,11 @@ int input_cal_request(uint8_t step, uint8_t targets)
 	ARG_UNUSED(targets);
 	return -ENOTSUP;
 #endif
+}
+
+void input_trigger_full_set(const uint8_t pct[2])
+{
+	memcpy(trg_full_pct, pct, sizeof(trg_full_pct));
 }
 
 void input_paddle_config_set(const struct input_paddle_config *cfg)

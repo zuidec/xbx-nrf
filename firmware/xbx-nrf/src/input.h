@@ -40,6 +40,14 @@ void input_read(struct xbx_input_report *report);
 void input_paddle_config_set(const struct input_paddle_config *cfg);
 
 /*
+ * Trigger full pull threshold: LT, RT report full from this % of their
+ * calibrated travel (uncalibrated triggers: their full range).
+ */
+#define INPUT_TRG_FULL_MIN     50
+#define INPUT_TRG_FULL_DEFAULT 95
+void input_trigger_full_set(const uint8_t pct[2]);
+
+/*
  * XInput has no paddle bits: OR each held paddle's mapped buttons into
  * report->buttons. Call after input_read() when the host is XInput.
  */
@@ -70,7 +78,7 @@ struct input_raw {
 	uint8_t cal_targets;     /* INPUT_CAL_STICKS / _TRIGGERS being calibrated */
 	uint8_t cal_bad;         /* axes the last save refused (bit per calib_axis_id) */
 	uint8_t stored;          /* calibrated axes in flash (bit per calib_axis_id) */
-	uint8_t full_pct;        /* trigger full pull threshold, % of the travel */
+	uint8_t full_pct[2];     /* trigger full pull thresholds, % of the travel */
 };
 
 /* input_read()'s state: from another thread, values may be a tick apart. */

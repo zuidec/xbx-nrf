@@ -125,6 +125,11 @@ static void reset_fn(struct k_work *work)
 	sys_reboot(SYS_REBOOT_COLD);
 }
 
+bool pair_button(void)
+{
+	return gpio_pin_get_dt(&pair_pin) > 0;
+}
+
 void pair_forget(void)
 {
 	settings_delete("pair/link");

@@ -69,6 +69,9 @@ void pair_indicator_hold(bool hold);
 /* Indicator off for good (power-off); TX thread only. */
 void pair_indicator_off(void);
 
+/* The Pair button is pressed now (not debounced). */
+bool pair_button(void);
+
 /* Erase the stored link (factory reset; the restart follows). */
 void pair_forget(void);
 

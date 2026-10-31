@@ -71,8 +71,8 @@ static int cmd_rumble(const uint8_t *args)
 
 /*
  * CALIBRATE: step (0 status, enum input_cal_step), targets (start) →
- * state, targets, refused axes, stored axes, full pull %, then per axis
- * (calib_axis_id order) min, centre, max (i16 LE)
+ * state, targets, refused axes, stored axes, LT full pull %, then per axis
+ * (calib_axis_id order) min, centre, max (i16 LE), then RT full pull %
  */
 static int cmd_calibrate(const uint8_t *args, uint8_t *result)
 {
@@ -92,13 +92,14 @@ static int cmd_calibrate(const uint8_t *args, uint8_t *result)
 	result[n++] = raw.cal_targets;
 	result[n++] = raw.cal_bad;
 	result[n++] = raw.stored;
-	result[n++] = raw.full_pct;
+	result[n++] = raw.full_pct[0];
 	for (int i = 0; i < CALIB_AXES; i++, n += 6) {
 		sys_put_le16(raw.range[i].min, &result[n]);
 		sys_put_le16(raw.range[i].center, &result[n + 2]);
 		sys_put_le16(raw.range[i].max, &result[n + 4]);
 	}
-	BUILD_ASSERT(5 + 6 * CALIB_AXES <= CFG_USB_DATA_SIZE);
+	result[n++] = raw.full_pct[1];
+	BUILD_ASSERT(5 + 6 * CALIB_AXES + 1 <= CFG_USB_DATA_SIZE);
 	return 0;
 }
 
@@ -133,7 +134,8 @@ static int factory_reset(uint8_t scope)
 	return 0;
 }
 
-static const uint8_t setting_ids[] = {CFG_SETTING_PADDLES, CFG_SETTING_BINDINGS};
+static const uint8_t setting_ids[] = {CFG_SETTING_PADDLES, CFG_SETTING_BINDINGS,
+				      CFG_SETTING_TRG_FULL};
 
 static const struct config_usb_app app = {
 	.ids = setting_ids,

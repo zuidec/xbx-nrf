@@ -25,6 +25,7 @@ LOG_MODULE_REGISTER(config, LOG_LEVEL_INF);
 
 static const struct config_data defaults = {
 	.version = CFG_VERSION,
+	.trigger_full = {INPUT_TRG_FULL_DEFAULT, INPUT_TRG_FULL_DEFAULT},
 	.paddles = {
 		.enabled = true,
 		.xinput = {XBX_BTN_A, XBX_BTN_B, XBX_BTN_X, XBX_BTN_Y},
@@ -74,7 +75,13 @@ int config_init(void)
 		err = settings_load_subtree("config");
 	}
 	LOG_INF("%s", loaded ? "config loaded" : "no config stored: defaults");
+	for (int t = 0; t < 2; t++) {
+		if (current.trigger_full[t] < INPUT_TRG_FULL_MIN || current.trigger_full[t] > 100) {
+			current.trigger_full[t] = INPUT_TRG_FULL_DEFAULT; /* older entry: 0 */
+		}
+	}
 	input_paddle_config_set(&current.paddles);
+	input_trigger_full_set(current.trigger_full);
 	return err;
 }
 
@@ -121,6 +128,7 @@ static void apply(const struct config_data *cfg, bool erase)
 	erase_pending = erase;
 	k_spin_unlock(&lock, key);
 	input_paddle_config_set(&cfg->paddles);
+	input_trigger_full_set(cfg->trigger_full);
 	k_work_reschedule(&save_work, SAVE_DELAY);
 }
 
@@ -159,6 +167,9 @@ int config_setting_get(uint8_t id, uint8_t *value, size_t size)
 			sys_put_le16(cfg.paddles.xinput[i], &value[2 * i]);
 		}
 		return 2 * INPUT_PADDLES;
+	case CFG_SETTING_TRG_FULL:
+		memcpy(value, cfg.trigger_full, sizeof(cfg.trigger_full));
+		return sizeof(cfg.trigger_full);
 	default:
 		return -ENOTSUP;
 	}
@@ -187,6 +198,14 @@ int config_setting_set(uint8_t id, const uint8_t *value, size_t len)
 				return -EINVAL;
 			}
 			cfg.paddles.xinput[i] = b;
+		}
+		break;
+	case CFG_SETTING_TRG_FULL:
+		for (int t = 0; t < 2; t++) {
+			if (value[t] < INPUT_TRG_FULL_MIN || value[t] > 100) {
+				return -EINVAL;
+			}
+			cfg.trigger_full[t] = value[t];
 		}
 		break;
 	default:
