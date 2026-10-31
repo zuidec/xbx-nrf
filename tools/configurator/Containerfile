@@ -1,0 +1,7 @@
+# build.sh --release: Linux build on Debian 12 (glibc 2.36), so the binary
+# runs on that and every newer distro. libpython: PyInstaller bundles it.
+FROM docker.io/library/debian:12
+
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends python3 python3-tk python3-venv libpython3.11 binutils \
+	&& rm -rf /var/lib/apt/lists/*

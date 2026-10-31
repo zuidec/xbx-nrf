@@ -639,8 +639,10 @@ Linux first.
 - [x] App: dongle tab with factory reset (pairing).
 - [x] App: LED brightness (controller: Guide; dongle: pair, player, power
       with on/off; CLI `led`).
-- [ ] Linux build (PyInstaller one-file), bundling `files/` (udev rule as
-      the real file); Windows and macOS later.
+- [x] Linux build (PyInstaller one-file, [[docs/configurator#Building]]):
+      `build.sh`, `--release` in a Debian 12 container. CLI tested on
+      Debian 12, Ubuntu 24.04, Fedora 41 containers; window here.
+- [ ] Windows and macOS builds (on those systems; `hidapi` path untested).
 ---
 
 ## 6. Prototyping milestones

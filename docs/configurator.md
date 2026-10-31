@@ -14,8 +14,8 @@ aliases:
 # Configurator
 
 Desktop app for settings, calibration, testing and firmware updates of the
-controller and the dongle. **First version:** controller and dongle tabs and
-the CLI work from source; no packaged build yet. Steps: [[todo#Configurator]].
+controller and the dongle. Controller and dongle tabs and the CLI work, from
+source or as one Linux file ([[#Building]]). Steps: [[todo#Configurator]].
 
 ## Decisions
 
@@ -100,10 +100,26 @@ app asks the user to mount it.
   into `/etc/udev/rules.d/` (`pkexec`, or `sudo` from the CLI).
 - **macOS:** unsigned: right-click → Open the first time.
 - **Windows:** no driver needed.
-- `build.sh` builds one file into `build/`, named for the OS and CPU (e.g.
-  `xbx-config-linux-x86_64`, `xbx-config-windows-x86_64.exe`). PyInstaller
-  doesn't cross-build: each OS builds its own, Linux now; Windows and macOS
-  later (their machines or CI).
+
+### Building
+
+`tools/configurator/build.sh` builds one file, named for the OS and CPU
+(e.g. `xbx-config-linux-x86_64`, `xbx-config-windows-x86_64.exe`):
+
+| Command | Output | Runs on |
+|---|---|---|
+| `build.sh` | `build/` | This system and any with the same or newer glibc |
+| `build.sh --release` (Linux) | `build/release/` | Debian 12 (glibc 2.36) and newer: built in a Debian 12 container |
+
+- Needs Python 3 with tkinter and venv, and `objdump` on Linux; `--release`
+  needs only podman or docker. It checks first and lists what's missing.
+- PyInstaller is pinned in `requirements-build.txt` and installed into the
+  build's own venv; `-p` starts it over. The bundle's contents:
+  `xbx-config.spec`; the container: `Containerfile`.
+- Linux: fontconfig and freetype aren't bundled; the system's are used (a
+  bundled older fontconfig warns about newer config files).
+- PyInstaller doesn't cross-build: each OS and CPU builds its own. Linux
+  tested; Windows (Git Bash) and macOS later.
 
 ## USB channel
 

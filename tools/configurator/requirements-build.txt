@@ -1,0 +1,4 @@
+# build.sh installs these into its own venv (build/venv); the app itself
+# needs only the standard library on Linux.
+pyinstaller==6.22.3
+hidapi==0.15.0; sys_platform != "linux"
