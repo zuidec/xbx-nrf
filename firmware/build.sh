@@ -3,23 +3,28 @@
 #
 # Usage (from anywhere; starts the pinned SDK toolchain itself if needed):
 #   ./build.sh <xbx-nrf|dongle|xbx-dongle> [-r] [-f <device>] [extra west build args]
+#   ./build.sh xbx-dongle-bootloader [-f swd]
 #   e.g. ./build.sh xbx-nrf -p                       # pristine rebuild
 #        ./build.sh xbx-nrf -f swd                   # build + flash over SWD
 #        ./build.sh dongle -f /dev/ttyACM0           # build + flash
-#        ./build.sh xbx-dongle -f swd                # custom dongle over SWD
+#        ./build.sh xbx-dongle -f /dev/sdX           # custom dongle, UF2 drive
+#        ./build.sh xbx-dongle-bootloader -f swd     # its bootloader (erases all)
 #        ./build.sh dongle -r                        # release build
+#
+# *-bootloader targets run bootloader/build.sh (UF2 bootloader, own options).
 #
 # -r / --release adds the app's release.conf (no USB console, no logs) and
 # builds into <app>/build-release/.
 #
 # -f / --flash <device>, by board:
 #   nrf52840dongle/nrf52840  serial port of the DFU bootloader (press RESET)
-#   */uf2 (Pro Micro)        UF2 drive: mount point or block device (/dev/sdX)
+#   */uf2 (Pro Micro, ours)  UF2 drive: mount point or block device (/dev/sdX);
+#                            "swd" writes only the app (bootloader stays)
 #   anything else            "swd": west flash with the board's runner
 #
 # Each app has a default board below. Pass -b <board> to override it.
-# xbx-dongle is the dongle app on the custom board, in <app>/build-xbx/
-# (-release) so the PCA10059 build stays.
+# xbx-dongle is the dongle app on the custom board (UF2 bootloader variant),
+# in <app>/build-xbx/ (-release) so the PCA10059 build stays.
 # BUILD_DIR=<dir> builds into <app>/<dir> instead (a second configuration,
 # e.g. a fake-input controller, without overwriting the main build).
 
@@ -33,6 +38,7 @@ xbx_relaunch_in_toolchain "$script_dir" "$script_dir/$(basename "${BASH_SOURCE[0
 
 usage() {
 	echo "usage: $0 <xbx-nrf|dongle|xbx-dongle> [-r] [-f <device>] [extra west build args]" >&2
+	echo "       $0 xbx-dongle-bootloader [-f swd]" >&2
 	exit 2
 }
 
@@ -40,11 +46,15 @@ usage() {
 app="$1"
 shift
 
+case "$app" in
+xbx-dongle-bootloader) exec "$script_dir/bootloader/build.sh" xbx_dongle "$@" ;;
+esac
+
 build_name=build
 case "$app" in
 xbx-nrf) board="xbx_controller/nrf52840" ;; # Pro Micro: -b promicro_nrf52840/nrf52840/uf2
 dongle)  board="nrf52840dongle/nrf52840" ;; # PCA10059; Pro Micro: -b promicro_nrf52840/nrf52840/uf2
-xbx-dongle) app=dongle; board="xbx_dongle/nrf52840"; build_name=build-xbx ;;
+xbx-dongle) app=dongle; board="xbx_dongle/nrf52840/uf2"; build_name=build-xbx ;; # no bootloader: -b xbx_dongle/nrf52840
 *) usage ;;
 esac
 
@@ -114,6 +124,12 @@ nrf52840dongle/nrf52840)
 	nrfutil nrf5sdk-tools dfu usb-serial -pkg "$build_dir/dfu.zip" -p "$flash_dev"
 	;;
 */uf2)
+	if [ "$flash_dev" = swd ]; then
+		echo "flash: west flash (SWD, app only)"
+		west flash -d "$build_dir" -r openocd
+		echo "flash: done"
+		exit 0
+	fi
 	drive="$flash_dev"
 	if [ -b "$flash_dev" ]; then
 		drive=$(findmnt -n -o TARGET --source "$flash_dev" || true)
