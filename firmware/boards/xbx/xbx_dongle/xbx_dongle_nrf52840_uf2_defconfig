@@ -1,0 +1,11 @@
+CONFIG_ARM_MPU=y
+CONFIG_GPIO=y
+
+# Console on J3 (debug UART)
+CONFIG_SERIAL=y
+CONFIG_CONSOLE=y
+CONFIG_UART_CONSOLE=y
+
+# UF2 bootloader (firmware/bootloader/): app at the DT code partition
+CONFIG_BUILD_OUTPUT_UF2=y
+CONFIG_USE_DT_CODE_PARTITION=y

@@ -1,0 +1,2 @@
+/* UF2 bootloader variant: same as the plain board */
+#include "xbx_dongle_nrf52840.overlay"

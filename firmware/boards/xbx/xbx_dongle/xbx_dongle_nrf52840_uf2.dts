@@ -1,0 +1,8 @@
+/*
+ * xbx-nrf dongle with the UF2 bootloader (firmware/bootloader/): app after
+ * the SoftDevice area, settings and bootloader at the top of flash.
+ */
+
+/dts-v1/;
+#include "xbx_dongle_nrf52840_common.dtsi"
+#include <nordic/nrf52840_partition_uf2_sdv6.dtsi>
