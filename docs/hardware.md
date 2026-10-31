@@ -120,8 +120,8 @@ KiCad: `pcb/xbx-nrf/`. Rev1.1 built and working; outline and part positions
 from `mech/controller-bottom-board/` (measured, fit-checked in the shell). No
 Play & Charge in v1. Open items: [[todo#3. Hardware design — controller board]].
 
-Board target `xbx_controller/nrf52840` (`firmware/boards/xbx/xbx_controller/`,
-the default in `build.sh`); flashing over J1 (SWD):
+Board target `xbx_controller/nrf52840/uf2`, with our UF2 bootloader
+(`firmware/boards/xbx/xbx_controller/`, the default in `build.sh`); flashing:
 [[docs/flashing#Custom boards (SWD)]].
 
 ### Sticks (RKJXV122400R footprint)

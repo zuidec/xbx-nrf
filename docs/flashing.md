@@ -26,8 +26,8 @@ Related: [[docs/building]], [[todo#5. Firmware]].
 |---|---|---|---|
 | Pro Micro nRF52840 (nice!nano clone) | Controller prototype, dongle stand-in | nice!nano UF2 bootloader ✅ | `promicro_nrf52840/nrf52840/uf2` |
 | Nordic nRF52840 Dongle (PCA10059) | Dongle (off-the-shelf option) | Nordic USB DFU bootloader ✅ | `nrf52840dongle/nrf52840` |
-| Custom controller board | Controller | None; SWD only (J1, JST-SH) ✅ | `xbx_controller/nrf52840` |
-| Custom dongle board | Dongle | None; SWD only (J1, JST-SH) | `xbx_dongle/nrf52840` |
+| Custom controller board | Controller | Our UF2 bootloader (`XBXCTRL`) ✅; SWD on J1 | `xbx_controller/nrf52840/uf2` |
+| Custom dongle board | Dongle | Our UF2 bootloader (`XBXDONGLE`) ✅; SWD on J1 | `xbx_dongle/nrf52840/uf2` |
 
 | Debug probe | Notes |
 |---|---|
@@ -145,8 +145,13 @@ Both custom boards (`xbx_controller`, `xbx_dongle`) flash over J1 with the
 Pi Debug Probe; `west flash` runs OpenOCD with CMSIS-DAP. From `firmware/`:
 ```sh
 ./build.sh xbx-nrf -f swd      # controller ✅
-./build.sh xbx-dongle -f swd   # custom dongle: app only, bootloader stays ✅
+./build.sh xbx-dongle -f swd   # custom dongle ✅
 ```
+
+- **App only:** the default targets are the `uf2` variants, so this writes
+  the app at `0x26000` and keeps the bootloader. Without a bootloader it
+  won't boot: install one (UF2 bootloader section below) or build the plain
+  board (`-b xbx_controller/nrf52840`, `-b xbx_dongle/nrf52840`).
 
 - **Controller: flash on USB power.** Reset drops the power hold (J2 pin 9),
   so on AAs 3.3 V goes with it.
@@ -206,24 +211,26 @@ app after the SoftDevice area it expects.
 > On nice!nano-style boards P0.13 switches the `VCC` pin (low = on). Drive it
 > low when powering sticks or sensors from `VCC`, or use `3.3V` instead.
 
-## Custom dongle — UF2 bootloader ✅
+## Custom boards — UF2 bootloader ✅
 
-Adafruit nRF52 bootloader with our `xbx_dongle` board
-([[docs/building#Bootloader]]). The `xbx-dongle` target builds the `uf2`
-variant: app at `0x26000`, after the SoftDevice area the bootloader expects.
+Adafruit nRF52 bootloader with our board folders
+([[docs/building#Bootloader]]). The `xbx-nrf` and `xbx-dongle` targets build
+the `uf2` variants: app at `0x26000`, after the SoftDevice area the
+bootloader expects. From `firmware/`:
 
-1. Install it once over SWD, from `firmware/` (full erase: app and pairings
-   go):
-   ```sh
-   ./build.sh xbx-dongle-bootloader -f swd
-   ```
-2. Enter it: hold **Pair** while pressing reset or plugging in (a reset
-   double tap also works, 500 ms window). The pair LED pulses and an
-   `XBXDONGLE` drive appears (`1209:0005`). Without an app it stays there.
-3. Flash the app:
-   ```sh
-   ./build.sh xbx-dongle -f /dev/sdX
-   ```
+| Step | Controller | Dongle |
+|---|---|---|
+| Install once (SWD, full erase) | `./build.sh xbx-nrf-bootloader -f swd` | `./build.sh xbx-dongle-bootloader -f swd` |
+| Enter | Hold **LS + RS** at power-on (plugging in, or Guide on AAs) | Hold **Pair** while pressing reset or plugging in |
+| Drive appears | `XBXCTRL` (`1209:0006`), Guide LED pulses | `XBXDONGLE` (`1209:0005`), pair LED pulses |
+| Flash the app | `./build.sh xbx-nrf -f /dev/sdX` | `./build.sh xbx-dongle -f /dev/sdX` |
+
+- The full erase takes calibration, pairings and settings with it.
+- Without an app the bootloader stays in update mode; on AAs the controller
+  stays on there until the batteries come out.
+- The controller bootloader raises the power hold at startup and again
+  before starting the app (upstream's teardown resets every pin).
+- Dongle: a reset double tap also works (500 ms window).
 
 ## nRF52840 Dongle (PCA10059) — USB DFU (no probe) ✅
 
@@ -249,7 +256,8 @@ it, build for `nrf52840dongle/nrf52840/bare` instead.
           -c "init; reset halt; nrf5 mass_erase" \
           -c "program $BL verify reset exit"
   ```
-- **Custom dongle:** `./build.sh xbx-dongle-bootloader -f swd`.
+- **Custom boards:** `./build.sh xbx-nrf-bootloader -f swd` /
+  `./build.sh xbx-dongle-bootloader -f swd`.
 - **PCA10059:** nRF5 SDK `examples/dfu/open_bootloader/pca10059_usb_debug`,
   over SWD.
 
@@ -260,6 +268,7 @@ it, build for `nrf52840dongle/nrf52840/bare` instead.
 | ST-Link won't connect ("target voltage 0 V") | Target 3.3 V not on the sense pin |
 | Connects, can't halt or read memory | Chip locked → [[#Locked chip (APPROTECT)]] |
 | Dongle app doesn't run after SWD flashing | Bootloader gone → build for the `bare` variant |
+| Custom board app doesn't run after `-f swd` | No UF2 bootloader (the app starts at `0x26000`) → install it, or build the plain board |
 | No UF2 drive | Double tap too slow; charge-only USB cable |
 | `west flash`: no matching UF2 partition | Drive not mounted |
 | No `/dev/ttyACM*` after flashing | App crashed early; user not in `dialout` |

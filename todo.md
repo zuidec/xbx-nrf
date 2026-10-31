@@ -569,18 +569,21 @@ the constants (deadzone, drift window, settle time) on the TMR sticks.
 Adafruit nRF52 UF2 bootloader on both boards, unsigned
 ([[docs/signing|why not signed]]).
 - [x] Build setup: `firmware/bootloader/` (upstream `0.11.0` plus our
-      board folders), `./build.sh xbx-dongle-bootloader`; needs the Arm GNU
-      Toolchain ([[docs/building#Bootloader]]).
+      board folders), `./build.sh xbx-nrf-bootloader` /
+      `xbx-dongle-bootloader`; needs the Arm GNU Toolchain
+      ([[docs/building#Bootloader]]).
 - [x] `xbx_dongle` board: PAIR_LED, Pair held at boot enters it,
       `1209:0005`, `XBXDONGLE` drive. Zephyr `xbx_dongle/nrf52840/uf2`
       (app at `0x26000`), the `xbx-dongle` default. Tested: install, UF2
       flash, entry with Pair + reset / plug-in.
-- [ ] `xbx_controller` board (`1209:0006`, `xbx-nrf-bootloader` target):
-      raise power hold (pin 9) in `board_init2()`; check teardown leaves it
-      high and the app configures it active.
-- [ ] Controller DFU entry: LS + RS held at power-on. Patch `main.c`, or set
-      `GPREGRET` from `board_init2()` if `main.c` reads it later. Check
-      the pull-ups on LS / RS.
+- [x] `xbx_controller` board: Guide LED, `1209:0006`, `XBXCTRL` drive.
+      Power hold raised in `board_init2()` and again in `board_teardown2()`
+      (upstream's teardown resets every pin). Zephyr
+      `xbx_controller/nrf52840/uf2`, the `xbx-nrf` default. Tested:
+      install, UF2 flash, power-on on AAs.
+- [x] Controller DFU entry: LS + RS held at power-on; `board_init2()`
+      reads them (internal pull-ups) and sets `GPREGRET = 0x57` before
+      `check_dfu_mode()`. Tested on USB and AAs.
 - [ ] App entry: button combo → `GPREGRET = 0x57` + reset (not View + Menu +
       LS, the erase combo).
 - [ ] Measure power-on to pin 9 high (the 500 ms double-reset wait only
