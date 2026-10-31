@@ -7,6 +7,9 @@ list(APPEND EXTRA_DTC_OVERLAY_FILE ${CMAKE_CURRENT_LIST_DIR}/peripherals.overlay
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(xbx_dongle)
 
+include(../common/build_id.cmake)
+xbx_build_id(dongle)
+
 target_sources(app PRIVATE src/main.c src/pairing.c src/radio.c src/usb.c src/xinput.c src/bridge.c src/leds.c
 	../common/src/hid_pad.c ../common/src/hid_pid.c)
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../common/include)

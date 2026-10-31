@@ -1,0 +1,5 @@
+# Bootloader version: upstream Adafruit nRF52 Bootloader tag, then our
+# revision of it (board files, fixes): <upstream>-xbx.<revision>. Bump the
+# revision for any change here; back to 1 with a new upstream tag.
+UPSTREAM = 0.11.0
+REVISION = 1

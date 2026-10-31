@@ -33,6 +33,7 @@
 #include <string.h>
 
 #include <app_version.h>
+#include <xbx_build_id.h>
 
 #include "hid_pad.h"
 #include "hid_pid.h"
@@ -741,7 +742,7 @@ int main(void)
 	int err;
 
 	LOG_INF("xbx-nrf controller v%s (%s), protocol v%d, tx %d dBm%s", APP_VERSION_STRING,
-		STRINGIFY(APP_BUILD_VERSION), XBX_PROTOCOL_VERSION, XBX_TX_POWER_DBM,
+		XBX_BUILD_ID, XBX_PROTOCOL_VERSION, XBX_TX_POWER_DBM,
 		IS_ENABLED(CONFIG_XBX_FAKE_INPUT) ? ", fake input" : "");
 
 #if HAS_TIMING_PIN

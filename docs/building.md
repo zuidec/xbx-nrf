@@ -140,15 +140,15 @@ app's `CMakeLists.txt` has no effect.
 ## Bootloader
 
 `firmware/bootloader/`: the Adafruit nRF52 Bootloader, fetched at a pinned
-tag (`TAG` in `bootloader/build.sh`) into `src/` (gitignored), plus our
+tag (`UPSTREAM` in `bootloader/VERSION`) into `src/` (gitignored), plus our
 board folders in `boards/`. `./build.sh xbx-nrf-bootloader` /
 `xbx-dongle-bootloader` build into `bootloader/build/<board>/`; `-f swd`
 installs it ([[docs/flashing]]).
 
 | File | Use |
 |---|---|
-| `<board>_bootloader-<tag>_s140_6.1.1.hex` | Full install over SWD |
-| `update-<board>_bootloader-<tag>_nosd.uf2` | Bootloader update, copied onto its own drive |
+| `<board>_bootloader-<version>_s140_6.1.1.hex` | Full install over SWD |
+| `update-<board>_bootloader-<version>_nosd.uf2` | Bootloader update, copied onto its own drive |
 
 - Needs the **Arm GNU Toolchain** (`ARM_GCC_DIR`, default
   `~/.local/opt/arm-gnu-toolchain-14.2.rel1-x86_64-arm-none-eabi`). openSUSE's
@@ -158,15 +158,35 @@ installs it ([[docs/flashing]]).
 
 ## Versions
 
-| What | Where | Bump when |
-|---|---|---|
-| **App version** | `<app>/VERSION` | Releasing that app |
-| **Protocol version** | `XBX_PROTOCOL_VERSION` in `protocol.h` | Packet format changes; reflash **both** boards |
-| **Build ID** | `git describe` (`APP_BUILD_VERSION`) | Automatic |
+Each component has its own version and tags; they don't move together.
+Compatibility between them is the protocol and channel versions, not
+matching numbers.
 
-- Printed at boot, e.g.
-  `xbx-nrf controller v0.5.0 (v0.5.0), protocol v3, tx 8 dBm`.
-- After `git tag v0.1.0` the build ID reads `v0.1.0` (`v0.1.0-3-g<hash>` later).
+| Component | Version in | Tag |
+|---|---|---|
+| Controller firmware | `firmware/xbx-nrf/VERSION` | `controller-v<version>` |
+| Dongle firmware | `firmware/dongle/VERSION` | `dongle-v<version>` |
+| Bootloader | `firmware/bootloader/VERSION`: `<upstream>-xbx.<revision>` | `bootloader-v<version>` |
+| Configurator | `__version__` in `tools/configurator/xbxconfig/__init__.py` | `configurator-v<version>` |
+| Hardware | the board revision | `hw-rev<rev>` |
+
+| Compatibility | Where | Bump when |
+|---|---|---|
+| **Radio protocol** | `XBX_PROTOCOL_VERSION` in `protocol.h` | Packet format changes; reflash **both** boards |
+| **Configurator channel** | `CFG_USB_VERSION_*` in `config_usb.h` | Major: incompatible; minor: additions ([[docs/configurator#Versioning]]) |
+
+- **Release:** bump the version in its own commit (e.g.
+  `Controller: version 0.6.0`), then an annotated tag on that commit:
+  `git tag -a controller-v0.6.0 -m "<what's new>"`.
+- **Bootloader revision:** bump `REVISION` for any change to our board files
+  or a fix; a new upstream tag sets `UPSTREAM` and `REVISION = 1`. It shows
+  in the drive's `INFO_UF2.TXT` (`UF2 Bootloader 0.11.0-xbx.1`).
+- The `v0.1.0`–`v0.5.0` tags predate this: both firmwares together.
+- **Build ID** (firmware): `git describe` over that component's tags only
+  (`common/build_id.cmake`; Zephyr's `APP_BUILD_VERSION` takes any tag),
+  e.g. `controller-v0.6.0-3-g<hash>`; just the hash before its first tag.
+  Printed at boot: `xbx-nrf controller v0.6.0 (controller-v0.6.0), protocol
+  v3, tx 8 dBm`.
 - Uncommitted changes don't show in the build ID: commit before flashing
   anything you keep.
 

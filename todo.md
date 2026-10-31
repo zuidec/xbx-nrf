@@ -575,6 +575,9 @@ the constants (deadzone, drift window, settle time) on the TMR sticks.
       checked by the build script.
 - [x] App `VERSION` files (0.1.0); boot log shows version, build ID, protocol.
 - [x] `git tag v0.1.0` once M1 is done.
+- [x] Per-component versions and tags (`controller-v*`, `dongle-v*`,
+      `bootloader-v*`, `configurator-v*`, `hw-rev*`); build ID per
+      component ([[docs/building#Versions]]).
 
 ### Bootloader
 Adafruit nRF52 UF2 bootloader on both boards, unsigned

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # UF2 bootloader build: the Adafruit nRF52 Bootloader at a pinned tag (fetched
 # into src/) plus our board folders (boards/<board>/), output in
-# build/<board>/.
+# build/<board>/. Version from VERSION (<upstream>-xbx.<revision>): in the
+# file names and the drive's INFO_UF2.TXT.
 #
 # Usage: ../build.sh <xbx-nrf|xbx-dongle>-bootloader [-f swd], or from
 # anywhere: ./build.sh <board> [-f swd]
@@ -15,13 +16,16 @@
 
 set -euo pipefail
 
-TAG=0.11.0
 REPO=https://github.com/adafruit/Adafruit_nRF52_Bootloader.git
 ARM_GCC_URL=https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads
 ARM_GCC_DIR="${ARM_GCC_DIR:-$HOME/.local/opt/arm-gnu-toolchain-14.2.rel1-x86_64-arm-none-eabi}"
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 fw_dir="$(dirname "$script_dir")"
+
+version_field() { sed -n "s/^$1 *= *//p" "$script_dir/VERSION"; }
+TAG="$(version_field UPSTREAM)"
+VERSION="$TAG-xbx.$(version_field REVISION)"
 
 # shellcheck source=../check-sdk.sh
 source "$fw_dir/check-sdk.sh"
@@ -62,11 +66,15 @@ fi
 
 rm -rf "$src/src/boards/$board"
 cp -r "$script_dir/boards/$board" "$src/src/boards/"
+rm -rf "$src/_build/build-$board" # the Makefile doesn't track a changed version
 
-name="${board}_bootloader-$TAG"
+name="${board}_bootloader-$VERSION"
 hex="${name}_s140_6.1.1.hex" # bootloader + SoftDevice area (MBR) + UICR
 uf2="update-${name}_nosd.uf2" # bootloader update from a running bootloader
+# GIT_VERSION: upstream takes it from git describe (its own tag, "-dirty"
+# with our board files copied in); ours names the revision
 make -C "$src" BOARD="$board" PYTHON=python3 CROSS_COMPILE="$ARM_GCC_DIR/bin/arm-none-eabi-" \
+	GIT_VERSION="$VERSION" \
 	-j"$(nproc)" \
 	"_build/build-$board/$hex" "_build/build-$board/$uf2"
 

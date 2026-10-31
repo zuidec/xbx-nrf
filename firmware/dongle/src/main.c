@@ -14,6 +14,7 @@
 #include <zephyr/logging/log.h>
 
 #include <app_version.h>
+#include <xbx_build_id.h>
 
 #include "protocol.h"
 #include "bridge.h"
@@ -32,7 +33,7 @@ int main(void)
 
 	leds_init();
 	LOG_INF("xbx-nrf dongle v%s (%s), protocol v%d, tx %d dBm", APP_VERSION_STRING,
-		STRINGIFY(APP_BUILD_VERSION), XBX_PROTOCOL_VERSION, XBX_TX_POWER_DBM);
+		XBX_BUILD_ID, XBX_PROTOCOL_VERSION, XBX_TX_POWER_DBM);
 
 	if (usb_mode_get() == USB_MODE_HID) {
 		err = hid_pad_init();

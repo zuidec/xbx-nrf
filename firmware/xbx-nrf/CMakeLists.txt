@@ -6,6 +6,9 @@ list(APPEND EXTRA_DTC_OVERLAY_FILE ${CMAKE_CURRENT_LIST_DIR}/usb.overlay)
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(xbx_controller)
 
+include(../common/build_id.cmake)
+xbx_build_id(controller)
+
 target_sources(app PRIVATE src/main.c src/battery.c src/pair.c src/power.c src/rumble.c src/usb.c src/xinput_wired.c ../common/src/config_usb.c ../common/src/hid_pad.c ../common/src/hid_pid.c)
 target_compile_definitions(app PRIVATE XBX_DEVICE=XBX_DEVICE_CONTROLLER) # image marker
 zephyr_linker_sources(RODATA ../common/image_marker.ld)
