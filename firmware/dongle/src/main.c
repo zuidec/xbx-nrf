@@ -6,8 +6,8 @@
  * link statistics per controller once per second. The bridge (bridge.c)
  * forwards the reports to USB (usb.c): the HID gamepad (hid_pad.c, hid_pid.c,
  * single-player) or the XInput receiver (xinput.c, one slot per controller),
- * chosen by the mode strap. The console carries the logs in development
- * builds.
+ * chosen by the mode strap. The configurator channel (configurator.c) is
+ * there in both modes. The console carries the logs in development builds.
  */
 
 #include <zephyr/kernel.h>
@@ -18,6 +18,7 @@
 
 #include "protocol.h"
 #include "bridge.h"
+#include "configurator.h"
 #include "hid_pad.h"
 #include "leds.h"
 #include "pairing.h"
@@ -46,6 +47,12 @@ int main(void)
 	err = pairing_init();
 	if (err) {
 		LOG_ERR("pairing init failed: %d", err);
+		return 0;
+	}
+
+	err = configurator_init();
+	if (err) {
+		LOG_ERR("configurator channel init failed: %d", err);
 		return 0;
 	}
 

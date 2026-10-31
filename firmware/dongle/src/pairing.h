@@ -49,4 +49,10 @@ void pairing_on_confirm(uint8_t pipe, const struct xbx_pair_confirm *confirm);
 /* A paired controller's link came up: it becomes the most recently connected. */
 void pairing_link_connected(uint8_t pipe);
 
+/*
+ * System work queue: forget the table, address and channel, LED solid; the
+ * caller restarts soon after (nothing is saved until then).
+ */
+void pairing_forget(void);
+
 #endif /* XBX_DONGLE_PAIRING_H_ */

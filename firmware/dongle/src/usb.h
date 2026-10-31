@@ -15,7 +15,7 @@ enum usb_mode {
 /* Mode strap, read once (the first call) and fixed until reset. */
 enum usb_mode usb_mode_get(void);
 
-/* Build the USB device and enable it. */
+/* Build the USB device and enable it; call after configurator_init(). */
 int usb_start(void);
 
 #endif /* XBX_DONGLE_USB_H_ */

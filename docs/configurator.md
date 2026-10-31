@@ -14,8 +14,8 @@ aliases:
 # Configurator
 
 Desktop app for settings, calibration, testing and firmware updates of the
-controller and the dongle. **First version:** controller tab and CLI work
-from source; no packaged build yet. Steps: [[todo#Configurator]].
+controller and the dongle. **First version:** controller and dongle tabs and
+the CLI work from source; no packaged build yet. Steps: [[todo#Configurator]].
 
 ## Decisions
 
@@ -75,7 +75,7 @@ channel's usage page; lists every one found.
 |---|---|
 | Info | Firmware version, USB mode (SW3), serial, paired controllers (suggested) |
 | LED brightness | Pair, player and power LEDs |
-| Factory reset (suggested) | Forget all controllers (now: Pair held 10 s) |
+| Factory reset | Forget all controllers (also: Pair held 10 s) |
 | Firmware update | As the controller |
 
 ### Firmware update
@@ -117,7 +117,7 @@ Steam ignore it).
 |---|---|
 | Report descriptor | Usage page `0xFF00`, usage `0x01`, application collection; input 64 bytes, output 64 bytes, no report IDs |
 | Endpoints | Interrupt IN and OUT, 64 bytes, 10 ms |
-| Firmware | `common/src/config_usb.c` (controller; dongle planned), handled on the system work queue |
+| Firmware | `common/src/config_usb.c` with each app's `src/configurator.c`, handled on the system work queue |
 
 Endpoint budget: the dongle in XInput mode with the console uses 6 of the
 nRF52840's 7 IN endpoints (4 slots + CDC); this one is the 7th.
@@ -155,7 +155,7 @@ is dropped. Input-test data comes unrequested as `STREAM` reports (command
 | `0x04` | `STREAM` | Controller | rate in Hz (0 = off, ≤ 100); stops when the interface goes down ([[#STREAM report]]) |
 | `0x05` | `CALIBRATE` | Controller | step, targets → [[#CALIBRATE result]] |
 | `0x06` | `RUMBLE` | Controller | levels heavy, weak, LT, RT (u8), duration ms (u16 LE, ≤ 2000, 0 stops); overrides the host while it runs |
-| `0x07` | `FACTORY_RESET` | Both | scope bits: `0x01` settings (with the stored USB mode), `0x02` calibration, `0x04` pairing; then restart |
+| `0x07` | `FACTORY_RESET` | Both | scope bits: `0x01` settings (with the stored USB mode), `0x02` calibration, `0x04` pairing; then restart. Dongle: pairing only (settings: nothing stored yet) |
 | `0x08` | `BOOTLOADER` | Both | → ok, then `GPREGRET = 0x57` and reset |
 | `0x09` | `REBOOT` | Both | → ok, then reset |
 

@@ -334,6 +334,10 @@ class ResetPanel(Panel):
             self.call("factory_reset", scope)
 
 
+class DongleResetPanel(ResetPanel):
+    SCOPES = (("Pairing (forget all controllers)", p.RESET_PAIRING),)
+
+
 class FirmwarePanel(Panel):
     """Firmware update from a .uf2 the user picks; the update runs in a thread."""
 

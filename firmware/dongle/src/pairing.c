@@ -569,6 +569,19 @@ void pairing_link_connected(uint8_t pipe)
 	}
 }
 
+void pairing_forget(void)
+{
+	LOG_WRN("factory reset: forgetting all controllers and the address");
+	pairing_stop("factory reset", false);
+	led_pattern(LED_RESET);
+	/* a link-up before the restart finds no entry, so nothing saves the table */
+	memset(table.entry, 0, sizeof(table.entry));
+	k_work_cancel(&table_save_work);
+	settings_delete("pair/table");
+	settings_delete("pair/addr");
+	settings_delete("pair/chan");
+}
+
 void pairing_start(const char *why)
 {
 	if (pattern == LED_RESET) {
@@ -592,16 +605,11 @@ static void button_fn(struct k_work *work)
 	pairing_start("button");
 }
 
-/* Pair button held FACTORY_RESET_MS: forget table and address, restart. */
+/* Pair button held FACTORY_RESET_MS: forget everything, restart. */
 static void reset_fn(struct k_work *work)
 {
 	ARG_UNUSED(work);
-	LOG_WRN("factory reset: forgetting all controllers and the address");
-	pairing_stop("factory reset", false);
-	led_pattern(LED_RESET);
-	settings_delete("pair/table");
-	settings_delete("pair/addr");
-	settings_delete("pair/chan");
+	pairing_forget();
 	k_msleep(1000); /* LED solid: done */
 	sys_reboot(SYS_REBOOT_COLD);
 }

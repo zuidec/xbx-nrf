@@ -29,6 +29,11 @@ BUILD_ASSERT(APP_VERSION_MAJOR < 100 && APP_VERSION_MINOR < 10 && APP_PATCHLEVEL
 	(((APP_VERSION_MAJOR / 10) << 12) | ((APP_VERSION_MAJOR % 10) << 8) |                     \
 	 (APP_VERSION_MINOR << 4) | APP_PATCHLEVEL)
 
+/* class names follow the instance order: hid_0 gamepad, hid_1 configurator */
+BUILD_ASSERT(DT_SAME_NODE(DT_INST(0, zephyr_hid_device), DT_NODELABEL(hid_dev_0)) &&
+		     DT_SAME_NODE(DT_INST(1, zephyr_hid_device), DT_NODELABEL(hid_dev_1)),
+	     "HID instance order");
+
 USBD_DEVICE_DEFINE(xbx_usbd, DEVICE_DT_GET(DT_NODELABEL(zephyr_udc0)), XBX_USB_VID,
 		   XBX_USB_PID_HID);
 
@@ -111,6 +116,12 @@ static int usb_setup(void)
 	}
 
 	err = register_functions();
+	if (err) {
+		return err;
+	}
+
+	/* XInput with the console: the 7th and last IN endpoint */
+	err = usbd_register_class(&xbx_usbd, "hid_1", USBD_SPEED_FS, 1); /* configurator */
 	if (err) {
 		return err;
 	}

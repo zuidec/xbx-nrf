@@ -11,5 +11,7 @@ include(../common/build_id.cmake)
 xbx_build_id(dongle)
 
 target_sources(app PRIVATE src/main.c src/pairing.c src/radio.c src/usb.c src/xinput.c src/bridge.c src/leds.c
-	../common/src/hid_pad.c ../common/src/hid_pid.c)
+	src/configurator.c ../common/src/config_usb.c ../common/src/hid_pad.c ../common/src/hid_pid.c)
+target_compile_definitions(app PRIVATE XBX_DEVICE=XBX_DEVICE_DONGLE) # image marker
+zephyr_linker_sources(RODATA ../common/image_marker.ld)
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../common/include)

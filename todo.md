@@ -621,13 +621,18 @@ Linux first.
       input test. Tested except factory reset.
 - [ ] Test factory reset (each scope).
 - [ ] Firmware: LED brightness and stored USB mode settings (`config.c`).
-- [ ] Firmware: the same channel on the dongle (LED brightness: PWM on the
-      LED pins); check the IN endpoint budget in XInput mode.
+- [x] Firmware: the channel on the dongle (`dongle/src/configurator.c`):
+      `INFO`, `BOOTLOADER`, `REBOOT`, `FACTORY_RESET` (pairing), image
+      marker. Builds; not tested on hardware yet.
+- [ ] Test the dongle channel: HID and XInput mode (XInput with the console
+      takes the 7th and last IN endpoint), firmware update, factory reset.
+- [ ] Firmware: LED brightness on the dongle (PWM on the LED pins, setting
+      `0x03`, stored).
 - [x] App: protocol module, CLI, window (controller: info, input test,
       calibration, rumble, paddles, factory reset, firmware update; dongle:
       info, update). Firmware update tested (auto-mount not yet).
-- [ ] App: LED brightness, USB mode once the firmware has them; the dongle
-      tab once its firmware has the channel.
+- [x] App: dongle tab with factory reset (pairing).
+- [ ] App: LED brightness, USB mode once the firmware has them.
 - [ ] Linux build (PyInstaller one-file), bundling `files/` (udev rule as
       the real file); Windows and macOS later.
 ---
