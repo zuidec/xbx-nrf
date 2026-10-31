@@ -26,21 +26,48 @@ def udev_rule_installed():
         return False
 
 
-def install_udev_rule():
-    """Copy the rule into /etc/udev/rules.d and reload udev, as root via
-    pkexec (graphical prompt) or sudo (terminal). Replug the device after."""
+def _as_root(script, what):
+    """Run a shell script as root via pkexec (graphical prompt) or sudo (terminal)."""
     tool = shutil.which("pkexec") or shutil.which("sudo")
     if not tool:
-        raise OSError("neither pkexec nor sudo found: install the rule by hand: "
-                      f"{path(UDEV_RULE)} -> {UDEV_DIR}/")
+        raise OSError(f"neither pkexec nor sudo found: {what} by hand")
+    r = subprocess.run([tool, "sh", "-c", script], capture_output=True, text=True)
+    if r.returncode:
+        raise OSError(f"{what} failed: {r.stderr.strip() or r.returncode}")
+
+
+RELOAD = "udevadm control --reload-rules && udevadm trigger --subsystem-match=hidraw"
+
+
+def install_udev_rule():
+    """Copy the rule into /etc/udev/rules.d and reload udev, as root. Replug
+    the device after."""
     # PyInstaller's unpack dir may not be readable by root's helper: copy out first
     with tempfile.TemporaryDirectory() as tmp:
         src = os.path.join(tmp, UDEV_RULE)
         shutil.copyfile(path(UDEV_RULE), src)
         os.chmod(tmp, 0o755)
         os.chmod(src, 0o644)
-        script = (f"install -m 644 '{src}' '{UDEV_DIR}/{UDEV_RULE}' && "
-                  "udevadm control --reload-rules && udevadm trigger --subsystem-match=hidraw")
-        r = subprocess.run([tool, "sh", "-c", script], capture_output=True, text=True)
-    if r.returncode:
-        raise OSError(f"installing the udev rule failed: {r.stderr.strip() or r.returncode}")
+        _as_root(f"install -m 644 '{src}' '{UDEV_DIR}/{UDEV_RULE}' && {RELOAD}",
+                 f"installing {UDEV_DIR}/{UDEV_RULE}")
+
+
+def installed():
+    """What the app put on this system (paths); only the Linux udev rule.
+    Windows and macOS: nothing (no driver, no settings files)."""
+    target = os.path.join(UDEV_DIR, UDEV_RULE)
+    return [target] if sys.platform.startswith("linux") and os.path.exists(target) else []
+
+
+def app_file():
+    """The one-file build itself (None when run from source)."""
+    return sys.executable if getattr(sys, "frozen", False) else None
+
+
+def uninstall():
+    """Remove what installed() lists, as root; returns the paths removed."""
+    paths = installed()
+    if paths:
+        quoted = " ".join(f"'{p}'" for p in paths)
+        _as_root(f"rm -f {quoted} && {RELOAD}", f"removing {', '.join(paths)}")
+    return paths

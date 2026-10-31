@@ -48,7 +48,7 @@ so fixing one means editing that file.
 | `transport.py` | Finding and opening the interface (`hidraw` / `hidapi`) |
 | `device.py` | Requests; a reader thread splits responses from `STREAM` reports |
 | `uf2.py` | File check (marker), bootloader drive, the update |
-| `files.py` | Bundled files, udev rule install |
+| `files.py` | Bundled files, udev rule install and uninstall |
 | `cli.py`, `gui/` | CLI; window (`app.py`, `panels.py`, `widgets.py`) |
 
 Finds devices by VID `0x1209`, the app PIDs (`0x0001`–`0x0004`) and the
@@ -100,6 +100,11 @@ app asks the user to mount it.
   into `/etc/udev/rules.d/` (`pkexec`, or `sudo` from the CLI).
 - **macOS:** unsigned: right-click → Open the first time.
 - **Windows:** no driver needed.
+- **Uninstall:** File → Remove installed files (CLI `uninstall`) removes what
+  the app put on the system: only the Linux udev rule; Windows and macOS
+  have nothing. Then delete the app file. Firmware updates write only to
+  the device's drive, and the one-file build unpacks into a temporary
+  folder that it deletes on exit.
 
 ### Building
 

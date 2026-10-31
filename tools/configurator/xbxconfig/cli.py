@@ -218,6 +218,18 @@ def cmd_install_udev(args):
     print("installed; unplug and replug the device")
 
 
+def cmd_uninstall(args):
+    paths = files.installed()
+    if paths:
+        files.uninstall()
+        print("removed: " + ", ".join(paths))
+    else:
+        print("nothing installed on this system")
+    app = files.app_file()
+    print(f"to remove the app itself, delete {app}" if app else
+          "running from source: nothing else to remove")
+
+
 def led_level(s):
     v = int(s)
     if not 1 <= v <= 255:
@@ -279,6 +291,8 @@ def main(argv=None):
     sub.add_parser("reboot").set_defaults(fn=cmd_reboot)
     sub.add_parser("install-udev", help="Linux: give the user access (admin prompt)"
                    ).set_defaults(fn=cmd_install_udev)
+    sub.add_parser("uninstall", help="remove what the app installed (Linux: the udev "
+                   "rule; admin prompt)").set_defaults(fn=cmd_uninstall)
     args = ap.parse_args(argv)
     if getattr(args, "pct", None) and (len(args.pct) != 2 or not all(
             p.TRG_FULL_MIN <= v <= 100 for v in args.pct)):

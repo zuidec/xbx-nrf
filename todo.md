@@ -643,6 +643,11 @@ Linux first.
       `build.sh`, `--release` in a Debian 12 container. CLI tested on
       Debian 12, Ubuntu 24.04, Fedora 41 containers; window here.
 - [ ] Windows and macOS builds (on those systems; `hidapi` path untested).
+- [x] Uninstall: File → Remove installed files, CLI `uninstall` (Linux: the
+      udev rule). Tested.
+- [x] udev install and uninstall on the real system: tested. The "Give
+      access" banner isn't (the VIA rule `92-viia.rules` here opens every
+      hidraw node anyway).
 ---
 
 ## 6. Prototyping milestones

@@ -74,6 +74,33 @@ class DeviceTab(ttk.Frame):
         except (p.ProtocolError, OSError):
             pass  # unplugged: the watcher notices
 
+    def uninstall(self):
+        paths = files.installed()
+        app = files.app_file()
+        rest = (f"To remove the app itself, delete {app}." if app else
+                "Running from source: nothing else to remove.")
+        if not paths:
+            messagebox.showinfo("xbx-config", f"Nothing installed on this system.\n\n{rest}",
+                                parent=self)
+            return
+        listing = "\n".join(f"• {p}" for p in paths)
+        if not messagebox.askyesno(
+                "Remove installed files",
+                f"Remove (asks for the admin password):\n{listing}\n\nWithout the udev rule "
+                f"this user may lose access to the devices.\n\n{rest}", parent=self):
+            return
+
+        def run():
+            try:
+                files.uninstall()
+            except OSError as e:
+                self.after(0, lambda: messagebox.showerror("xbx-config", str(e), parent=self))
+            else:
+                self.after(0, lambda: messagebox.showinfo(
+                    "xbx-config", f"Removed.\n\n{rest}", parent=self))
+
+        threading.Thread(target=run, daemon=True).start()
+
     def tick(self):
         if self.shown and self.device:
             self.shown.tick()
@@ -92,6 +119,13 @@ class App(tk.Tk):
         self.banner_text = ttk.Label(self.banner, text="", wraplength=520)
         self.banner_text.pack(side="left")
         self.banner_btn = ttk.Button(self.banner, text="Give access...", command=self.install)
+        menubar = tk.Menu(self, tearoff=False)
+        file_menu = tk.Menu(menubar, tearoff=False)
+        file_menu.add_command(label="Remove installed files...", command=self.uninstall)
+        file_menu.add_separator()
+        file_menu.add_command(label="Quit", command=self.quit_app)
+        menubar.add_cascade(label="File", menu=file_menu)
+        self.configure(menu=menubar)
         self.book = ttk.Notebook(self)
         self.book.pack(fill="both", expand=True, padx=8, pady=8)
         self.tabs = {
@@ -156,6 +190,33 @@ class App(tk.Tk):
                 self.after(0, lambda: messagebox.showinfo(
                     "xbx-config", "Installed. Unplug the device and plug it in again.",
                     parent=self))
+
+        threading.Thread(target=run, daemon=True).start()
+
+    def uninstall(self):
+        paths = files.installed()
+        app = files.app_file()
+        rest = (f"To remove the app itself, delete {app}." if app else
+                "Running from source: nothing else to remove.")
+        if not paths:
+            messagebox.showinfo("xbx-config", f"Nothing installed on this system.\n\n{rest}",
+                                parent=self)
+            return
+        listing = "\n".join(f"• {p}" for p in paths)
+        if not messagebox.askyesno(
+                "Remove installed files",
+                f"Remove (asks for the admin password):\n{listing}\n\nWithout the udev rule "
+                f"this user may lose access to the devices.\n\n{rest}", parent=self):
+            return
+
+        def run():
+            try:
+                files.uninstall()
+            except OSError as e:
+                self.after(0, lambda: messagebox.showerror("xbx-config", str(e), parent=self))
+            else:
+                self.after(0, lambda: messagebox.showinfo(
+                    "xbx-config", f"Removed.\n\n{rest}", parent=self))
 
         threading.Thread(target=run, daemon=True).start()
 
