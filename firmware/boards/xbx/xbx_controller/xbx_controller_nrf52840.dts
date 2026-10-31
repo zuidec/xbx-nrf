@@ -1,4 +1,7 @@
-/* xbx-nrf controller without a bootloader: the app owns all flash (SWD only). */
+/*
+ * xbx-nrf controller without a bootloader: the app owns all flash (SWD only).
+ * Zephyr needs this base form; the apps build only for the uf2 variant.
+ */
 
 /dts-v1/;
 #include "xbx_controller_nrf52840_common.dtsi"

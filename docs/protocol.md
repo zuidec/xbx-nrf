@@ -281,11 +281,11 @@ repeating **frame** and gives each connected controller its own **slot**:
   ±15 µs are left alone: mostly the controller's thread jitter.
 - **No retries** within a frame: a lost report is replaced by the next one.
 - **Frame changes:** when more controllers connect than the 1 ms frame serves
-  (2; `CONFIG_XBX_FAST_FRAME_MAX`, 1 for testing with two boards), the dongle
-  stretches its frame to 2 ms; when they leave, the rest move into slots 0–1
-  and it goes back to 1 ms. Controllers follow `slots` and `slot` in their next
-  ACK: the report period becomes the frame length and older measurements are
-  ignored. Expect a few colliding reports during a switch.
+  (2), the dongle stretches its frame to 2 ms; when they leave, the rest move
+  into slots 0–1 and it goes back to 1 ms. Controllers follow `slots` and
+  `slot` in their next ACK: the report period becomes the frame length and
+  older measurements are ignored. Expect a few colliding reports during a
+  switch.
 - Pairing traffic on pipe 0 is rare and short; it may cost an occasional report
   in an active slot.
 
@@ -336,10 +336,9 @@ whole device, hence single-player HID.
 **Mode selection:** read at boot, before USB starts (`usb_mode_get()` in
 `usb.c`), then sampled every 250 ms; set to the other mode for 1 s, it
 restarts the dongle into that mode. `mode-gpios` in each board overlay:
-Pro Micro jumper P0.06 to GND = XInput, open = HID; PCA10059 switch to GND
-on the P0.29 pad = XInput; custom board SW3 (P1.09, low = XInput;
-[[docs/hardware#Custom board]]). Each mode has its own PID, so hosts never
-mix up the two descriptor sets.
+PCA10059 switch to GND on the P0.29 pad = XInput; custom board SW3 (P1.09,
+low = XInput; [[docs/hardware#Custom board]]). Each mode has its own PID, so
+hosts never mix up the two descriptor sets.
 
 ## USB HID mode
 

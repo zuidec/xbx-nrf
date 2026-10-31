@@ -243,9 +243,7 @@ struct stick_axis {
 };
 
 static struct stick_axis axes[STICK_AXES] = {
-	[CALIB_LX] = {.invert = IS_ENABLED(CONFIG_XBX_LSTICK_INVERT_X)},
 	[CALIB_LY] = {.invert = IS_ENABLED(CONFIG_XBX_LSTICK_INVERT_Y)},
-	[CALIB_RX] = {.invert = IS_ENABLED(CONFIG_XBX_RSTICK_INVERT_X)},
 	[CALIB_RY] = {.invert = IS_ENABLED(CONFIG_XBX_RSTICK_INVERT_Y)},
 };
 

@@ -5,8 +5,8 @@
  *
  * Controllers are numbered by link 0..RADIO_LINKS-1 (pipe = link + 1; the
  * XInput slot and player number follow the link). Each linked controller also
- * gets a time slot in the radio frame: 1 ms (2 slots) while up to
- * CONFIG_XBX_FAST_FRAME_MAX are connected, else 2 ms (4 slots).
+ * gets a time slot in the radio frame: 1 ms (2 slots) while up to 2 are
+ * connected, else 2 ms (4 slots).
  */
 
 #ifndef XBX_DONGLE_RADIO_H_

@@ -22,25 +22,12 @@ config XBX_FAKE_INPUT
 	  and released at random intervals (seeded from the chip ID, so two
 	  controllers differ). Needs no input hardware (link tests).
 
-config XBX_LSTICK_INVERT_X
-	bool "Invert the left stick X axis"
-	depends on !XBX_FAKE_INPUT
-	help
-	  Report convention: right = positive. Set if the stick reads the
-	  wrong way round.
-
 config XBX_LSTICK_INVERT_Y
 	bool "Invert the left stick Y axis"
 	depends on !XBX_FAKE_INPUT
 	help
 	  Report convention: up = positive. Set if the stick reads the wrong
-	  way round.
-
-config XBX_RSTICK_INVERT_X
-	bool "Invert the right stick X axis"
-	depends on !XBX_FAKE_INPUT
-	help
-	  As XBX_LSTICK_INVERT_X, for the right stick.
+	  way round (X: right = positive, no option; add one if needed).
 
 config XBX_RSTICK_INVERT_Y
 	bool "Invert the right stick Y axis"

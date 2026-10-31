@@ -138,7 +138,7 @@ static void slot_assign(struct link *l)
 	if (l->slot != XBX_SLOT_NONE) {
 		return;
 	}
-	if (__builtin_popcount(slots_used) >= CONFIG_XBX_FAST_FRAME_MAX && frame_slots < RADIO_SLOTS_MAX) {
+	if (__builtin_popcount(slots_used) >= RADIO_SLOTS_FAST && frame_slots < RADIO_SLOTS_MAX) {
 		frame_resize(RADIO_SLOTS_MAX);
 	}
 	for (uint8_t s = 0; s < frame_slots; s++) {
@@ -155,7 +155,7 @@ static void slot_assign(struct link *l)
 /* After a slot was freed: back to the 1 ms frame once it serves everyone. */
 static void frame_shrink(void)
 {
-	if (frame_slots == RADIO_SLOTS_FAST || __builtin_popcount(slots_used) > CONFIG_XBX_FAST_FRAME_MAX) {
+	if (frame_slots == RADIO_SLOTS_FAST || __builtin_popcount(slots_used) > RADIO_SLOTS_FAST) {
 		return;
 	}
 	/* move controllers from slots 2-3 into the free fast slots */

@@ -56,14 +56,14 @@ to the button expander, and Guide / Pair / power-hold signals.
 ## Firmware
 
 Two Zephyr apps, `firmware/xbx-nrf` (controller) and `firmware/dongle`, on the
-**nRF Connect SDK v3.4.1** (pinned). Prototyped on Pro Micro nRF52840 boards
-and the nRF52840 Dongle: pairing, up to 4 controllers (tested with 2), HID and
-XInput.
+**nRF Connect SDK v3.4.1** (pinned), for the custom boards; also a Pro Micro
+nRF52840 controller (test build) and the nRF52840 Dongle. Pairing, up to 4
+controllers, HID and XInput.
 
 ```sh
 cd firmware
 ./build.sh xbx-nrf [-f <device>]  # development build (+ flash)
-./build.sh dongle -r               # release build
+./build.sh xbx-dongle -r           # release build
 ```
 
 | Doc | Covers |

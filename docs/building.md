@@ -62,32 +62,40 @@ doesn't search the app folder), so plain `west build` needs
 
 ## Building
 
-Builds go into `<app>/build/`; board bootloaders stay.
+Two targets per app, each with its own board and build folder; board
+bootloaders stay.
+
+| Target | Board | Folder |
+|---|---|---|
+| `xbx-nrf` | `xbx_controller/nrf52840/uf2` | `xbx-nrf/build/` |
+| `xbx-nrf-promicro` | `promicro_nrf52840/nrf52840/uf2` (test build) | `xbx-nrf/build-promicro/` |
+| `xbx-dongle` | `xbx_dongle/nrf52840/uf2` | `dongle/build/` |
+| `xbx-dongle-pca10059` | `nrf52840dongle/nrf52840` | `dongle/build-pca10059/` |
 
 ```sh
 cd ~/Projects/xbx-nrf/firmware
 ./build.sh xbx-nrf                  # incremental
-./build.sh dongle -p                # pristine
-./build.sh dongle -f /dev/ttyACM0   # build, then flash
-./build.sh dongle -r                # release build
-./build.sh xbx-dongle -f /dev/sdX   # custom dongle, UF2 drive
+./build.sh xbx-dongle -p            # pristine
+./build.sh xbx-dongle -f /dev/sdX   # build, then flash (UF2 drive)
+./build.sh xbx-dongle -r            # release build
+./build.sh xbx-dongle-pca10059 -f /dev/ttyACM0
 ./build.sh xbx-nrf-bootloader       # controller bootloader ([[#Bootloader]])
 ./build.sh xbx-dongle-bootloader    # dongle bootloader
 ```
 
 - Runs from any folder and shell: outside `ncs-shell` it restarts itself in
   the pinned toolchain (`nrfutil sdk-manager toolchain launch`).
-- Extra arguments go to `west build`; `-b` overrides the default board.
+- Extra arguments go to `west build`; the target sets the board (`-b` is
+  refused, so a folder never changes board).
 - `-r` / `--release` adds the app's `release.conf` (no USB console, no logs)
-  and builds into `<app>/build-release/`.
+  and builds into the target's folder with `-release` added.
 - `-f` / `--flash <device>` flashes after a successful build
   ([[docs/flashing]]):
 
   | Board | Device |
   |---|---|
-  | `nrf52840dongle/nrf52840` | DFU bootloader's serial port (press RESET first) |
-  | `*/uf2` (Pro Micro) | UF2 drive: mount point, or block device (`/dev/sdX`, mounted for you) |
-  | Others (custom boards) | `swd`: `west flash` with the board's runner |
+  | PCA10059 | DFU bootloader's serial port (press RESET first) |
+  | `*/uf2` (ours, Pro Micro) | UF2 drive: mount point, or block device (`/dev/sdX`, mounted for you); `swd`: the app over SWD |
 - `-- -DCONFIG_…` options stay in that build folder's cache until a pristine
   build (`-p`).
 - `BUILD_DIR=<dir>` builds into `<app>/<dir>/` instead, for a second
@@ -95,10 +103,8 @@ cd ~/Projects/xbx-nrf/firmware
   ```sh
   BUILD_DIR=build-p2 ./build.sh xbx-nrf -p -- -DCONFIG_XBX_FAKE_INPUT=y
   ```
-- Default boards live in `build.sh`: `xbx_controller/nrf52840/uf2` for the
-  controller, the PCA10059 for `dongle`. `xbx-dongle` is the dongle app on
-  `xbx_dongle/nrf52840/uf2`, built into `dongle/build-xbx/` (`-r`:
-  `build-xbx-release/`) so both dongle builds coexist.
+- The custom boards' plain form (`xbx_controller/nrf52840`, no bootloader)
+  exists only because Zephyr needs it; the apps have no overlay for it.
 - Plain `west build` also works but skips the version check, and needs `-b`
   again after `-p`.
 

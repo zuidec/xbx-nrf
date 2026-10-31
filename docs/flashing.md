@@ -24,7 +24,7 @@ Related: [[docs/building]], [[todo#5. Firmware]].
 
 | Board | Role | Built-in programming | Board target |
 |---|---|---|---|
-| Pro Micro nRF52840 (nice!nano clone) | Controller prototype, dongle stand-in | nice!nano UF2 bootloader ✅ | `promicro_nrf52840/nrf52840/uf2` |
+| Pro Micro nRF52840 (nice!nano clone) | Controller test build (`xbx-nrf-promicro`) | nice!nano UF2 bootloader ✅ | `promicro_nrf52840/nrf52840/uf2` |
 | Nordic nRF52840 Dongle (PCA10059) | Dongle (off-the-shelf option) | Nordic USB DFU bootloader ✅ | `nrf52840dongle/nrf52840` |
 | Custom controller board | Controller | Our UF2 bootloader (`XBXCTRL`) ✅; SWD on J1 | `xbx_controller/nrf52840/uf2` |
 | Custom dongle board | Dongle | Our UF2 bootloader (`XBXDONGLE`) ✅; SWD on J1 | `xbx_dongle/nrf52840/uf2` |
@@ -148,10 +148,9 @@ Pi Debug Probe; `west flash` runs OpenOCD with CMSIS-DAP. From `firmware/`:
 ./build.sh xbx-dongle -f swd   # custom dongle ✅
 ```
 
-- **App only:** the default targets are the `uf2` variants, so this writes
-  the app at `0x26000` and keeps the bootloader. Without a bootloader it
-  won't boot: install one (UF2 bootloader section below) or build the plain
-  board (`-b xbx_controller/nrf52840`, `-b xbx_dongle/nrf52840`).
+- **App only:** the targets are the `uf2` variants, so this writes the app
+  at `0x26000` and keeps the bootloader. Without a bootloader it won't boot:
+  install one first (UF2 bootloader section below).
 
 - **Controller: flash on USB power.** Reset drops the power hold (J2 pin 9),
   so on AAs 3.3 V goes with it.
@@ -202,9 +201,10 @@ app after the SoftDevice area it expects.
 2. Build and flash, from `firmware/`, giving the drive's block device (mounted
    for you) or its mount point:
    ```sh
-   ./build.sh xbx-nrf -f /dev/sdX
+   ./build.sh xbx-nrf-promicro -f /dev/sdX
    ```
-   Or copy `<app>/build/<app>/zephyr/zephyr.uf2` onto the drive by hand.
+   Or copy `xbx-nrf/build-promicro/xbx-nrf/zephyr/zephyr.uf2` onto the
+   drive by hand.
 3. The app reboots; logs appear on `/dev/ttyACM*` (USB CDC console).
 
 > [!note] P0.13 = external VCC switch
@@ -238,13 +238,14 @@ bootloader expects. From `firmware/`:
 2. Find the bootloader's port (`ls -l /dev/serial/by-id/`, "Open DFU
    Bootloader"), then build and flash from `firmware/`:
    ```sh
-   ./build.sh dongle -f /dev/ttyACMx
+   ./build.sh xbx-dongle-pca10059 -f /dev/ttyACMx
    ```
-   The script packages `<app>/build/dfu.zip` and runs `nrfutil nrf5sdk-tools
-   dfu usb-serial`. GUI alternative: nRF Connect for Desktop → Programmer.
+   The script packages `dongle/build-pca10059/dfu.zip` and runs
+   `nrfutil nrf5sdk-tools dfu usb-serial`. GUI alternative: nRF Connect for
+   Desktop → Programmer.
 
-The default board target leaves room for the Nordic bootloader. If SWD erased
-it, build for `nrf52840dongle/nrf52840/bare` instead.
+The target leaves room for the Nordic bootloader. If SWD erased it, restore it
+first ([[#Restoring bootloaders]]).
 
 ## Restoring bootloaders
 

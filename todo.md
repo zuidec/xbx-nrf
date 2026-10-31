@@ -296,11 +296,11 @@ Code: `firmware/{xbx-nrf,dongle}/src/main.c`,
 > Clone antennas are weak. Remaining loss looks like fades/interference →
 > channel hopping.
 
-- [x] **Update the default boards in `build.sh`** as hardware moves
-      on: dongle → PCA10059 done; controller → `xbx_controller/nrf52840`
-      done.
-      Custom dongle: its own target, `./build.sh xbx-dongle` (into
-      `dongle/build-xbx/`); PCA10059 stays the `dongle` default.
+- [x] **Build targets in `build.sh`**: two per app, each with its own
+      board and folder ([[docs/building#Building]]): `xbx-nrf`,
+      `xbx-nrf-promicro` (test build), `xbx-dongle`, `xbx-dongle-pca10059`.
+      Pro Micro dongle, no-bootloader overlays, `XBX_FAST_FRAME_MAX` and the
+      stick X invert options dropped.
 - [x] Test firmware: ESB 2 Mbps, 1 ms fake reports, ACK payloads, stats,
       P0.17 timing pin.
 - [x] Report timing from hardware TIMER3 (exact 1 kHz; ESB uses TIMER2).
@@ -602,7 +602,7 @@ Adafruit nRF52 UF2 bootloader on both boards, unsigned
       `check_dfu_mode()`. Tested on USB and AAs.
 - [x] App entry, controller: the configurator's `BOOTLOADER` command →
       `GPREGRET = 0x57` + reset ([[#Configurator]]). Tested.
-- [ ] App entry, dongle: the same, with the dongle's channel.
+- [x] App entry, dongle: the same, with the dongle's channel. Tested.
 - [ ] Measure power-on to pin 9 high (the 500 ms double-reset wait only
       follows a reset-pin reset).
 
@@ -625,9 +625,9 @@ Linux first.
 - [ ] Firmware: LED brightness and stored USB mode settings (`config.c`).
 - [x] Firmware: the channel on the dongle (`dongle/src/configurator.c`):
       `INFO`, `BOOTLOADER`, `REBOOT`, `FACTORY_RESET` (pairing), image
-      marker. Builds; not tested on hardware yet.
-- [ ] Test the dongle channel: HID and XInput mode (XInput with the console
-      takes the 7th and last IN endpoint), firmware update, factory reset.
+      marker. Firmware update through the app tested.
+- [ ] Test the dongle channel in XInput mode (with the console it takes the
+      7th and last IN endpoint) and factory reset.
 - [ ] Firmware: LED brightness on the dongle (PWM on the LED pins, setting
       `0x03`, stored).
 - [x] App: protocol module, CLI, window (controller: info, input test,

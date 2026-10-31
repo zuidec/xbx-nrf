@@ -1,31 +1,32 @@
 #!/usr/bin/env bash
-# Firmware build into <app>/build/, optionally flashed right after.
+# Firmware build, optionally flashed right after.
 #
 # Usage (from anywhere; starts the pinned SDK toolchain itself if needed):
-#   ./build.sh <xbx-nrf|dongle|xbx-dongle> [-r] [-f <device>] [extra west build args]
+#   ./build.sh <target> [-r] [-f <device>] [extra west build args]
 #   ./build.sh <xbx-nrf|xbx-dongle>-bootloader [-f swd]
+#
+# Targets: board, folder in the app (xbx-nrf/ or dongle/)
+#   xbx-nrf               xbx_controller/nrf52840/uf2      build/
+#   xbx-nrf-promicro      promicro_nrf52840/nrf52840/uf2   build-promicro/ (test)
+#   xbx-dongle            xbx_dongle/nrf52840/uf2          build/
+#   xbx-dongle-pca10059   nrf52840dongle/nrf52840          build-pca10059/
+#   *-bootloader          bootloader/build.sh (UF2 bootloader, own options)
+#
 #   e.g. ./build.sh xbx-nrf -p                       # pristine rebuild
 #        ./build.sh xbx-nrf -f swd                   # build + flash app over SWD
-#        ./build.sh dongle -f /dev/ttyACM0           # build + flash
-#        ./build.sh xbx-dongle -f /dev/sdX           # custom dongle, UF2 drive
+#        ./build.sh xbx-dongle -f /dev/sdX           # build + flash, UF2 drive
+#        ./build.sh xbx-dongle-pca10059 -f /dev/ttyACM0
+#        ./build.sh xbx-dongle -r                    # release build
 #        ./build.sh xbx-dongle-bootloader -f swd     # its bootloader (erases all)
-#        ./build.sh xbx-nrf-bootloader -f swd        # controller's bootloader
-#        ./build.sh dongle -r                        # release build
-#
-# *-bootloader targets run bootloader/build.sh (UF2 bootloader, own options).
 #
 # -r / --release adds the app's release.conf (no USB console, no logs) and
-# builds into <app>/build-release/.
+# builds into the target's folder with -release added.
 #
 # -f / --flash <device>, by board:
-#   nrf52840dongle/nrf52840  serial port of the DFU bootloader (press RESET)
-#   */uf2 (Pro Micro, ours)  UF2 drive: mount point or block device (/dev/sdX);
-#                            "swd" writes only the app (bootloader stays)
-#   anything else            "swd": west flash with the board's runner
+#   PCA10059  serial port of its DFU bootloader (press RESET)
+#   */uf2     UF2 drive: mount point or block device (/dev/sdX); "swd"
+#             writes only the app (bootloader stays)
 #
-# Each app has a default board below. Pass -b <board> to override it.
-# xbx-dongle is the dongle app on the custom board (UF2 bootloader variant),
-# in <app>/build-xbx/ (-release) so the PCA10059 build stays.
 # BUILD_DIR=<dir> builds into <app>/<dir> instead (a second configuration,
 # e.g. a fake-input controller, without overwriting the main build).
 
@@ -38,33 +39,29 @@ source "$script_dir/check-sdk.sh"
 xbx_relaunch_in_toolchain "$script_dir" "$script_dir/$(basename "${BASH_SOURCE[0]}")" "$@"
 
 usage() {
-	echo "usage: $0 <xbx-nrf|dongle|xbx-dongle> [-r] [-f <device>] [extra west build args]" >&2
+	echo "usage: $0 <xbx-nrf|xbx-nrf-promicro|xbx-dongle|xbx-dongle-pca10059> [-r] [-f <device>] [extra west build args]" >&2
 	echo "       $0 <xbx-nrf|xbx-dongle>-bootloader [-f swd]" >&2
 	exit 2
 }
 
 [ $# -ge 1 ] || usage
-app="$1"
+target="$1"
 shift
 
-case "$app" in
+case "$target" in
 xbx-nrf-bootloader)    exec "$script_dir/bootloader/build.sh" xbx_controller "$@" ;;
 xbx-dongle-bootloader) exec "$script_dir/bootloader/build.sh" xbx_dongle "$@" ;;
-esac
-
-build_name=build
-case "$app" in
-xbx-nrf) board="xbx_controller/nrf52840/uf2" ;; # no bootloader: -b xbx_controller/nrf52840; Pro Micro: -b promicro_nrf52840/nrf52840/uf2
-dongle)  board="nrf52840dongle/nrf52840" ;; # PCA10059; Pro Micro: -b promicro_nrf52840/nrf52840/uf2
-xbx-dongle) app=dongle; board="xbx_dongle/nrf52840/uf2"; build_name=build-xbx ;; # no bootloader: -b xbx_dongle/nrf52840
+xbx-nrf)             app=xbx-nrf; board="xbx_controller/nrf52840/uf2"; build_name=build ;;
+xbx-nrf-promicro)    app=xbx-nrf; board="promicro_nrf52840/nrf52840/uf2"; build_name=build-promicro ;;
+xbx-dongle)          app=dongle; board="xbx_dongle/nrf52840/uf2"; build_name=build ;;
+xbx-dongle-pca10059) app=dongle; board="nrf52840dongle/nrf52840"; build_name=build-pca10059 ;;
 *) usage ;;
 esac
 
-# Take -r and -f / --flash out of the arguments (west gets the rest). An
-# explicit -b / --board wins over the default; remember it for flashing.
+# Take -r and -f / --flash out of the arguments (west gets the rest). The
+# board comes with the target: one folder, one board.
 flash_dev=""
 release=false
-explicit_board=false
 cmake_sep=false
 west_args=()
 while [ $# -gt 0 ]; do
@@ -73,10 +70,9 @@ while [ $# -gt 0 ]; do
 	-r | --release) release=true ;;
 	-f | --flash) [ $# -ge 2 ] || usage; flash_dev="$2"; shift 2; continue ;;
 	--flash=*) flash_dev="${1#--flash=}" ;;
-	-b | --board)
-		[ $# -ge 2 ] || usage
-		board="$2"; explicit_board=true; west_args+=("$1" "$2"); shift 2; continue ;;
-	--board=*) board="${1#--board=}"; explicit_board=true; west_args+=("$1") ;;
+	-b | --board | --board=*)
+		echo "error: the target sets the board; see the targets in $0" >&2
+		exit 2 ;;
 	*) west_args+=("$1") ;;
 	esac
 	shift
@@ -98,11 +94,7 @@ echo "out:   $build_dir"
 $release && echo "conf:  $app_dir/release.conf"
 
 # BOARD_ROOT: our boards in firmware/boards/ (sysbuild ignores the app folder)
-if $explicit_board; then
-	BOARD_ROOT="$script_dir" west build -d "$build_dir" "$app_dir" "${west_args[@]}"
-else
-	BOARD_ROOT="$script_dir" west build -b "$board" -d "$build_dir" "$app_dir" "${west_args[@]}"
-fi
+BOARD_ROOT="$script_dir" west build -b "$board" -d "$build_dir" "$app_dir" "${west_args[@]}"
 
 echo
 echo "images:"
@@ -147,14 +139,6 @@ nrf52840dongle/nrf52840)
 	echo "flash: UF2 to $drive"
 	cp "$image_dir/zephyr.uf2" "$drive/"
 	sync
-	;;
-*)
-	if [ "$flash_dev" != "swd" ]; then
-		echo "error: $board flashes over SWD; use -f swd" >&2
-		exit 1
-	fi
-	echo "flash: west flash (SWD)"
-	west flash -d "$build_dir"
 	;;
 esac
 echo "flash: done"
