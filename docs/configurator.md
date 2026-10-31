@@ -14,30 +14,42 @@ aliases:
 # Configurator
 
 Desktop app for settings, calibration, testing and firmware updates of the
-controller and the dongle. **Design, not built yet.** Steps:
-[[todo#Configurator]].
+controller and the dongle. **First version:** controller tab and CLI work
+from source; no packaged build yet. Steps: [[todo#Configurator]].
 
 ## Decisions
 
 - **Python + Tkinter (ttk)**, one file per OS with PyInstaller (Nuitka if
-  Windows antivirus flags it). Tkinter is in Python's standard library; the
-  only other dependency is `hidapi` (bundled). Python and C are both
+  Windows antivirus flags it). Tkinter is in Python's standard library.
+  Linux talks to `hidraw` directly (standard library only); Windows and
+  macOS use `hidapi` (bundled). Python and C are both
   reviewable here; Rust was ruled out for that reason, a web page for needing
   a Chromium browser.
 - **Direct USB only** for now: the controller is configured over its own USB
   port, not through the dongle. Relaying over the radio can come later
   without changing the commands.
 - **Vendor HID interface** on both devices, in every USB mode: no driver on
-  Windows or macOS, `hidapi` everywhere ([[#USB channel]]).
+  any OS ([[#USB channel]]).
 - Same code as a **CLI** (`info`, `bootloader`, …) for development and
   tests.
 
 ## App
 
-Code: `tools/configurator/` (planned), one code base for every OS. **Linux
-first.** Files the app writes onto the user's system (e.g. the udev rule) are
-kept as the real files in `tools/configurator/files/`, exactly as installed;
-`build.sh` bundles them, so fixing one means editing that file.
+Code: `tools/configurator/`, one code base for every OS. **Linux first.**
+Run from source: `python3 tools/configurator/xbx-config.py` (the window), or
+with a command for the CLI (`--help`). Files the app writes onto the user's
+system (e.g. the udev rule) are kept as the real files in
+`tools/configurator/files/`, exactly as installed; `build.sh` bundles them,
+so fixing one means editing that file.
+
+| Module (`xbxconfig/`) | Does |
+|---|---|
+| `protocol.py` | Message layouts, ids, constants |
+| `transport.py` | Finding and opening the interface (`hidraw` / `hidapi`) |
+| `device.py` | Requests; a reader thread splits responses from `STREAM` reports |
+| `uf2.py` | File check (marker), bootloader drive, the update |
+| `files.py` | Bundled files, udev rule install |
+| `cli.py`, `gui/` | CLI; window (`app.py`, `panels.py`, `widgets.py`) |
 
 Finds devices by VID `0x1209`, the app PIDs (`0x0001`–`0x0004`) and the
 channel's usage page; lists every one found.
@@ -74,17 +86,19 @@ The user always picks the `.uf2` file; the app ships no firmware.
 2. The app waits for the drive (`XBXCTRL` / `XBXDONGLE`) and checks that
    the file is for that device, so a dongle image can't go on a controller
    ([[#Image marker]]).
-3. Copies the `.uf2`; the bootloader restarts into the app, which the app
-   finds again by VID / PID.
+3. Copies the `.uf2` and syncs it; the bootloader restarts into the app,
+   which the app finds again by serial and checks that it runs the file's
+   version.
 
-Linux: the drive must be mounted (desktops do it automatically); the app
-reports when it isn't.
+Linux: a drive the desktop didn't mount is mounted with `udisksctl` (no root)
+and unmounted again after the sync, never before; without `udisksctl` the
+app asks the user to mount it.
 
 ### Platforms
 
 - **Linux:** a udev rule (`files/70-xbx-nrf.rules`) gives the user the
   `hidraw` nodes. The app detects missing access and offers to install it
-  into `/etc/udev/rules.d/` (admin prompt).
+  into `/etc/udev/rules.d/` (`pkexec`, or `sudo` from the CLI).
 - **macOS:** unsigned: right-click → Open the first time.
 - **Windows:** no driver needed.
 - `build.sh` builds one file into `build/`, named for the OS and CPU (e.g.
@@ -175,7 +189,8 @@ Command `0x80`, byte 1 counts reports, byte 2 is 0. Values LE.
 | 34 | Battery % (`0xFF` = unknown) |
 | 35–38 | Motor levels heavy, weak, LT, RT |
 
-Buttons and axes are the report before the XInput paddle mapping. Live
+Buttons and axes are the report before the XInput paddle mapping;
+`buttons_ext` includes Pair (input test only: the dongle ignores it). Live
 coverage while calibrating comes from the raw counts.
 
 ### CALIBRATE
@@ -194,8 +209,9 @@ the app; the button combos still work.
 Wrong state: "busy"; triggers without analog triggers: "unsupported here".
 Saving keeps the stored axes not calibrated now. A trigger is refused when
 its pull is under 1/16 of the ADC range, or when it moved both ways from
-rest (pulled while the rest was measured). It reports full from 95 % of its
-travel (`TRG_FULL_PCT`), so a pull a little short still reaches full.
+rest (pulled while the rest was measured). It reports full from a share of
+its travel (setting `0x05`, default 95 %), so a pull a little short still
+reaches full.
 
 ### CALIBRATE result
 
@@ -205,8 +221,9 @@ travel (`TRG_FULL_PCT`), so a pull a little short still reaches full.
 | 4 | Targets being calibrated |
 | 5 | Axes the last save refused (bit per axis: lx, ly, rx, ry, lt, rt) |
 | 6 | Axes stored in flash (same bits) |
-| 7 | Full pull threshold, % of the trigger travel |
+| 7 | LT full pull threshold, % of the travel |
 | 8–43 | Per axis min, centre, max (i16 LE, raw counts; triggers: centre = rest). While sweeping: seen so far |
+| 44 | RT full pull threshold, % |
 
 ### Settings
 
@@ -220,6 +237,7 @@ here". Stored by `config.c` (one versioned entry per device).
 | `0x02` | Paddle XInput bindings | Controller | 4 × u16 LE `XBX_BTN_*`, P1–P4 (0 = none) |
 | `0x03` | LED brightness | Both | u8 (0–255) |
 | `0x04` | Stored USB mode | Controller | u8 (0 HID, 1 XInput) |
+| `0x05` | Trigger full pull threshold | Controller | 2 × u8 %, LT, RT (50–100; default 95): calibrated triggers report full from there |
 
 ### Versioning
 

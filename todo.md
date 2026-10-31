@@ -558,10 +558,11 @@ the constants (deadzone, drift window, settle time) on the TMR sticks.
 - [x] Boot-time centre check: re-centre within a small window of the stored
       centre, else keep it (stick held at power-up).
 - [x] Trigger calibration in the same routine: rest, full pull and
-      direction stored; refused if too short or moved both ways from rest;
-      full from 95 % of the travel (`TRG_FULL_PCT`).
-- [ ] Test trigger calibration on Rev1.1; tune `CAL_MIN_TRAVEL`,
-      `TRG_FULL_PCT`.
+      direction stored; refused if too short or moved both ways from rest.
+      Tested on Rev1.1.
+- [x] Full pull threshold per trigger: setting `0x05` (default 95 % of the
+      travel), set in the app's calibration view.
+- [ ] Tune `CAL_MIN_TRAVEL` and the default threshold with use.
 - [ ] Triggers: stops, remapping, hair trigger.
 - [x] Commands for the host program: `CALIBRATE` ([[#Configurator]]).
 - [ ] User page `docs/controller.md`: wired / wireless, X / B mode,
@@ -613,13 +614,17 @@ Linux first.
       `REBOOT`, `BOOTLOADER`; image marker; save 1 s after the last change.
       Tested in HID and XInput mode.
 - [x] Firmware: `STREAM`, `CALIBRATE` (sticks and triggers, status),
-      `RUMBLE`, `FACTORY_RESET` on the controller. Rumble tested; stream,
-      calibration and factory reset not yet.
-- [ ] Firmware: LED brightness and stored USB mode settings (`config.c`
-      version 2).
+      `RUMBLE`, `FACTORY_RESET` on the controller; Pair in the report for the
+      input test. Tested except factory reset.
+- [ ] Test factory reset (each scope).
+- [ ] Firmware: LED brightness and stored USB mode settings (`config.c`).
 - [ ] Firmware: the same channel on the dongle (LED brightness: PWM on the
       LED pins); check the IN endpoint budget in XInput mode.
-- [ ] App: protocol module and CLI, then the Tkinter tabs.
+- [x] App: protocol module, CLI, window (controller: info, input test,
+      calibration, rumble, paddles, factory reset, firmware update; dongle:
+      info, update). Firmware update tested (auto-mount not yet).
+- [ ] App: LED brightness, USB mode once the firmware has them; the dongle
+      tab once its firmware has the channel.
 - [ ] Linux build (PyInstaller one-file), bundling `files/` (udev rule as
       the real file); Windows and macOS later.
 ---

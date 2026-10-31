@@ -1,0 +1,3 @@
+# xbx-nrf controller and dongle: the configurator's hidraw access for the
+# logged-in user. Installed by xbx-config into /etc/udev/rules.d/.
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="000[1-4]", TAG+="uaccess"
