@@ -3,12 +3,13 @@
 #
 # Usage (from anywhere; starts the pinned SDK toolchain itself if needed):
 #   ./build.sh <xbx-nrf|dongle|xbx-dongle> [-r] [-f <device>] [extra west build args]
-#   ./build.sh xbx-dongle-bootloader [-f swd]
+#   ./build.sh <xbx-nrf|xbx-dongle>-bootloader [-f swd]
 #   e.g. ./build.sh xbx-nrf -p                       # pristine rebuild
-#        ./build.sh xbx-nrf -f swd                   # build + flash over SWD
+#        ./build.sh xbx-nrf -f swd                   # build + flash app over SWD
 #        ./build.sh dongle -f /dev/ttyACM0           # build + flash
 #        ./build.sh xbx-dongle -f /dev/sdX           # custom dongle, UF2 drive
 #        ./build.sh xbx-dongle-bootloader -f swd     # its bootloader (erases all)
+#        ./build.sh xbx-nrf-bootloader -f swd        # controller's bootloader
 #        ./build.sh dongle -r                        # release build
 #
 # *-bootloader targets run bootloader/build.sh (UF2 bootloader, own options).
@@ -38,7 +39,7 @@ xbx_relaunch_in_toolchain "$script_dir" "$script_dir/$(basename "${BASH_SOURCE[0
 
 usage() {
 	echo "usage: $0 <xbx-nrf|dongle|xbx-dongle> [-r] [-f <device>] [extra west build args]" >&2
-	echo "       $0 xbx-dongle-bootloader [-f swd]" >&2
+	echo "       $0 <xbx-nrf|xbx-dongle>-bootloader [-f swd]" >&2
 	exit 2
 }
 
@@ -47,12 +48,13 @@ app="$1"
 shift
 
 case "$app" in
+xbx-nrf-bootloader)    exec "$script_dir/bootloader/build.sh" xbx_controller "$@" ;;
 xbx-dongle-bootloader) exec "$script_dir/bootloader/build.sh" xbx_dongle "$@" ;;
 esac
 
 build_name=build
 case "$app" in
-xbx-nrf) board="xbx_controller/nrf52840" ;; # Pro Micro: -b promicro_nrf52840/nrf52840/uf2
+xbx-nrf) board="xbx_controller/nrf52840/uf2" ;; # no bootloader: -b xbx_controller/nrf52840; Pro Micro: -b promicro_nrf52840/nrf52840/uf2
 dongle)  board="nrf52840dongle/nrf52840" ;; # PCA10059; Pro Micro: -b promicro_nrf52840/nrf52840/uf2
 xbx-dongle) app=dongle; board="xbx_dongle/nrf52840/uf2"; build_name=build-xbx ;; # no bootloader: -b xbx_dongle/nrf52840
 *) usage ;;

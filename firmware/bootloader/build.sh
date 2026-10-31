@@ -3,9 +3,9 @@
 # into src/) plus our board folders (boards/<board>/), output in
 # build/<board>/.
 #
-# Usage: ../build.sh xbx-dongle-bootloader [-f swd], or from anywhere:
-#   ./build.sh <board> [-f swd]
-#   board: a folder in boards/ (xbx_dongle)
+# Usage: ../build.sh <xbx-nrf|xbx-dongle>-bootloader [-f swd], or from
+# anywhere: ./build.sh <board> [-f swd]
+#   board: a folder in boards/ (xbx_controller, xbx_dongle)
 #   -f swd: full erase, then flash the bootloader over SWD (Pi Debug Probe).
 #           Wipes the app and its settings.
 #
