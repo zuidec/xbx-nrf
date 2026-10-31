@@ -254,7 +254,20 @@ Locked decisions: [README](README.md). Not yet locked:
 	- [x] USB mode switch read at boot ([[#Dongle]] step 4), pair button,
 	      status LEDs; none on P0.09/P0.10 (NFC) or P0.18 (reset).
 	- [x] SWD on J1 (JST-SH, Pi pinout).
-	- [ ] First flash over SWD.
+	- [x] First flash over SWD (`./build.sh xbx-dongle -f swd`). Tested on
+	      the RC clock: USB, pairing, rx/loss.
+	- [x] LFXO didn't start at first (firmware waits in
+	      `lfclk_spinwait()`); runs after rework (LFCLKSTAT: crystal).
+	      C6, C7 are 9 pF; Nordic uses 12 pF for a 9 pF crystal: check
+	      which FC-135 load version is fitted.
+	- [x] Player LEDs: Pn lit while player n is connected (HID: P1);
+	      power LED on from boot. LEDs tested; two or more players not yet.
+	- [x] Module joints: P1.12 (pair), P1.14, P1.15, P0.03, P0.06, P0.27
+	      didn't reach the chip until a third reflow; all LEDs and the pair
+	      button work now. Green LEDs (D2–D5) were fitted backwards: the
+	      part's cathode marking differs.
+	- [ ] Next rev: a test point on every module GPIO, to check each joint
+	      after assembly (short to GND / drive and read back over SWD).
 	- [x] Firmware: board `xbx_dongle/nrf52840` (`firmware/boards/xbx/`),
 	      pins from the Rev1.1 schematic. Normal voltage mode (3.3 V LDO), so
 	      no REGOUT0 change.
@@ -283,11 +296,11 @@ Code: `firmware/{xbx-nrf,dongle}/src/main.c`,
 > Clone antennas are weak. Remaining loss looks like fades/interference →
 > channel hopping.
 
-- [ ] **Update the default boards in `build.sh`** as hardware moves
+- [x] **Update the default boards in `build.sh`** as hardware moves
       on: dongle → PCA10059 done; controller → `xbx_controller/nrf52840`
       done.
-      Custom dongle board: `xbx_dongle/nrf52840` becomes the default once
-      Rev1.1 works; PCA10059 stays supported.
+      Custom dongle: its own target, `./build.sh xbx-dongle` (into
+      `dongle/build-xbx/`); PCA10059 stays the `dongle` default.
 - [x] Test firmware: ESB 2 Mbps, 1 ms fake reports, ACK payloads, stats,
       P0.17 timing pin.
 - [x] Report timing from hardware TIMER3 (exact 1 kHz; ESB uses TIMER2).
@@ -439,6 +452,9 @@ USB modes, in order; one active at a time.
 - [x] Auto power-off on AAs (`power.c`): idle 15 min, no dongle 2 min;
       tested with short timeouts. Low battery: [[#Power (rechargeable AA)]].
 - [ ] Boot reason: Guide / Pair (→ pairing) / USB.
+- [ ] Pair shouldn't power the controller on (SW2 → R46 → Q14 does in
+      hardware). On AAs, with Pair held at boot and Guide not, release the
+      hold; or remove R46 (Pair still reaches the PCAL6416).
 - [x] Power-off from the PC: the dongle decodes XInput power-off
       (`00 00 08 C0`, sent by `xpad` when Guide is held 5 s) and sets
       `flags` bit 1 until the link drops; the controller powers off. Tested
