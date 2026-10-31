@@ -22,6 +22,8 @@ keys/
 build/
 build_*/
 build-*/
+# configurator binaries (tools/configurator/build.sh)
+tools/configurator/output/
 twister-out*/
 *.hex
 *.bin

@@ -108,19 +108,23 @@ app asks the user to mount it.
 
 ### Building
 
-`tools/configurator/build.sh` builds one file, named for the OS and CPU
-(e.g. `xbx-config-linux-x86_64`, `xbx-config-windows-x86_64.exe`):
+`tools/configurator/build.sh` builds one file into
+`tools/configurator/output/`, named for the version, OS and CPU; work files
+(venvs, PyInstaller's) stay in `build/`. The version comes first: a name
+ending in `.1` reads as a man page to file managers, which then won't run it.
 
-| Command | Output | Runs on |
+| Command | File | Runs on |
 |---|---|---|
-| `build.sh` | `build/` | This system and any with the same or newer glibc |
-| `build.sh --release` (Linux) | `build/release/` | Debian 12 (glibc 2.36) and newer: built in a Debian 12 container |
+| `build.sh --release` (Linux) | `xbx-config-0.2.1-linux-x86_64` | Debian 12 (glibc 2.36) and newer: built in a Debian 12 container |
+| `build.sh` (Linux) | `xbx-config-0.2.1-linux-x86_64-local` | This system and any with the same or newer glibc |
+| `build.sh` (Windows, macOS) | `xbx-config-0.2.1-windows-x86_64.exe`, `xbx-config-0.2.1-macos-arm64` | That OS |
 
 - Needs Python 3 with tkinter and venv, and `objdump` on Linux; `--release`
   needs only podman or docker. It checks first and lists what's missing.
 - PyInstaller is pinned in `requirements-build.txt` and installed into the
-  build's own venv; `-p` starts it over. The bundle's contents:
-  `xbx-config.spec`; the container: `Containerfile`.
+  build's own venv. `-p` starts the venv over and deletes earlier versions
+  of the same file (same OS, CPU and kind); other builds in `output/` stay.
+  The bundle's contents: `xbx-config.spec`; the container: `Containerfile`.
 - Linux: fontconfig and freetype aren't bundled; the system's are used (a
   bundled older fontconfig warns about newer config files).
 - PyInstaller doesn't cross-build: each OS and CPU builds its own. Linux
