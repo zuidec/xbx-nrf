@@ -363,8 +363,9 @@ Up to 7 paired (least recently connected replaced), 4 connected; 1 kHz for
       acknowledged; the link stores the channel. Tested: existing pairings
       kept 76; after a dongle reset the scan picks a channel and both
       controllers find it when re-paired and after a power cycle.
-- [ ] Pairing success: dongle pair LED and controller Guide LED blink a
-      couple of times when the exchange completes.
+- [x] Pairing success: dongle pair LED and controller Guide LED blink
+      three times quickly (200 ms; errors: 400 ms) when the exchange
+      completes. Tested.
 - [x] Step 2, TDMA (protocol v2): 1 ms dongle frame (TIMER3), 2 slots, first
       free slot per link; timing error in ACKs, controller shifts one
       TIMER3 period; no retries. Two Pro Micros: both 971–1001/s (was ~40
