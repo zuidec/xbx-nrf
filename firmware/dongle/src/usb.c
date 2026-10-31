@@ -8,6 +8,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/sys/reboot.h>
 #include <zephyr/usb/usbd.h>
 
 #include <app_version.h>
@@ -60,24 +61,52 @@ static void usb_msg_cb(struct usbd_context *const ctx, const struct usbd_msg *co
 	LOG_INF("USB: %s", usbd_msg_type_string(msg->type));
 }
 
-enum usb_mode usb_mode_get(void)
+static enum usb_mode mode_sample(void)
 {
-	if (mode_read) {
-		return mode;
-	}
-	mode_read = true;
-	mode = USB_MODE_HID;
+	enum usb_mode m = USB_MODE_HID;
+
 #if DT_NODE_HAS_PROP(ZEPHYR_USER, mode_gpios)
 	if (gpio_is_ready_dt(&mode_pin) && gpio_pin_configure_dt(&mode_pin, GPIO_INPUT) == 0) {
 		k_busy_wait(100); /* let the pull-up charge the pin */
 		if (gpio_pin_get_dt(&mode_pin) > 0) {
-			mode = USB_MODE_XINPUT;
+			m = USB_MODE_XINPUT;
 		}
 		gpio_pin_configure_dt(&mode_pin, GPIO_DISCONNECTED); /* no pull-up current */
 	}
 #endif
+	return m;
+}
+
+enum usb_mode usb_mode_get(void)
+{
+	if (!mode_read) {
+		mode_read = true;
+		mode = mode_sample();
+	}
 	return mode;
 }
+
+#if DT_NODE_HAS_PROP(ZEPHYR_USER, mode_gpios)
+#define MODE_POLL_MS   250
+#define MODE_SETTLE_MS 1000 /* the other mode this long: restart into it */
+
+/* system work queue: flash writes queued before the restart still run first */
+static void mode_watch_fn(struct k_work *work)
+{
+	static uint32_t changed_ms;
+	struct k_work_delayable *dwork = k_work_delayable_from_work(work);
+
+	if (mode_sample() == mode) {
+		changed_ms = 0;
+	} else if ((changed_ms += MODE_POLL_MS) >= MODE_SETTLE_MS) {
+		LOG_INF("mode switch changed: restarting");
+		sys_reboot(SYS_REBOOT_COLD);
+	}
+	k_work_schedule(dwork, K_MSEC(MODE_POLL_MS));
+}
+
+static K_WORK_DELAYABLE_DEFINE(mode_watch_work, mode_watch_fn);
+#endif
 
 static int register_functions(void)
 {
@@ -162,5 +191,8 @@ int usb_start(void)
 		return err;
 	}
 
+#if DT_NODE_HAS_PROP(ZEPHYR_USER, mode_gpios)
+	k_work_schedule(&mode_watch_work, K_MSEC(MODE_POLL_MS));
+#endif
 	return usbd_enable(&xbx_usbd);
 }

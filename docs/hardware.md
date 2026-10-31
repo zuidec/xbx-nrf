@@ -268,7 +268,7 @@ flashing over J1 (SWD). Pins from the Rev1.1 schematic:
 
 | Signal | Pin | Notes |
 |---|---|---|
-| MODE_SW | P1.09 | SW3, read once at boot: **low = XInput** (1 kΩ to GND), **high = HID** (open, internal pull-up) |
+| MODE_SW | P1.09 | SW3, read at boot (a change restarts the dongle after 1 s): **low = XInput** (1 kΩ to GND), **high = HID** (open, internal pull-up) |
 | PAIR_SW | P1.12 | SW2 to GND; internal pull-up. Press = pairing mode, hold 10 s = factory reset |
 | PAIR_LED (blue) | P0.08 | D1, active low, 180 Ω, high drive; pairing indicator |
 | P1_LED…P4_LED (green) | P1.13, P1.14, P1.15, P0.03 | D2–D5, active low, 1 kΩ |

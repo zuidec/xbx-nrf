@@ -442,6 +442,8 @@ USB modes, in order; one active at a time.
 4. [x] **Mode switching:** `mode-gpios`, read once at boot before USB
        starts. Pro Micro: jumper on P0.06; PCA10059: switch to GND on the
        P0.29 pad; custom board: SW3 (P1.09, low = XInput).
+   - [x] Switch changed while running: restart after 1 s (`usb.c`, sampled
+         every 250 ms). Tested.
 5. [x] Open-source license + `LICENSE` file (MPL-2.0 / CERN-OHL-S-2.0 /
        CC-BY-4.0, REUSE compliant).
 6. [ ] USB IDs: pid.codes test PIDs `0x0001`–`0x0004` for now (dongle HID /

@@ -333,8 +333,9 @@ Later in the output report: link quality (RSSI, for
 Plain HID has no way to add or remove a gamepad without re-enumerating the
 whole device, hence single-player HID.
 
-**Mode selection:** read once at boot, before USB starts (`usb_mode_get()` in
-`usb.c`); changing it needs a reset. `mode-gpios` in each board overlay:
+**Mode selection:** read at boot, before USB starts (`usb_mode_get()` in
+`usb.c`), then sampled every 250 ms; set to the other mode for 1 s, it
+restarts the dongle into that mode. `mode-gpios` in each board overlay:
 Pro Micro jumper P0.06 to GND = XInput, open = HID; PCA10059 switch to GND
 on the P0.29 pad = XInput; custom board SW3 (P1.09, low = XInput;
 [[docs/hardware#Custom board]]). Each mode has its own PID, so hosts never

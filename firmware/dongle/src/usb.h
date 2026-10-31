@@ -12,7 +12,10 @@ enum usb_mode {
 	USB_MODE_XINPUT, /* PID 0x0002 */
 };
 
-/* Mode strap, read once (the first call) and fixed until reset. */
+/*
+ * Mode strap, read at the first call and fixed until reset. After
+ * usb_start(), the strap set to the other mode for 1 s restarts the dongle.
+ */
 enum usb_mode usb_mode_get(void);
 
 /* Build the USB device and enable it; call after configurator_init(). */
