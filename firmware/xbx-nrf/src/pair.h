@@ -17,7 +17,8 @@
  * then the link (dongle address, pipe) is stored in settings ("pair/link").
  *
  * Errors (refused, aborted, dongle full) blink the indicator slowly three
- * times. Pair held FACTORY_RESET_MS: forget the link and restart.
+ * times, success quickly three times. Pair held FACTORY_RESET_MS: forget the
+ * link and restart.
  */
 
 #ifndef XBX_PAIR_H_
@@ -59,7 +60,7 @@ void pair_tick(uint32_t elapsed_ms, bool linked);
 /* Pairing mode active: the radio carries pairing messages, not reports. */
 bool pair_active(void);
 
-/* The indicator LED is showing pairing, an error or a reset (not rumble). */
+/* The indicator LED is showing pairing, a result or a reset (not rumble). */
 bool pair_indicator_busy(void);
 
 /* Another module drives the indicator meanwhile (calibration); TX thread only. */

@@ -42,6 +42,8 @@ LOG_MODULE_REGISTER(pairing, LOG_LEVEL_INF);
 #define BLINK_MS           100  /* pairing: fast blink, 5 Hz */
 #define ERROR_BLINK_MS     400  /* error: three slow blinks */
 #define ERROR_MS           (6 * ERROR_BLINK_MS)
+#define SUCCESS_BLINK_MS   200  /* paired: three quick blinks */
+#define SUCCESS_MS         (6 * SUCCESS_BLINK_MS)
 
 #define ADDR_VERSION  1
 #define TABLE_VERSION 1
@@ -95,7 +97,8 @@ static bool aborting;
 enum led_pattern {
 	LED_OFF,
 	LED_PAIRING,
-	LED_ERROR, /* then back to LED_PAIRING or LED_OFF */
+	LED_ERROR,   /* then back to LED_PAIRING or LED_OFF */
+	LED_SUCCESS, /* likewise */
 	LED_RESET, /* solid until the restart */
 };
 
@@ -158,14 +161,19 @@ static void led_fn(struct k_work *work)
 		led_set((pattern_ms / BLINK_MS) % 2 == 0);
 		break;
 	case LED_ERROR:
-		if (pattern_ms >= ERROR_MS) {
+	case LED_SUCCESS: {
+		bool error = pattern == LED_ERROR;
+		uint32_t step = error ? ERROR_BLINK_MS : SUCCESS_BLINK_MS;
+
+		if (pattern_ms >= (error ? ERROR_MS : SUCCESS_MS)) {
 			pattern = active ? LED_PAIRING : LED_OFF;
 			pattern_ms = 0;
 			led_fn(NULL);
 			return;
 		}
-		led_set((pattern_ms / ERROR_BLINK_MS) % 2 == 0);
+		led_set((pattern_ms / step) % 2 == 0);
 		break;
+	}
 	case LED_RESET:
 		led_set(true);
 		break;
@@ -513,6 +521,7 @@ static void confirm_fn(struct k_work *work)
 		LOG_INF("paired: %02x%02x%02x%02x… on pipe %u", c.ctrl_id[0], c.ctrl_id[1],
 			c.ctrl_id[2], c.ctrl_id[3], pipe);
 		pairing_stop("paired", false);
+		led_pattern(LED_SUCCESS);
 		done_queue(pipe);
 	} else if (e->last_connected && memcmp(e->ctrl_id, c.ctrl_id, 8) == 0) {
 		/* a repeat after saving: our PAIR_DONE hasn't reached it yet */

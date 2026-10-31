@@ -28,6 +28,8 @@ LOG_MODULE_REGISTER(pair, LOG_LEVEL_INF);
 #define BLINK_MS         100   /* pairing: fast blink, 5 Hz */
 #define ERROR_BLINK_MS   400   /* error: three slow blinks */
 #define ERROR_MS         (6 * ERROR_BLINK_MS)
+#define SUCCESS_BLINK_MS 200   /* paired: three quick blinks */
+#define SUCCESS_MS       (6 * SUCCESS_BLINK_MS)
 #define SEARCH_BLINK_MS  500   /* no link: slow blink, 1 Hz */
 
 #define LINK_VERSION 1
@@ -70,6 +72,8 @@ static bool hold_used;           /* this hold already entered pairing: release f
 static bool indicator_on;
 static uint32_t error_ms;        /* error blink: time into it, 0 = none */
 static atomic_t error_request;   /* start the error blink (any context) */
+static uint32_t success_ms;      /* success blink: time into it, 0 = none */
+static atomic_t success_request; /* start the success blink (any context) */
 static bool resetting;
 static struct k_spinlock lock;   /* stored, offered, state */
 
@@ -246,6 +250,9 @@ void pair_tick(uint32_t elapsed_ms, bool linked)
 	if (atomic_cas(&error_request, 1, 0) && state == PAIR_IDLE && !error_ms) {
 		error_ms = 1;
 	}
+	if (atomic_cas(&success_request, 1, 0) && state == PAIR_IDLE && !error_ms) {
+		success_ms = 1;
+	}
 
 	if (state == PAIR_IDLE) {
 		if (error_ms) {
@@ -253,6 +260,13 @@ void pair_tick(uint32_t elapsed_ms, bool linked)
 			error_ms += elapsed_ms;
 			if (error_ms > ERROR_MS) {
 				error_ms = 0;
+				indicator_set(false);
+			}
+		} else if (success_ms) {
+			indicator_set(((success_ms - 1) / SUCCESS_BLINK_MS) % 2 == 0);
+			success_ms += elapsed_ms;
+			if (success_ms > SUCCESS_MS) {
+				success_ms = 0;
 				indicator_set(false);
 			}
 		} else if (INDICATOR_IDLE) {
@@ -273,7 +287,8 @@ void pair_tick(uint32_t elapsed_ms, bool linked)
 
 bool pair_indicator_busy(void)
 {
-	return state != PAIR_IDLE || error_ms || resetting || atomic_get(&error_request);
+	return state != PAIR_IDLE || error_ms || success_ms || resetting ||
+	       atomic_get(&error_request) || atomic_get(&success_request);
 }
 
 void pair_indicate_error(void)
@@ -405,6 +420,7 @@ void pair_on_ack(const uint8_t *data, size_t len)
 		k_spin_unlock(&lock, key);
 		k_work_submit(&save_work);
 		LOG_INF("paired: pipe %u, channel %u", offered.pipe, offered.channel);
+		atomic_set(&success_request, 1);
 		pair_stop("paired", false);
 		return;
 	}
