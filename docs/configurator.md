@@ -64,8 +64,7 @@ channel's usage page; lists every one found.
 | Stick calibration | Guided: centre at rest → sweep → save, with live coverage; cancel, erase |
 | Trigger calibration | Guided: rest → full pull → save; alone or with the sticks |
 | Paddles | On / off; XInput binding per paddle (any button or none) |
-| LED brightness | Guide LED |
-| USB mode (suggested) | Stored default, HID or XInput (now: X / B held at boot) |
+| LED brightness | Guide LED, 1–255 (can't be off: it shows pairing and the link) |
 | Factory reset | Settings, calibration, pairing: each or all |
 | Firmware update | Enter the bootloader, copy the `.uf2`, wait for the restart |
 
@@ -74,7 +73,7 @@ channel's usage page; lists every one found.
 | Section | Does |
 |---|---|
 | Info | Firmware version, USB mode (SW3), serial, paired controllers (suggested) |
-| LED brightness | Pair, player and power LEDs |
+| LED brightness | Pair, player and power LEDs, 1–255 each; player and power can be switched off, pair can't. A change lights that group for 1.5 s (the pair LED is off outside pairing) |
 | Factory reset | Forget all controllers (also: Pair held 10 s) |
 | Firmware update | As the controller |
 
@@ -155,7 +154,7 @@ is dropped. Input-test data comes unrequested as `STREAM` reports (command
 | `0x04` | `STREAM` | Controller | rate in Hz (0 = off, ≤ 100); stops when the interface goes down ([[#STREAM report]]) |
 | `0x05` | `CALIBRATE` | Controller | step, targets → [[#CALIBRATE result]] |
 | `0x06` | `RUMBLE` | Controller | levels heavy, weak, LT, RT (u8), duration ms (u16 LE, ≤ 2000, 0 stops); overrides the host while it runs |
-| `0x07` | `FACTORY_RESET` | Both | scope bits: `0x01` settings (with the stored USB mode), `0x02` calibration, `0x04` pairing; then restart. Dongle: pairing only (settings: nothing stored yet) |
+| `0x07` | `FACTORY_RESET` | Both | scope bits: `0x01` settings (with the stored USB mode), `0x02` calibration, `0x04` pairing; then restart. Dongle: settings and pairing |
 | `0x08` | `BOOTLOADER` | Both | → ok, then `GPREGRET = 0x57` and reset |
 | `0x09` | `REBOOT` | Both | → ok, then reset |
 
@@ -229,15 +228,20 @@ reaches full.
 
 Each setting has an id and a fixed-size value, so app and firmware of
 different versions agree on what both know; unknown ids answer "unsupported
-here". Stored by `config.c` (one versioned entry per device).
+here". Stored in flash 1 s after the last change: the controller's
+`config.c` (one versioned entry), the dongle's `configurator.c` (`cfg/leds`).
+
+LED levels (`common/include/led_level.h`): 1–255 spread over a visible
+range (level 1 = 24 of 255, so no level looks off), gamma 2 so the steps
+look even; off is a separate switch.
 
 | Id | Setting | Device | Value |
 |---|---|---|---|
 | `0x01` | Paddles on | Controller | u8 (0 / 1) |
 | `0x02` | Paddle XInput bindings | Controller | 4 × u16 LE `XBX_BTN_*`, P1–P4 (0 = none) |
-| `0x03` | LED brightness | Both | u8 (0–255) |
-| `0x04` | Stored USB mode | Controller | u8 (0 HID, 1 XInput) |
+| `0x03` | Guide LED brightness | Controller | u8 1–255 (default 255) |
 | `0x05` | Trigger full pull threshold | Controller | 2 × u8 %, LT, RT (50–100; default 95): calibrated triggers report full from there |
+| `0x06` | LED brightness | Dongle | 4 × u8: pair, player, power (1–255, default 255); on bits `0x01` player, `0x02` power (default both) |
 
 ### Versioning
 

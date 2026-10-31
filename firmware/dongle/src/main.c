@@ -32,9 +32,16 @@ int main(void)
 	struct radio_stats prev = {0};
 	int err;
 
-	leds_init();
 	LOG_INF("xbx-nrf dongle v%s (%s), protocol v%d, tx %d dBm", APP_VERSION_STRING,
 		XBX_BUILD_ID, XBX_PROTOCOL_VERSION, XBX_TX_POWER_DBM);
+
+	/* first: its stored LED brightness applies from the first LED on */
+	err = configurator_init();
+	if (err) {
+		LOG_ERR("configurator channel init failed: %d", err);
+		return 0;
+	}
+	leds_init();
 
 	if (usb_mode_get() == USB_MODE_HID) {
 		err = hid_pad_init();
@@ -47,12 +54,6 @@ int main(void)
 	err = pairing_init();
 	if (err) {
 		LOG_ERR("pairing init failed: %d", err);
-		return 0;
-	}
-
-	err = configurator_init();
-	if (err) {
-		LOG_ERR("configurator channel init failed: %d", err);
 		return 0;
 	}
 

@@ -12,6 +12,7 @@
 #include <string.h>
 
 #include "config.h"
+#include "pair.h"
 #include "protocol.h"
 
 LOG_MODULE_REGISTER(config, LOG_LEVEL_INF);
@@ -80,8 +81,12 @@ int config_init(void)
 			current.trigger_full[t] = INPUT_TRG_FULL_DEFAULT; /* older entry: 0 */
 		}
 	}
+	if (current.led_dim == 255) {
+		current.led_dim = 254; /* level 0 (an earlier build): lowest level, not off */
+	}
 	input_paddle_config_set(&current.paddles);
 	input_trigger_full_set(current.trigger_full);
+	pair_indicator_level(255 - current.led_dim);
 	return err;
 }
 
@@ -129,6 +134,7 @@ static void apply(const struct config_data *cfg, bool erase)
 	k_spin_unlock(&lock, key);
 	input_paddle_config_set(&cfg->paddles);
 	input_trigger_full_set(cfg->trigger_full);
+	pair_indicator_level(255 - cfg->led_dim);
 	k_work_reschedule(&save_work, SAVE_DELAY);
 }
 
@@ -167,6 +173,9 @@ int config_setting_get(uint8_t id, uint8_t *value, size_t size)
 			sys_put_le16(cfg.paddles.xinput[i], &value[2 * i]);
 		}
 		return 2 * INPUT_PADDLES;
+	case CFG_SETTING_LED:
+		value[0] = 255 - cfg.led_dim;
+		return 1;
 	case CFG_SETTING_TRG_FULL:
 		memcpy(value, cfg.trigger_full, sizeof(cfg.trigger_full));
 		return sizeof(cfg.trigger_full);
@@ -199,6 +208,12 @@ int config_setting_set(uint8_t id, const uint8_t *value, size_t len)
 			}
 			cfg.paddles.xinput[i] = b;
 		}
+		break;
+	case CFG_SETTING_LED:
+		if (len < 1 || value[0] == 0) {
+			return -EINVAL;
+		}
+		cfg.led_dim = 255 - value[0];
 		break;
 	case CFG_SETTING_TRG_FULL:
 		for (int t = 0; t < 2; t++) {

@@ -27,6 +27,7 @@
 
 #include <string.h>
 
+#include "leds.h"
 #include "pairing.h"
 #include "radio.h"
 
@@ -48,12 +49,8 @@ LOG_MODULE_REGISTER(pairing, LOG_LEVEL_INF);
 #define ADDR_VERSION  1
 #define TABLE_VERSION 1
 
-#define PAIR_LED_NODE DT_ALIAS(pair_led)
-#define PAIR_SW_NODE  DT_ALIAS(pair_sw)
+#define PAIR_SW_NODE DT_ALIAS(pair_sw)
 
-#if DT_NODE_EXISTS(PAIR_LED_NODE)
-static const struct gpio_dt_spec pair_led = GPIO_DT_SPEC_GET(PAIR_LED_NODE, gpios);
-#endif
 #if DT_NODE_EXISTS(PAIR_SW_NODE)
 static const struct gpio_dt_spec pair_sw = GPIO_DT_SPEC_GET(PAIR_SW_NODE, gpios);
 static struct gpio_callback pair_sw_cb;
@@ -146,11 +143,7 @@ static K_WORK_DEFINE(table_save_work, table_save_fn);
 
 static void led_set(bool on)
 {
-#if DT_NODE_EXISTS(PAIR_LED_NODE)
-	gpio_pin_set_dt(&pair_led, on);
-#else
-	ARG_UNUSED(on);
-#endif
+	leds_pair(on);
 }
 
 static void led_fn(struct k_work *work)
@@ -658,11 +651,6 @@ int pairing_init(void)
 	int paired = 0;
 	int err;
 
-#if DT_NODE_EXISTS(PAIR_LED_NODE)
-	if (gpio_is_ready_dt(&pair_led)) {
-		gpio_pin_configure_dt(&pair_led, GPIO_OUTPUT_INACTIVE);
-	}
-#endif
 #if DT_NODE_EXISTS(PAIR_SW_NODE)
 	err = button_init();
 	if (err) {

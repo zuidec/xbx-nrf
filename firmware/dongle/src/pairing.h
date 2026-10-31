@@ -3,7 +3,7 @@
  * dongle's own random address, created once and stored; the table of up to
  * PAIRING_PIPES paired controllers (pipe n = entry n - 1); and pairing mode,
  * entered with the pair button (alias pair-sw) or at boot while nothing is
- * paired. The pairing LED (alias pair-led) blinks fast meanwhile, then three
+ * paired. The pairing LED (leds_pair()) blinks fast meanwhile, then three
  * quick blinks when a controller is paired.
  *
  * The radio (radio.c) hands pairing messages over from its interrupt; the

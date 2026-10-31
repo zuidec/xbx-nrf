@@ -307,9 +307,125 @@ class PaddlesPanel(Panel):
         self.call("set_bindings", values)
 
 
+class LedPanel(Panel):
+    """Brightness sliders (1-255); changes go out at most every SEND_MS while dragging.
+
+    ROWS: (key, label, switchable); a switchable row has an on/off checkbox."""
+
+    title = "LED brightness"
+    NOTE = ""
+    ROWS = ()
+    SETTING = 0
+    SEND_MS = 50
+
+    def __init__(self, master):
+        super().__init__(master)
+        self.values = {}  # what the device has (keys as in ROWS, plus "<key>_on")
+        self.pending = None
+        ttk.Label(self, text=self.NOTE, wraplength=460).pack(anchor="w")
+        grid = ttk.Frame(self)
+        grid.pack(anchor="w", pady=12)
+        self.scales, self.labels, self.checks = {}, {}, {}
+        for r, (key, label, switchable) in enumerate(self.ROWS):
+            ttk.Label(grid, text=label).grid(row=r, column=0, sticky="w", padx=(0, 12))
+            sc = ttk.Scale(grid, from_=1, to=255, length=280,
+                           command=lambda _v, k=key: self.slid(k))
+            sc.grid(row=r, column=1, pady=4)
+            self.scales[key] = sc
+            self.labels[key] = ttk.Label(grid, width=4)
+            self.labels[key].grid(row=r, column=2, padx=8)
+            if switchable:
+                v = tk.BooleanVar()
+                ttk.Checkbutton(grid, text="On", variable=v,
+                                command=lambda k=key: self.switched(k)).grid(row=r, column=3)
+                self.checks[key] = v
+        self.missing = ttk.Label(self, text="This firmware has no brightness setting; "
+                                 "update it.")
+
+    # device access, per device
+    def read(self):
+        raise NotImplementedError
+
+    def write(self, values):
+        raise NotImplementedError
+
+    def on_show(self):
+        if not self.device:
+            return
+        has = self.SETTING in (self.call("setting_ids") or [])
+        for w in self.scales.values():
+            w.state(["!disabled"] if has else ["disabled"])
+        if not has:
+            self.missing.pack(anchor="w")
+            return
+        self.missing.pack_forget()
+        v = self.read()
+        if v is None:
+            return
+        self.values = dict(v)
+        for key, sc in self.scales.items():
+            sc.set(v[key])
+            self.labels[key].configure(text=str(v[key]))
+        for key, var in self.checks.items():
+            var.set(v[key + "_on"])
+            self.scales[key].state(["!disabled"] if v[key + "_on"] else ["disabled"])
+
+    def slid(self, key):
+        v = round(self.scales[key].get())
+        self.labels[key].configure(text=str(v))
+        if not self.values or v == self.values[key]:
+            return
+        self.values[key] = v
+        self.queue()
+
+    def switched(self, key):
+        if not self.values:
+            return
+        on = self.checks[key].get()
+        self.values[key + "_on"] = on
+        self.scales[key].state(["!disabled"] if on else ["disabled"])
+        self.queue()
+
+    def queue(self):
+        if self.pending is None:
+            self.pending = self.after(self.SEND_MS, self.send)
+
+    def send(self):
+        self.pending = None
+        self.write(dict(self.values))
+
+
+class ControllerLedPanel(LedPanel):
+    NOTE = "Guide LED: it shows pairing and the link, so it can't be turned off."
+    ROWS = (("guide", "Guide LED", False),)
+    SETTING = p.SET_LED
+
+    def read(self):
+        v = self.call("led")
+        return None if v is None else {"guide": v}
+
+    def write(self, values):
+        self.call("set_led", values["guide"])
+
+
+class DongleLedPanel(LedPanel):
+    NOTE = ("The pair LED shows pairing, so it can't be turned off; the player "
+            "and power LEDs can.")
+    ROWS = (("pair", "Pair LED", False), ("player", "Player LEDs", True),
+            ("power", "Power LED", True))
+    SETTING = p.SET_DONGLE_LEDS
+
+    def read(self):
+        return self.call("dongle_leds")
+
+    def write(self, values):
+        self.call("set_dongle_leds", values)
+
+
 class ResetPanel(Panel):
     title = "Factory reset"
-    SCOPES = (("Settings (paddles, stored USB mode)", p.RESET_SETTINGS),
+    SCOPES = (("Settings (paddles, LED, trigger full pull, stored USB mode)",
+               p.RESET_SETTINGS),
               ("Stick and trigger calibration", p.RESET_CALIBRATION),
               ("Pairing (forget the dongle)", p.RESET_PAIRING))
 
@@ -337,7 +453,8 @@ class ResetPanel(Panel):
 
 
 class DongleResetPanel(ResetPanel):
-    SCOPES = (("Pairing (forget all controllers)", p.RESET_PAIRING),)
+    SCOPES = (("Settings (LED brightness)", p.RESET_SETTINGS),
+              ("Pairing (forget all controllers)", p.RESET_PAIRING))
 
 
 class FirmwarePanel(Panel):

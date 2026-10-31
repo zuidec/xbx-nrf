@@ -77,6 +77,34 @@ def cmd_triggers(args):
     d.close()
 
 
+def cmd_led(args):
+    d = _open(args)
+    if d.info.device == "dongle":
+        if args.level is not None:
+            sys.exit("the dongle takes --pair, --player, --power")
+        leds = d.dongle_leds()
+        for name in ("pair", "player", "power"):
+            v = getattr(args, name)
+            if v in ("on", "off"):
+                if name == "pair":
+                    sys.exit("the pair LED can't be turned off")
+                leds[name + "_on"] = v == "on"
+            elif v is not None:
+                leds[name] = led_level(v)
+        if any(getattr(args, n) is not None for n in ("pair", "player", "power")):
+            d.set_dongle_leds(leds)
+        leds = d.dongle_leds()
+        print(f"pair {leds['pair']}, " + ", ".join(
+            f"{n} {leds[n]}{'' if leds[n + '_on'] else ' (off)'}" for n in ("player", "power")))
+    else:
+        if any(getattr(args, n) is not None for n in ("pair", "player", "power")):
+            sys.exit("the controller takes one level (the Guide LED)")
+        if args.level is not None:
+            d.set_led(args.level)
+        print(f"Guide LED: {d.led()} / 255")
+    d.close()
+
+
 def cmd_stream(args):
     d = _open(args)
     d.stream(args.hz)
@@ -190,6 +218,13 @@ def cmd_install_udev(args):
     print("installed; unplug and replug the device")
 
 
+def led_level(s):
+    v = int(s)
+    if not 1 <= v <= 255:
+        raise argparse.ArgumentTypeError("LED levels are 1-255")
+    return v
+
+
 def level(s):
     v = int(s)
     if not 0 <= v <= 255:
@@ -213,6 +248,12 @@ def main(argv=None):
     s.add_argument("pct", nargs="*", type=int, metavar="PCT",
                    help=f"LT RT, {p.TRG_FULL_MIN}-100 %% of the calibrated travel")
     s.set_defaults(fn=cmd_triggers)
+    s = sub.add_parser("led", help="show or set the LED brightness")
+    s.add_argument("level", nargs="?", type=led_level, help="controller: Guide LED, 1-255")
+    s.add_argument("--pair", metavar="LEVEL", help="dongle: pair LED, 1-255")
+    s.add_argument("--player", metavar="LEVEL", help="dongle: player LEDs, 1-255, on or off")
+    s.add_argument("--power", metavar="LEVEL", help="dongle: power LED, 1-255, on or off")
+    s.set_defaults(fn=cmd_led)
     s = sub.add_parser("stream", help="live input (controller)")
     s.add_argument("hz", nargs="?", type=int, default=50)
     s.set_defaults(fn=cmd_stream)

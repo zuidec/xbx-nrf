@@ -30,9 +30,11 @@ USB_MODES = {0: "HID", 1: "XInput"}
 # settings
 SET_PADDLES = 0x01
 SET_BINDINGS = 0x02
-SET_LED = 0x03
-SET_USB_MODE = 0x04
+SET_LED = 0x03  # controller: Guide LED, 1-255
 SET_TRG_FULL = 0x05  # LT, RT full pull threshold, %
+SET_DONGLE_LEDS = 0x06  # dongle: pair, player, power levels (1-255), on flags
+LEDS_PLAYER_ON = 0x01
+LEDS_POWER_ON = 0x02
 TRG_FULL_MIN = 50
 
 # FACTORY_RESET scope

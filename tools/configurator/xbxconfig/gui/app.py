@@ -97,10 +97,11 @@ class App(tk.Tk):
         self.tabs = {
             "controller": DeviceTab(self.book, self, "controller", [
                 panels.InfoPanel, panels.InputPanel, panels.CalibrationPanel,
-                panels.RumblePanel, panels.PaddlesPanel, panels.ResetPanel,
-                panels.FirmwarePanel]),
+                panels.RumblePanel, panels.PaddlesPanel, panels.ControllerLedPanel,
+                panels.ResetPanel, panels.FirmwarePanel]),
             "dongle": DeviceTab(self.book, self, "dongle", [
-                panels.InfoPanel, panels.DongleResetPanel, panels.FirmwarePanel]),
+                panels.InfoPanel, panels.DongleLedPanel, panels.DongleResetPanel,
+                panels.FirmwarePanel]),
         }
         for kind, tab in self.tabs.items():
             self.book.add(tab, text=kind.capitalize())

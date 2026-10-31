@@ -116,6 +116,26 @@ class Device:
     def set_bindings(self, values):
         self.setting_set(p.SET_BINDINGS, p.pack_bindings(values))
 
+    def led(self):
+        """Controller: Guide LED level 1-255."""
+        return self.setting_get(p.SET_LED)[0]
+
+    def set_led(self, level):
+        self.setting_set(p.SET_LED, bytes([level]))
+
+    def dongle_leds(self):
+        """Dongle: {"pair", "player", "power": level 1-255, "player_on", "power_on"}."""
+        v = self.setting_get(p.SET_DONGLE_LEDS)
+        return {"pair": v[0], "player": v[1], "power": v[2],
+                "player_on": bool(v[3] & p.LEDS_PLAYER_ON),
+                "power_on": bool(v[3] & p.LEDS_POWER_ON)}
+
+    def set_dongle_leds(self, leds):
+        on = ((p.LEDS_PLAYER_ON if leds["player_on"] else 0)
+              | (p.LEDS_POWER_ON if leds["power_on"] else 0))
+        self.setting_set(p.SET_DONGLE_LEDS,
+                         bytes([leds["pair"], leds["player"], leds["power"], on]))
+
     def trigger_full(self):
         """(LT, RT) full pull thresholds, %."""
         v = self.setting_get(p.SET_TRG_FULL)

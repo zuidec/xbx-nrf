@@ -69,6 +69,12 @@ void pair_indicator_hold(bool hold);
 /* Indicator off for good (power-off); TX thread only. */
 void pair_indicator_off(void);
 
+/* Brightness 1–255 (led_level.h); any thread. */
+void pair_indicator_level(uint8_t level);
+
+/* The indicator's PWM pulse when lit, at the current brightness. */
+uint32_t pair_indicator_pulse(void);
+
 /* The Pair button is pressed now (not debounced). */
 bool pair_button(void);
 

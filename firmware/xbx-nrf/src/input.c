@@ -517,7 +517,7 @@ static void status_led(bool on)
 	led_set(&led_heavy, on ? 0xFF : 0);
 	led_set(&led_weak, 0);
 #else
-	pwm_set_pulse_dt(&led_status, on ? led_status.period : 0);
+	pwm_set_pulse_dt(&led_status, on ? pair_indicator_pulse() : 0);
 #endif
 }
 

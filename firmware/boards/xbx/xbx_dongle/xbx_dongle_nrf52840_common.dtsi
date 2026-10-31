@@ -3,8 +3,8 @@
  * MDBT50Q-U1MV2 in normal voltage mode: VDD and VDDH from a 3.3 V LDO, so
  * REG0 is unused. The module
  * carries the REG1 DC/DC inductors. LEDs sink to their GPIO (active low),
- * so their pins are open-drain: "off" floats the pin instead of driving it
- * high.
+ * so their PWM pins are open-drain: "off" floats the pin instead of driving
+ * it high.
  */
 
 #include <nordic/nrf52840_qiaa.dtsi>
@@ -23,41 +23,39 @@
 		zephyr,shell-uart = &uart0;
 	};
 
-	leds {
-		compatible = "gpio-leds";
+	/* 1 ms period; brightness from the configurator (leds.c) */
+	pwmleds {
+		compatible = "pwm-leds";
 
 		/* blue, 180 Ω: high drive (low side) */
 		pair_led: pair_led {
-			gpios = <&gpio0 8 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN | NRF_GPIO_DRIVE_H0)>;
+			pwms = <&pwm1 0 PWM_MSEC(1) PWM_POLARITY_INVERTED>;
 			label = "PAIR_LED (blue)";
 		};
 
 		p1_led: p1_led {
-			gpios = <&gpio1 13 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+			pwms = <&pwm0 0 PWM_MSEC(1) PWM_POLARITY_INVERTED>;
 			label = "P1_LED (green)";
 		};
 
 		p2_led: p2_led {
-			gpios = <&gpio1 14 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+			pwms = <&pwm0 1 PWM_MSEC(1) PWM_POLARITY_INVERTED>;
 			label = "P2_LED (green)";
 		};
 
 		p3_led: p3_led {
-			gpios = <&gpio1 15 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+			pwms = <&pwm0 2 PWM_MSEC(1) PWM_POLARITY_INVERTED>;
 			label = "P3_LED (green)";
 		};
 
 		p4_led: p4_led {
-			gpios = <&gpio0 3 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+			pwms = <&pwm0 3 PWM_MSEC(1) PWM_POLARITY_INVERTED>;
 			label = "P4_LED (green)";
 		};
 
-		/*
-		 * Only with JP1 2–3 bridged. Open-drain matters most here: with 1–2
-		 * also bridged, P0.22 is shorted to GND and must never drive high.
-		 */
+		/* only with JP1 2–3 bridged (pinctrl: why open-drain matters here) */
 		pwr_led: pwr_led {
-			gpios = <&gpio0 22 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+			pwms = <&pwm1 1 PWM_MSEC(1) PWM_POLARITY_INVERTED>;
 			label = "PWR_LED (red)";
 		};
 	};
@@ -74,12 +72,12 @@
 
 	aliases {
 		sw0 = &pair_sw;
-		led0 = &pair_led;
-		led1 = &p1_led;
-		led2 = &p2_led;
-		led3 = &p3_led;
-		led4 = &p4_led;
-		led5 = &pwr_led;
+		pwm-led0 = &pair_led;
+		pwm-led1 = &p1_led;
+		pwm-led2 = &p2_led;
+		pwm-led3 = &p3_led;
+		pwm-led4 = &p4_led;
+		pwm-led5 = &pwr_led;
 		watchdog0 = &wdt0;
 	};
 };
@@ -94,6 +92,20 @@
 
 &adc {
 	status = "okay";
+};
+
+&pwm0 {
+	status = "okay";
+	pinctrl-0 = <&pwm0_default>;
+	pinctrl-1 = <&pwm0_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&pwm1 {
+	status = "okay";
+	pinctrl-0 = <&pwm1_default>;
+	pinctrl-1 = <&pwm1_sleep>;
+	pinctrl-names = "default", "sleep";
 };
 
 &gpiote {

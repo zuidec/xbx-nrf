@@ -270,9 +270,9 @@ flashing over J1 (SWD). Pins from the Rev1.1 schematic:
 |---|---|---|
 | MODE_SW | P1.09 | SW3, read at boot (a change restarts the dongle after 1 s): **low = XInput** (1 kΩ to GND), **high = HID** (open, internal pull-up) |
 | PAIR_SW | P1.12 | SW2 to GND; internal pull-up. Press = pairing mode, hold 10 s = factory reset |
-| PAIR_LED (blue) | P0.08 | D1, active low, 180 Ω, high drive; pairing indicator |
-| P1_LED…P4_LED (green) | P1.13, P1.14, P1.15, P0.03 | D2–D5, active low, 1 kΩ |
-| PWR_LED (red) | P0.22 | D6, 1 kΩ, via JP1 (open by default; see the warning below): 2–3 = GPIO, active low; 1–2 = GND, always on |
+| PAIR_LED (blue) | P0.08 | D1, active low, 180 Ω, high drive; pairing indicator; `pwm1` ch 0 |
+| P1_LED…P4_LED (green) | P1.13, P1.14, P1.15, P0.03 | D2–D5, active low, 1 kΩ; `pwm0` ch 0–3 |
+| PWR_LED (red) | P0.22 | D6, 1 kΩ, via JP1 (open by default; see the warning below): 2–3 = GPIO (`pwm1` ch 1), active low; 1–2 = GND, always on |
 | DBG_TX / DBG_RX | P0.20 / P0.21 | J3 UART (JST-SH, Raspberry Pi pinout): pin 1 TX, pin 3 RX; console for samples (the app logs over USB) |
 | SWCLK / SWDIO | — | J1 SWD (JST-SH, Raspberry Pi pinout) |
 | NRST | P0.18 | SW1 reset button, TP1 |
@@ -284,7 +284,8 @@ flashing over J1 (SWD). Pins from the Rev1.1 schematic:
 > [!warning] JP1: bridge one side only
 > Bridge 2–3 (LED on P0.22) **or** 1–2 (LED always on), never both: that
 > shorts P0.22 to GND, and the GPIO driving high into it can be damaged. The
-> board definition drives the LED pins open-drain (never high) as a backstop.
+> board definition drives the LED pins open-drain (never high, also on PWM)
+> as a backstop.
 
 ### nRF52840 Dongle (PCA10059)
 

@@ -451,10 +451,10 @@ USB modes, in order; one active at a time.
        and SDL/Steam cache drivers and mappings per VID:PID). Apply for our
        own once the repo is public, bootloaders too (now `0x0005` dongle,
        `0x0006` controller).
-7. [ ] **LED brightness from the configurator** (custom dongle): one level
-       for the pair, player and power LEDs, stored in flash like the
-       controller's `config.c`. Needs PWM on the LED pins (GPIO on/off
-       now).
+7. [x] **LED brightness from the configurator**: LEDs on PWM (open-drain
+       kept); pair, player and power levels 1–255 each, player and power
+       switchable off (`cfg/leds`). One level for all tested; the three
+       sliders not yet.
 
 ### Controller
 - [x] Power-off: Guide held 6 s releases the hold (`power.c`); a press held
@@ -622,19 +622,23 @@ Linux first.
       `RUMBLE`, `FACTORY_RESET` on the controller; Pair in the report for the
       input test. Tested.
 - [x] Test factory reset (each scope). Tested.
-- [ ] Firmware: LED brightness and stored USB mode settings (`config.c`).
+- [x] Firmware: LED brightness on the controller (Guide LED 1–255,
+      `config.c`). Tested. A stored USB mode
+      setting isn't needed: X / B held at power-on already switches it.
 - [x] Firmware: the channel on the dongle (`dongle/src/configurator.c`):
       `INFO`, `BOOTLOADER`, `REBOOT`, `FACTORY_RESET` (pairing), image
       marker. Firmware update through the app tested.
 - [x] Test the dongle channel in XInput mode (with the console it takes the
       7th and last IN endpoint) and factory reset. Tested.
-- [ ] Firmware: LED brightness on the dongle (PWM on the LED pins, setting
-      `0x03`, stored).
+- [x] Firmware: LED brightness on the dongle ([[#Dongle]] item 7).
+- [ ] Test the dongle's LED sliders and on/off boxes, saved after a restart;
+      tune `XBX_LED_FLOOR` (level 1).
 - [x] App: protocol module, CLI, window (controller: info, input test,
       calibration, rumble, paddles, factory reset, firmware update; dongle:
-      info, update). Firmware update tested (auto-mount not yet).
+      info, update). Firmware update tested, also the auto-mount.
 - [x] App: dongle tab with factory reset (pairing).
-- [ ] App: LED brightness, USB mode once the firmware has them.
+- [x] App: LED brightness (controller: Guide; dongle: pair, player, power
+      with on/off; CLI `led`).
 - [ ] Linux build (PyInstaller one-file), bundling `files/` (udev rule as
       the real file); Windows and macOS later.
 ---

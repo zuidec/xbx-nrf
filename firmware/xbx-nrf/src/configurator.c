@@ -135,7 +135,7 @@ static int factory_reset(uint8_t scope)
 }
 
 static const uint8_t setting_ids[] = {CFG_SETTING_PADDLES, CFG_SETTING_BINDINGS,
-				      CFG_SETTING_TRG_FULL};
+				      CFG_SETTING_LED, CFG_SETTING_TRG_FULL};
 
 static const struct config_usb_app app = {
 	.ids = setting_ids,

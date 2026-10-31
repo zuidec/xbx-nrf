@@ -31,6 +31,21 @@
 #define CFG_USB_RESET_CALIBRATION 0x02
 #define CFG_USB_RESET_PAIRING     0x04
 
+/* LED setting ids (docs/configurator.md, "Settings"; levels: led_level.h) */
+#define CFG_USB_SETTING_LED         0x03 /* controller: Guide LED, u8 1–255 */
+#define CFG_USB_SETTING_DONGLE_LEDS 0x06 /* dongle: struct below */
+
+/* CFG_USB_SETTING_DONGLE_LEDS value */
+struct cfg_usb_dongle_leds {
+	uint8_t pair;   /* 1–255 */
+	uint8_t player; /* 1–255 */
+	uint8_t power;  /* 1–255 */
+	uint8_t on;     /* CFG_USB_LEDS_* */
+} __packed;
+
+#define CFG_USB_LEDS_PLAYER_ON 0x01
+#define CFG_USB_LEDS_POWER_ON  0x02
+
 enum xbx_device {
 	XBX_DEVICE_CONTROLLER = 1,
 	XBX_DEVICE_DONGLE = 2,

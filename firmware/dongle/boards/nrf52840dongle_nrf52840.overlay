@@ -1,14 +1,14 @@
 /*
  * Nordic nRF52840 Dongle (PCA10059), the dongle prototype. The board already
  * defines SW1 (P1.06, pair button) and the LEDs (P0.06; RGB on P0.08, P1.09,
- * P0.12), all active-low; here: the mode switch, and pairing on SW1 with the
- * RGB LED's blue.
+ * P0.12, also on pwm0), all active-low; here: the mode switch, and pairing on
+ * SW1 with the RGB LED's blue (PWM, for the brightness setting).
  */
 
 / {
 	aliases {
 		pair-sw = &button0;
-		pair-led = &led1_blue;
+		pair-led = &blue_pwm_led;
 	};
 
 	zephyr,user {

@@ -9,5 +9,6 @@ toolchain:
 supported:
   - adc
   - gpio
+  - pwm
   - usbd
   - watchdog

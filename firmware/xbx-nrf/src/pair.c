@@ -15,6 +15,7 @@
 
 #include <string.h>
 
+#include "led_level.h"
 #include "pair.h"
 #include "protocol.h"
 
@@ -136,7 +137,19 @@ void pair_forget(void)
 }
 
 static bool indicator_held;  /* pair_indicator_hold() */
-static bool indicator_stale; /* released: set it again even if unchanged */
+static bool indicator_stale; /* released or dimmed: set it again even if unchanged */
+static atomic_t indicator_brightness = ATOMIC_INIT(XBX_LED_DEFAULT);
+
+uint32_t pair_indicator_pulse(void)
+{
+	return xbx_led_pulse(indicator.period, atomic_get(&indicator_brightness));
+}
+
+void pair_indicator_level(uint8_t level)
+{
+	atomic_set(&indicator_brightness, level);
+	indicator_stale = true; /* the next tick applies it */
+}
 
 static void indicator_set(bool on)
 {
@@ -146,7 +159,7 @@ static void indicator_set(bool on)
 	indicator_on = on;
 	indicator_stale = false;
 	if (pwm_is_ready_dt(&indicator)) {
-		pwm_set_pulse_dt(&indicator, on ? indicator.period : 0);
+		pwm_set_pulse_dt(&indicator, on ? pair_indicator_pulse() : 0);
 	}
 }
 
