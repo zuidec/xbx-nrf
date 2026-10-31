@@ -1,7 +1,7 @@
 ---
 title: xbx-nrf TODO
 created: 2026-09-28
-updated: 2026-10-29
+updated: 2026-10-31
 tags:
   - xbx-nrf
   - todo
@@ -374,8 +374,9 @@ Up to 7 paired (least recently connected replaced), 4 connected; 1 kHz for
       reaches the right controller.
 - [x] Step 3: join (sparse attempts at random phases), full flag, 2 ms frame
       for 3–4 controllers and back (slots compacted). Two Pro Micros with
-      `CONFIG_XBX_FAST_FRAME_MAX=1`: switches between 1 kHz and 500 Hz as
-      controllers are plugged and replugged; replugged controllers rejoin.
+      `CONFIG_XBX_FAST_FRAME_MAX=1` (since removed): switches between 1 kHz
+      and 500 Hz as controllers are plugged and replugged; replugged
+      controllers rejoin.
       Default build: both at 1 kHz.
 - [ ] TDMA: margin check. Measured transaction
       333–345 µs → ~155 µs margin in a 500 µs slot.
@@ -453,8 +454,7 @@ USB modes, in order; one active at a time.
        `0x0006` controller).
 7. [x] **LED brightness from the configurator**: LEDs on PWM (open-drain
        kept); pair, player and power levels 1–255 each, player and power
-       switchable off (`cfg/leds`). One level for all tested; the three
-       sliders not yet.
+       switchable off (`cfg/leds`). Tested.
 
 ### Controller
 - [x] Power-off: Guide held 6 s releases the hold (`power.c`); a press held
@@ -509,7 +509,9 @@ USB modes, in order; one active at a time.
       an SDL_GameControllerDB entry (one per device: dongle, wired).
 - [x] Guide LED: pairing indicator; outside pairing solid while linked,
       slow blink while searching.
-- [ ] Guide LED from the host (output report `led`, XInput LED pattern).
+- [ ] Guide LED from the host: the output report's `led` brightness
+      (`host_output()` ignores it now). XInput's player pattern needs
+      nothing more: one LED.
 - [x] Rumble PWM ([[docs/a3910#Firmware notes]]): HIN on pwm1 at 25 kHz,
       LIN as GPIO; a stopping motor brakes 40 ms (`BRAKE_MS`; 0–80 ms felt
       the same), then both inputs low. All four motors tested
@@ -610,8 +612,8 @@ Adafruit nRF52 UF2 bootloader on both boards, unsigned
 ### Configurator
 Python + Tkinter desktop app over a vendor HID channel, direct USB only
 ([[docs/configurator]]). Code: `tools/configurator/`, one code base;
-`build.sh` makes one file per OS in `build/` (`xbx-config-<os>-<cpu>`).
-Linux first.
+`build.sh` makes one file per OS in `output/`
+(`xbx-config-<version>-<os>-<cpu>`). Linux first.
 - [ ] Review the design ([[docs/configurator]]): tabs, commands, settings
       ids, open questions.
 - [x] Firmware: vendor HID interface (`config_usb.c`) on the controller in
@@ -631,8 +633,8 @@ Linux first.
 - [x] Test the dongle channel in XInput mode (with the console it takes the
       7th and last IN endpoint) and factory reset. Tested.
 - [x] Firmware: LED brightness on the dongle ([[#Dongle]] item 7).
-- [ ] Test the dongle's LED sliders and on/off boxes, saved after a restart;
-      tune `XBX_LED_FLOOR` (level 1).
+- [x] Test the dongle's LED sliders and on/off boxes, saved after a restart;
+      `XBX_LED_FLOOR` (level 1 = 24/255) kept. Tested.
 - [x] App: protocol module, CLI, window (controller: info, input test,
       calibration, rumble, paddles, factory reset, firmware update; dongle:
       info, update). Firmware update tested, also the auto-mount.
@@ -648,6 +650,8 @@ Linux first.
 - [x] udev install and uninstall on the real system: tested. The "Give
       access" banner isn't (the VIA rule `92-viia.rules` here opens every
       hidraw node anyway).
+- [ ] Later: the controller's settings through the dongle (needs a reliable
+      radio command channel).
 ---
 
 ## 6. Prototyping milestones
@@ -707,14 +711,6 @@ metadata needs Microsoft's compiler, and on Linux `xpad` drops trigger rumble.
       buzz → GIP isn't worth it on Linux.
 - [ ] Get the "gipdocs" download (metadata compiler, gamepad JSON template).
 - [ ] Decide VID/PID (Microsoft's for `xpad` auto-binding, or bind manually).
-
-### Calibration program
-Small OS-agnostic host tool (Python + `hidapi`, or similar): live stick and
-trigger view, guided calibration, deadzone / curve / trigger-stop settings.
-- [ ] Transport: vendor HID interface (no driver on any OS). Over the
-      controller's wired USB first; via the dongle needs a reliable radio
-      command channel.
-- [ ] Command set, shared with the on-device routine's stored data.
 
 ---
 

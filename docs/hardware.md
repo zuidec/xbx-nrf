@@ -1,7 +1,7 @@
 ---
 title: Hardware (stock top board, J3, controller and dongle boards)
 created: 2026-09-29
-updated: 2026-10-30
+updated: 2026-10-31
 tags:
   - xbx-nrf
   - reference
@@ -290,8 +290,8 @@ flashing over J1 (SWD). Pins from the Rev1.1 schematic:
 ### nRF52840 Dongle (PCA10059)
 
 Nordic's USB dongle, for anyone not building the custom board. Board target
-`nrf52840dongle/nrf52840` (the build default); flashing over its USB
-bootloader: [[docs/flashing#nRF52840 Dongle (PCA10059) — USB DFU (no probe) ✅]].
+`nrf52840dongle/nrf52840` (`xbx-dongle-pca10059` target); flashing over its
+USB bootloader: [[docs/flashing#nRF52840 Dongle (PCA10059) — USB DFU (no probe) ✅]].
 Runs from VDDH (USB), GPIOs at 3.0 V (set by Zephyr's board code).
 
 | Signal | Pin | Notes |
@@ -299,5 +299,5 @@ Runs from VDDH (USB), GPIOs at 3.0 V (set by Zephyr's board code).
 | MODE_SW | P0.29 (edge pad) | Add a switch to GND: **closed = XInput, open = HID**; internal pull-up |
 | PAIR_SW | P1.06 | On-board SW1: press = pairing mode, hold 10 s = factory reset |
 | LED (green) | P0.06 | On-board LED1, active low |
-| RGB LED | P0.08 (R), P1.09 (G), P0.12 (B) | On-board LED2, active low; blue = pairing indicator |
+| RGB LED | P0.08 (R), P1.09 (G), P0.12 (B) | On-board LED2, active low; blue = pairing indicator (PWM) |
 | Reset | P0.18 | On-board side button (also enters the USB bootloader) |

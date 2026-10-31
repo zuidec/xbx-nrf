@@ -1,7 +1,7 @@
 ---
 title: Building the firmware
 created: 2026-09-29
-updated: 2026-10-30
+updated: 2026-10-31
 tags:
   - xbx-nrf
   - firmware
@@ -18,10 +18,10 @@ Related: [[docs/flashing|Flashing & debugging]], [[todo#5. Firmware]].
 
 ## Apps
 
-| App | Folder | Default board | Also supported |
+| App | Folder | Board | Also |
 |---|---|---|---|
-| Controller | `firmware/xbx-nrf` | `xbx_controller/nrf52840/uf2` (custom board; `xbx_controller/nrf52840` without bootloader) | `promicro_nrf52840/nrf52840/uf2` |
-| Dongle | `firmware/dongle` | `nrf52840dongle/nrf52840` (PCA10059, off the shelf) | `xbx_dongle/nrf52840/uf2` (custom board, `xbx-dongle` target; `xbx_dongle/nrf52840` without bootloader), `promicro_nrf52840/nrf52840/uf2` |
+| Controller | `firmware/xbx-nrf` | `xbx_controller/nrf52840/uf2` (custom board) | `promicro_nrf52840/nrf52840/uf2` (test build) |
+| Dongle | `firmware/dongle` | `xbx_dongle/nrf52840/uf2` (custom board) | `nrf52840dongle/nrf52840` (PCA10059, off the shelf) |
 
 Standalone Zephyr apps, outside the SDK folder. Shared code:
 `firmware/common/include/` (e.g. `protocol.h`). Our own board definitions:
@@ -110,15 +110,16 @@ cd ~/Projects/xbx-nrf/firmware
 
 ### Output files
 
-Sysbuild puts each image in a subfolder named after the app:
+Sysbuild puts each image in a subfolder named after the app, inside the
+target's folder (`<dir>`, [[#Building]]):
 
 | File | Use |
 |---|---|
-| `<app>/build/<app>/zephyr/zephyr.uf2` | UF2 bootloader (Pro Micro) |
-| `<app>/build/<app>/zephyr/zephyr.hex` | SWD flashing |
-| `<app>/build/<app>/zephyr/zephyr.elf` | Debugging |
+| `<dir>/<app>/zephyr/zephyr.uf2` | UF2 bootloader (custom boards, Pro Micro) |
+| `<dir>/<app>/zephyr/zephyr.hex` | SWD flashing; PCA10059 DFU (`dfu.zip`) |
+| `<dir>/<app>/zephyr/zephyr.elf` | Debugging |
 
-`<app>/build/zephyr/` is sysbuild's own and has no firmware.
+`<dir>/zephyr/` is sysbuild's own and has no firmware.
 
 ### Board overlays
 
@@ -128,15 +129,12 @@ Name them after the **full** board target, `/` → `_`:
 |---|---|
 | `promicro_nrf52840/nrf52840/uf2` | `promicro_nrf52840_nrf52840_uf2.overlay` |
 | `nrf52840dongle/nrf52840` | `nrf52840dongle_nrf52840.overlay` |
-| `xbx_dongle/nrf52840` | `xbx_dongle_nrf52840.overlay` |
-| `xbx_dongle/nrf52840/uf2` | `xbx_dongle_nrf52840_uf2.overlay` (includes the one above) |
-| `xbx_controller/nrf52840` | `xbx_controller_nrf52840.overlay` |
-| `xbx_controller/nrf52840/uf2` | `xbx_controller_nrf52840_uf2.overlay` (includes the one above) |
+| `xbx_dongle/nrf52840/uf2` | `xbx_dongle_nrf52840_uf2.overlay` |
+| `xbx_controller/nrf52840/uf2` | `xbx_controller_nrf52840_uf2.overlay` |
 
 Shorter names are **silently ignored**; look for `-- Found devicetree overlay:`
-in the build log. Board `.conf` files follow the same rule but can't
-include each other: `xbx_controller_nrf52840_uf2.conf` is a symlink to the
-plain board's.
+in the build log. Board `.conf` files follow the same rule
+(`xbx_controller_nrf52840_uf2.conf`).
 
 ### Default board: why it's in the script
 

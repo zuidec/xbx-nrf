@@ -1,7 +1,7 @@
 ---
 title: Flashing & debugging the nRF52840 boards
 created: 2026-09-28
-updated: 2026-10-30
+updated: 2026-10-31
 tags:
   - xbx-nrf
   - firmware
@@ -63,8 +63,9 @@ An official ST-Link won't connect without the target 3.3 V on its sense pin.
 > A full erase or recover wipes the UF2 / Nordic USB bootloader; restore it with
 > [[#Restoring bootloaders]].
 
-Paths below use `$HEX` / `$ELF` for `<app>/build/<app>/zephyr/zephyr.hex` /
-`.elf`.
+Paths below use `$HEX` / `$ELF` for `<dir>/<app>/zephyr/zephyr.hex` /
+`.elf`, `<dir>` being the target's build folder
+([[docs/building#Output files]]).
 
 ## ST-Link + OpenOCD
 
@@ -269,7 +270,7 @@ first ([[#Restoring bootloaders]]).
 | ST-Link won't connect ("target voltage 0 V") | Target 3.3 V not on the sense pin |
 | Connects, can't halt or read memory | Chip locked → [[#Locked chip (APPROTECT)]] |
 | Dongle app doesn't run after SWD flashing | Bootloader gone → build for the `bare` variant |
-| Custom board app doesn't run after `-f swd` | No UF2 bootloader (the app starts at `0x26000`) → install it, or build the plain board |
+| Custom board app doesn't run after `-f swd` | No UF2 bootloader (the app starts at `0x26000`) → install it ([[#Custom boards — UF2 bootloader ✅]]) |
 | No UF2 drive | Double tap too slow; charge-only USB cable |
 | `west flash`: no matching UF2 partition | Drive not mounted |
 | No `/dev/ttyACM*` after flashing | App crashed early; user not in `dialout` |

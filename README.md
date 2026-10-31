@@ -73,12 +73,25 @@ cd firmware
 | [docs/protocol.md](docs/protocol.md) | Radio (pairing, time slots) and USB (HID, XInput) protocols |
 | [docs/gip.md](docs/gip.md) | Xbox GIP protocol notes (optional mode) |
 
+## Configurator
+
+Desktop app for settings, calibration, input and rumble tests and firmware
+updates of both devices over USB (Python + Tkinter; Linux tested).
+
+```sh
+python3 tools/configurator/xbx-config.py  # run from source
+tools/configurator/build.sh --release     # one file, in output/
+```
+
+Details: [docs/configurator.md](docs/configurator.md).
+
 ## Repository layout
 
 ```
 docs/                project notes (Obsidian)
 firmware/
-  boards/            our board definitions (xbx_dongle)
+  boards/            our board definitions (xbx_controller, xbx_dongle)
+  bootloader/        UF2 bootloader build (upstream + our boards)
   common/            shared code (include/protocol.h)
   xbx-nrf/           controller app
   dongle/            dongle app
@@ -90,7 +103,7 @@ pcb/xbx-nrf/         KiCad project, controller board (lib/: symbols,
 pcb/xbx-nrf-dongle/  KiCad project, dongle board
 mech/                FreeCAD parts (controller-bottom-board/: board outline)
 references/          schematics, scans, datasheets, pinouts
-tools/               test tools (test-rumble.sh)
+tools/               configurator/, test tools (test-rumble.sh)
 todo.md              task list (Obsidian)
 ```
 

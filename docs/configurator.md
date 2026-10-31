@@ -74,7 +74,7 @@ channel's usage page; lists every one found.
 |---|---|
 | Info | Firmware version, USB mode (SW3), serial, paired controllers (suggested) |
 | LED brightness | Pair, player and power LEDs, 1–255 each; player and power can be switched off, pair can't. A change lights that group for 1.5 s (the pair LED is off outside pairing) |
-| Factory reset | Forget all controllers (also: Pair held 10 s) |
+| Factory reset | Settings (LED brightness), pairing (forget all controllers; also: Pair held 10 s): each or both |
 | Firmware update | As the controller |
 
 ### Firmware update
@@ -115,9 +115,9 @@ ending in `.1` reads as a man page to file managers, which then won't run it.
 
 | Command | File | Runs on |
 |---|---|---|
-| `build.sh --release` (Linux) | `xbx-config-0.2.1-linux-x86_64` | Debian 12 (glibc 2.36) and newer: built in a Debian 12 container |
-| `build.sh` (Linux) | `xbx-config-0.2.1-linux-x86_64-local` | This system and any with the same or newer glibc |
-| `build.sh` (Windows, macOS) | `xbx-config-0.2.1-windows-x86_64.exe`, `xbx-config-0.2.1-macos-arm64` | That OS |
+| `build.sh --release` (Linux) | `xbx-config-0.2.2-linux-x86_64` | Debian 12 (glibc 2.36) and newer: built in a Debian 12 container |
+| `build.sh` (Linux) | `xbx-config-0.2.2-linux-x86_64-local` | This system and any with the same or newer glibc |
+| `build.sh` (Windows, macOS) | `xbx-config-0.2.2-windows-x86_64.exe`, `xbx-config-0.2.2-macos-arm64` | That OS |
 
 - Needs Python 3 with tkinter and venv, and `objdump` on Linux; `--release`
   needs only podman or docker. It checks first and lists what's missing.
