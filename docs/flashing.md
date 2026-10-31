@@ -144,8 +144,8 @@ Needs the Zephyr console on the UART pins wired to the probe.
 Both custom boards (`xbx_controller`, `xbx_dongle`) flash over J1 with the
 Pi Debug Probe; `west flash` runs OpenOCD with CMSIS-DAP. From `firmware/`:
 ```sh
-./build.sh xbx-nrf -f swd   # controller ✅
-./build.sh dongle -b xbx_dongle/nrf52840 -f swd
+./build.sh xbx-nrf -f swd      # controller ✅
+./build.sh xbx-dongle -f swd   # custom dongle ✅
 ```
 
 - **Controller: flash on USB power.** Reset drops the power hold (J2 pin 9),

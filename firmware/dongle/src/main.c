@@ -18,6 +18,7 @@
 #include "protocol.h"
 #include "bridge.h"
 #include "hid_pad.h"
+#include "leds.h"
 #include "pairing.h"
 #include "radio.h"
 #include "usb.h"
@@ -29,6 +30,7 @@ int main(void)
 	struct radio_stats prev = {0};
 	int err;
 
+	leds_init();
 	LOG_INF("xbx-nrf dongle v%s (%s), protocol v%d, tx %d dBm", APP_VERSION_STRING,
 		STRINGIFY(APP_BUILD_VERSION), XBX_PROTOCOL_VERSION, XBX_TX_POWER_DBM);
 

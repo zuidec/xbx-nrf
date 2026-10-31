@@ -2,10 +2,11 @@
 # Firmware build into <app>/build/, optionally flashed right after.
 #
 # Usage (from anywhere; starts the pinned SDK toolchain itself if needed):
-#   ./build.sh <xbx-nrf|dongle> [-r] [-f <device>] [extra west build args]
+#   ./build.sh <xbx-nrf|dongle|xbx-dongle> [-r] [-f <device>] [extra west build args]
 #   e.g. ./build.sh xbx-nrf -p                       # pristine rebuild
 #        ./build.sh xbx-nrf -f swd                   # build + flash over SWD
 #        ./build.sh dongle -f /dev/ttyACM0           # build + flash
+#        ./build.sh xbx-dongle -f swd                # custom dongle over SWD
 #        ./build.sh dongle -r                        # release build
 #
 # -r / --release adds the app's release.conf (no USB console, no logs) and
@@ -17,6 +18,8 @@
 #   anything else            "swd": west flash with the board's runner
 #
 # Each app has a default board below. Pass -b <board> to override it.
+# xbx-dongle is the dongle app on the custom board, in <app>/build-xbx/
+# (-release) so the PCA10059 build stays.
 # BUILD_DIR=<dir> builds into <app>/<dir> instead (a second configuration,
 # e.g. a fake-input controller, without overwriting the main build).
 
@@ -29,7 +32,7 @@ source "$script_dir/check-sdk.sh"
 xbx_relaunch_in_toolchain "$script_dir" "$script_dir/$(basename "${BASH_SOURCE[0]}")" "$@"
 
 usage() {
-	echo "usage: $0 <xbx-nrf|dongle> [-r] [-f <device>] [extra west build args]" >&2
+	echo "usage: $0 <xbx-nrf|dongle|xbx-dongle> [-r] [-f <device>] [extra west build args]" >&2
 	exit 2
 }
 
@@ -37,9 +40,11 @@ usage() {
 app="$1"
 shift
 
+build_name=build
 case "$app" in
 xbx-nrf) board="xbx_controller/nrf52840" ;; # Pro Micro: -b promicro_nrf52840/nrf52840/uf2
 dongle)  board="nrf52840dongle/nrf52840" ;; # PCA10059; Pro Micro: -b promicro_nrf52840/nrf52840/uf2
+xbx-dongle) app=dongle; board="xbx_dongle/nrf52840"; build_name=build-xbx ;;
 *) usage ;;
 esac
 
@@ -66,11 +71,11 @@ while [ $# -gt 0 ]; do
 done
 app_dir="$script_dir/$app"
 if $release; then
-	build_dir="$app_dir/${BUILD_DIR:-build-release}"
+	build_dir="$app_dir/${BUILD_DIR:-$build_name-release}"
 	$cmake_sep || west_args+=(--)
 	west_args+=(-DEXTRA_CONF_FILE="$app_dir/release.conf")
 else
-	build_dir="$app_dir/${BUILD_DIR:-build}"
+	build_dir="$app_dir/${BUILD_DIR:-$build_name}"
 fi
 
 xbx_check_sdk "$script_dir" || exit 1

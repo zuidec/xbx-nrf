@@ -26,6 +26,7 @@
 #include "bridge.h"
 #include "hid_pad.h"
 #include "hid_pid.h"
+#include "leds.h"
 #include "pairing.h"
 #include "protocol.h"
 #include "radio.h"
@@ -180,6 +181,7 @@ static void link_report(uint8_t link, uint32_t now)
 			} else {
 				/* presence first: the host adds the gamepad */
 				xinput_set_connected(p->xslot, true);
+				leds_player(p->xslot, true);
 			}
 		}
 		LOG_INF("pipe %u: link up%s", link + 1, xinput_mode ? "" : " (HID)");
@@ -189,6 +191,7 @@ static void link_report(uint8_t link, uint32_t now)
 	}
 	if (!xinput_mode && hid_link < 0) {
 		hid_link = link;
+		leds_player(0, true);
 		LOG_INF("pipe %u: drives the HID gamepad", link + 1);
 	}
 
@@ -216,6 +219,7 @@ static void link_lost(uint8_t link)
 	if (xinput_mode) {
 		if (p->xslot != XSLOT_NONE) {
 			xinput_set_connected(p->xslot, false);
+			leds_player(p->xslot, false);
 		}
 	} else if (link == hid_link) {
 		const struct hid_pad_state neutral = {
@@ -225,6 +229,7 @@ static void link_lost(uint8_t link)
 
 		hid_pad_update(&neutral);
 		hid_pid_stop_all();
+		leds_player(0, false);
 	}
 
 	/* don't resume stale rumble when the controller reconnects */

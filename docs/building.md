@@ -70,6 +70,7 @@ cd ~/Projects/xbx-nrf/firmware
 ./build.sh dongle -p                # pristine
 ./build.sh dongle -f /dev/ttyACM0   # build, then flash
 ./build.sh dongle -r                # release build
+./build.sh xbx-dongle -f swd        # custom dongle, flash over SWD
 ```
 
 - Runs from any folder and shell: outside `ncs-shell` it restarts itself in
@@ -93,8 +94,9 @@ cd ~/Projects/xbx-nrf/firmware
   BUILD_DIR=build-p2 ./build.sh xbx-nrf -p -- -DCONFIG_XBX_FAKE_INPUT=y
   ```
 - Default boards live in `build.sh`: `xbx_controller/nrf52840` for the
-  controller, the PCA10059 for the dongle until the custom one is tested
-  ([[todo#5. Firmware]]).
+  controller, the PCA10059 for `dongle`. `xbx-dongle` is the dongle app on
+  `xbx_dongle/nrf52840`, built into `dongle/build-xbx/` (`-r`:
+  `build-xbx-release/`) so both dongle builds coexist.
 - Plain `west build` also works but skips the version check, and needs `-b`
   again after `-p`.
 
