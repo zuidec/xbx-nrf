@@ -1,7 +1,8 @@
 /*
  * Configurator commands on the dongle (see configurator.h). Settings: the LED
- * levels, key "cfg/leds", saved 1 s after the last change. Requests, the
- * save and the flush all run on the system work queue.
+ * levels, key "cfg/leds", saved 1 s after the last change; other "cfg/" keys
+ * (older firmware) are deleted at boot. Requests, the save and the flush all
+ * run on the system work queue.
  */
 
 #include <zephyr/kernel.h>
@@ -9,6 +10,7 @@
 #include <zephyr/settings/settings.h>
 
 #include <errno.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "config_usb.h"
@@ -31,6 +33,7 @@ static const struct cfg_usb_dongle_leds leds_default = {
 };
 
 static struct cfg_usb_dongle_leds leds_cfg = leds_default;
+static char stale_key[24]; /* an unknown key seen while loading, deleted after */
 
 static bool leds_valid(const struct cfg_usb_dongle_leds *c)
 {
@@ -54,7 +57,9 @@ static int cfg_load(const char *name, size_t len, settings_read_cb read_cb, void
 	struct cfg_usb_dongle_leds c;
 
 	if (strcmp(name, "leds") != 0) {
-		return -ENOENT;
+		/* not deleted here: the load is still reading the storage */
+		snprintf(stale_key, sizeof(stale_key), "cfg/%s", name);
+		return 0;
 	}
 	if (len == sizeof(c) && read_cb(cb_arg, &c, sizeof(c)) == sizeof(c) && leds_valid(&c)) {
 		leds_cfg = c;
@@ -170,6 +175,10 @@ int configurator_init(void)
 
 	if (!err) {
 		err = settings_load_subtree("cfg");
+	}
+	if (!err && stale_key[0]) {
+		LOG_INF("settings: deleting stale %s", stale_key);
+		err = settings_delete(stale_key);
 	}
 	if (err) {
 		LOG_WRN("settings: %d", err);
