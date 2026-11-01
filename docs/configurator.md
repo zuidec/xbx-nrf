@@ -248,6 +248,7 @@ reaches full.
 | 7 | LT full pull threshold, % of the travel |
 | 8–43 | Per axis min, centre, max (i16 LE, raw counts; triggers: centre = rest). While sweeping: seen so far |
 | 44 | RT full pull threshold, % |
+| 45 | Stick axes reported against their counts (same bits; 0 before 0.8.1) |
 
 ### Settings
 

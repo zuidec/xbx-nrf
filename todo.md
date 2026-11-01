@@ -314,7 +314,6 @@ Code: `firmware/{xbx-nrf,dongle}/src/main.c`,
       took ~700 µs (I2C, a 100 µs busy-wait, ADC, one after the other): now
       asynchronous, ~245 µs (up to ~335). Two controllers: ~1 % and ~0 %
       loss, `sync` 0–7/s, within ±16 µs.
-- [ ] Busy Wi-Fi, distance, other channels (`XBX_RF_CHANNELS`).
 - [x] Tune retransmit delay/count. Not needed: no retries with time slots.
 - [ ] Dongle timing pin once usable PCA10059 pads are known.
 - [x] Packet format v1 ([[docs/protocol#Radio (controller ↔ dongle)]]).
@@ -324,8 +323,8 @@ Code: `firmware/{xbx-nrf,dongle}/src/main.c`,
       payloads and everyone switches at that frame. A controller that misses
       it loses the link and rejoins. Hopping every frame would need a shared
       sequence and frame count, a dongle retune (~40–130 µs) in the last
-      slot's margin, and harder joining and pairing. First: test on a busy
-      Wi-Fi channel whether it's needed.
+      slot's margin, and harder joining and pairing. Only if interference
+      shows up in use.
 
 ### Pairing & multiple controllers (protocol v3)
 Design: [[docs/protocol#Pairing & multiple controllers]].

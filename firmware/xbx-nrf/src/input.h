@@ -99,6 +99,7 @@ struct input_raw {
 	uint8_t cal_bad;         /* axes the last save refused (bit per calib_axis_id) */
 	uint8_t stored;          /* calibrated axes in flash (bit per calib_axis_id) */
 	uint8_t full_pct[2];     /* trigger full pull thresholds, % of the travel */
+	uint8_t inverted;        /* stick axes reported against their counts (bits) */
 };
 
 /* input_read()'s state: from another thread, values may be a tick apart. */

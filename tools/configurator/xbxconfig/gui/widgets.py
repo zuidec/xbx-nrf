@@ -86,7 +86,8 @@ class ButtonGrid(ttk.Frame):
 
 
 class CalStickView(tk.Canvas):
-    """Calibration view of one stick: raw ADC position, the range seen."""
+    """Calibration view of one stick: raw ADC position and the range seen,
+    oriented as reported (an inverted axis is drawn mirrored)."""
 
     def __init__(self, master, title, size=170):
         super().__init__(master, width=size, height=size + 18, bg=BG, highlightthickness=0)
@@ -99,15 +100,22 @@ class CalStickView(tk.Canvas):
         self.hc = self.create_line(0, 0, 0, 0, fill=ACCENT)
         self.vc = self.create_line(0, 0, 0, 0, fill=ACCENT)
         self.dot = self.create_oval(0, 0, 0, 0, fill=FG, outline="")
+        self.inv_x = self.inv_y = False
+
+    def _frac(self, v, inverted):
+        f = v / ADC_MAX
+        return 1 - f if inverted else f
 
     def _x(self, v):
-        return self.m + v / ADC_MAX * (self.size - 2 * self.m)
+        return self.m + self._frac(v, self.inv_x) * (self.size - 2 * self.m)
 
-    def _y(self, v):  # ADC up = larger, screen up = smaller
-        return self.size - self.m - v / ADC_MAX * (self.size - 2 * self.m)
+    def _y(self, v):  # reported up = positive, screen up = smaller
+        return self.size - self.m - self._frac(v, self.inv_y) * (self.size - 2 * self.m)
 
-    def show(self, raw_x, raw_y, rx, ry, refused):
-        """rx, ry: AxisRange of each axis."""
+    def show(self, raw_x, raw_y, rx, ry, refused, inv_x=False, inv_y=False):
+        """rx, ry: AxisRange of each axis; inv_x, inv_y: reported against
+        the counts."""
+        self.inv_x, self.inv_y = inv_x, inv_y
         self.coords(self.range, self._x(rx.min), self._y(ry.max), self._x(rx.max),
                     self._y(ry.min))
         self.coords(self.hc, self._x(rx.min), self._y(ry.center), self._x(rx.max),
@@ -122,9 +130,17 @@ class CalStickView(tk.Canvas):
         self.coords(self.dot, x - 4, y - 4, x + 4, y + 4)
 
 
+def trigger_pull(rng):
+    """Pull direction (+1 / -1) and travel of a trigger's AxisRange (centre =
+    rest); the longer side wins when it reaches both ways (auto-ranging)."""
+    up, down = rng.max - rng.center, rng.center - rng.min
+    return (1, up) if up >= down else (-1, down)
+
+
 class CalTriggerView(tk.Canvas):
-    """Calibration view of one trigger over the ADC range: rest, the range
-    seen, the current position and the full pull threshold."""
+    """Calibration view of one trigger, released at the left and pulled to the
+    right whichever way its ADC value moves: the range seen, the current
+    position and the full pull threshold. Spans rest to the ADC end."""
 
     def __init__(self, master, title, width=360):
         super().__init__(master, width=width, height=56, bg=BG, highlightthickness=0)
@@ -133,21 +149,22 @@ class CalTriggerView(tk.Canvas):
         self.create_text(width / 2, 48, text=title, fill=FG)
         self.create_rectangle(self.m, 10, width - self.m, 30, outline=DIM)
         self.range = self.create_rectangle(0, 11, 0, 29, fill="#cfe0f6", outline="")
-        self.rest = self.create_line(0, 6, 0, 34, fill=FG, width=2)
         self.full = self.create_line(0, 6, 0, 34, fill=OK, width=2, dash=(3, 2))
         self.pos = self.create_line(0, 8, 0, 32, fill=ACCENT, width=3)
 
-    def _x(self, v):
-        return self.m + v / ADC_MAX * (self.w - 2 * self.m)
-
     def show(self, raw, rng, full_pct, refused):
         """rng: AxisRange (centre = rest)."""
-        self.coords(self.range, self._x(rng.min), 11, self._x(rng.max), 29)
+        rest = rng.center
+        sign, travel = trigger_pull(rng)
+        span = max(1, ADC_MAX - rest if sign > 0 else rest)
+
+        def x(offset):  # counts pulled from rest
+            return self.m + max(0, min(1, offset / span)) * (self.w - 2 * self.m)
+
+        self.coords(self.range, x(0), 11, x(travel), 29)
         self.itemconfigure(self.range, fill="#f6d2cf" if refused else "#cfe0f6")
-        self.coords(self.rest, self._x(rng.center), 6, self._x(rng.center), 34)
-        up, down = rng.max - rng.center, rng.center - rng.min
-        travel = max(up, down)
-        full = rng.center + (travel if up >= down else -travel) * full_pct / 100
-        self.coords(self.full, self._x(full), 6, self._x(full), 34)
+        full = x(travel * full_pct / 100)
+        self.coords(self.full, full, 6, full, 34)
         self.itemconfigure(self.full, state="normal" if travel > 0 else "hidden")
-        self.coords(self.pos, self._x(raw), 8, self._x(raw), 32)
+        pos = x((raw - rest) * sign)
+        self.coords(self.pos, pos, 8, pos, 32)

@@ -166,12 +166,13 @@ class CalStatus:
     stored: int
     full_pct: tuple  # LT, RT
     ranges: list  # AxisRange per AXES
+    inverted: int  # stick axes reported against their counts (bit per AXES)
 
     @classmethod
     def parse(cls, r):
         v = struct.unpack_from("<18h", r, 5)
         ranges = [AxisRange(*v[3 * i:3 * i + 3]) for i in range(len(AXES))]
-        return cls(r[0], r[1], r[2], r[3], (r[4], r[41]), ranges)
+        return cls(r[0], r[1], r[2], r[3], (r[4], r[41]), ranges, r[42] if len(r) > 42 else 0)
 
 
 def pack_bindings(values):

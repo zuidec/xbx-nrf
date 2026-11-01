@@ -1220,6 +1220,7 @@ void input_raw_get(struct input_raw *out)
 		out->range[i].min = axes[i].min;
 		out->range[i].center = axes[i].center;
 		out->range[i].max = axes[i].max;
+		out->inverted |= axes[i].invert ? BIT(i) : 0;
 	}
 	for (int t = 0; t < ARRAY_SIZE(triggers); t++) {
 		const struct trigger *tr = &triggers[t];

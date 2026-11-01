@@ -72,7 +72,8 @@ static int cmd_rumble(const uint8_t *args)
 /*
  * CALIBRATE: step (0 status, enum input_cal_step), targets (start) →
  * state, targets, refused axes, stored axes, LT full pull %, then per axis
- * (calib_axis_id order) min, centre, max (i16 LE), then RT full pull %
+ * (calib_axis_id order) min, centre, max (i16 LE), then RT full pull %,
+ * inverted stick axes
  */
 static void cal_result_fill(uint8_t *result)
 {
@@ -91,7 +92,8 @@ static void cal_result_fill(uint8_t *result)
 		sys_put_le16(raw.range[i].max, &result[n + 4]);
 	}
 	result[n++] = raw.full_pct[1];
-	BUILD_ASSERT(5 + 6 * CALIB_AXES + 1 <= CFG_USB_DATA_SIZE);
+	result[n++] = raw.inverted;
+	BUILD_ASSERT(5 + 6 * CALIB_AXES + 2 <= CFG_USB_DATA_SIZE);
 }
 
 static uint8_t *cal_result; /* the response waiting for the TX thread */

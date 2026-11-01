@@ -114,6 +114,34 @@ class InputPanel(Panel):
             f"{n} {v:4}" for n, v in zip(p.AXES, s.adc)))
 
 
+class CalInfo(ttk.Frame):
+    """The values beside a calibration view: whether they are stored, then
+    rows of numbers (raw ADC counts)."""
+
+    def __init__(self, master, name, header, rows):
+        super().__init__(master)
+        self.name = name
+        self.state = ttk.Label(self, text="")
+        self.state.grid(row=0, column=0, columnspan=4, sticky="w", pady=(0, 4))
+        for c, h in enumerate(header, 1):
+            ttk.Label(self, text=h, foreground=w.RAW).grid(row=1, column=c, sticky="e",
+                                                         padx=(8, 0))
+        self.cells = []
+        align = "e" if len(header) > 1 else "w"  # number columns, or one text value
+        for r, label in enumerate(rows, 2):
+            ttk.Label(self, text=label, foreground=w.RAW).grid(row=r, column=0, sticky="w")
+            cells = [ttk.Label(self, text="", font="TkFixedFont") for _ in header]
+            for c, cell in enumerate(cells, 1):
+                cell.grid(row=r, column=c, sticky=align, padx=(8, 0))
+            self.cells.append(cells)
+
+    def show(self, state, color, rows):
+        self.state.configure(text=f"{self.name}: {state}", foreground=color)
+        for cells, values in zip(self.cells, rows):
+            for cell, v in zip(cells, values):
+                cell.configure(text=str(v))
+
+
 class CalibrationPanel(Panel):
     title = "Calibration"
     streams = True
@@ -148,14 +176,18 @@ class CalibrationPanel(Panel):
         self.ls = w.CalStickView(views, "Left stick (raw)")
         self.ls.grid(row=0, column=0, padx=8)
         self.rs = w.CalStickView(views, "Right stick (raw)")
-        self.rs.grid(row=0, column=1, padx=8)
+        self.rs.grid(row=0, column=2, padx=8)
+        self.info = []
+        for col, name in ((1, "Left stick"), (3, "Right stick")):
+            info = CalInfo(views, name, ("min", "centre", "max"), ("X", "Y"))
+            info.grid(row=0, column=col, padx=(0, 16), sticky="n", pady=8)
+            self.info.append(info)
         self.full = []
         self.trg = []
         for name in ("LT", "RT"):
             row = ttk.Frame(self)
             row.pack(anchor="w", pady=(8, 0))
-            view = w.CalTriggerView(row, f"{name}: rest (black), range, position (blue), "
-                                         f"full from (green)")
+            view = w.CalTriggerView(row, f"{name}: range (blue), position, full from (green)")
             view.pack(side="left")
             box = ttk.Frame(row)
             box.pack(side="left", padx=12)
@@ -166,11 +198,15 @@ class CalibrationPanel(Panel):
             sb.pack(anchor="w")
             sb.bind("<Return>", lambda _e: self.set_full())
             sb.bind("<FocusOut>", lambda _e: self.set_full())
+            info = CalInfo(row, name, ("",), ("rest", "full pull", "full from"))
+            info.pack(side="left", padx=(4, 0))
             self.trg.append(view)
             self.full.append(v)
+            self.info.append(info)
         self.lt, self.rt = self.trg
-        self.detail = ttk.Label(self, text="", font="TkFixedFont")
-        self.detail.pack(anchor="w", pady=(8, 0))
+        ttk.Label(self, text="A calibrated trigger reports full from its % of the travel; "
+                             "check it live in the Input test.", foreground=w.RAW).pack(
+            anchor="w", pady=(8, 0))
 
     def on_show(self):
         self.refresh()
@@ -226,13 +262,34 @@ class CalibrationPanel(Panel):
         self.text.configure(text=text, foreground=w.BAD if st.refused else w.FG)
         r = st.ranges
         bit = lambda i: bool(st.refused & (1 << i))  # noqa: E731
-        self.ls.show(s.adc[0], s.adc[1], r[0], r[1], bit(0) or bit(1))
-        self.rs.show(s.adc[2], s.adc[3], r[2], r[3], bit(2) or bit(3))
+        inv = lambda i: bool(st.inverted & (1 << i))  # noqa: E731
+        self.ls.show(s.adc[0], s.adc[1], r[0], r[1], bit(0) or bit(1), inv(0), inv(1))
+        self.rs.show(s.adc[2], s.adc[3], r[2], r[3], bit(2) or bit(3), inv(2), inv(3))
         self.lt.show(s.adc[4], r[4], st.full_pct[0], bit(4))
         self.rt.show(s.adc[5], r[5], st.full_pct[1], bit(5))
-        stored = ", ".join(n for i, n in enumerate(p.AXES) if st.stored & (1 << i)) or "none"
-        self.detail.configure(text=f"stored: {stored}.  A calibrated trigger reports full "
-                                   f"from its % of the travel; live: watch the Input test.")
+        self.show_info(st)
+
+    def axis_state(self, st, axes, target):
+        """Label and colour for a stick (both axes) or a trigger."""
+        bits = sum(1 << i for i in axes)
+        if st.state in (1, 2) and st.targets & target:
+            return ("not enough yet", w.BAD) if st.refused & bits else ("this run", w.ACCENT)
+        if st.stored & bits == bits:
+            return "stored", w.OK
+        return "not stored (auto-ranging)", w.RAW
+
+    def show_info(self, st):
+        r = st.ranges
+        for info, (x, y) in zip(self.info, ((0, 1), (2, 3))):
+            info.show(*self.axis_state(st, (x, y), p.CAL_STICKS),
+                      [(r[a].min, r[a].center, r[a].max) for a in (x, y)])
+        for info, a, pct in zip(self.info[2:], (4, 5), st.full_pct):
+            sign, travel = w.trigger_pull(r[a])
+            rest = r[a].center
+            pull = "up" if sign > 0 else "down"
+            info.show(*self.axis_state(st, (a,), p.CAL_TRIGGERS),
+                      [(rest,), (f"{rest + sign * travel} ({pull})",),
+                       (f"{rest + int(sign * travel * pct / 100)} ({pct} %)",)])
 
 
 class RumblePanel(Panel):
