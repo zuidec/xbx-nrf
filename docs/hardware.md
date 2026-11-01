@@ -106,13 +106,13 @@ on our v1 board: no Play & Charge support, charge the AAs externally.
 
 *Verify* / *Unknown*: [[todo#J3/J5 connector (top ↔ bottom)]].
 
-## Antennas (plan: reuse the stock ones)
+## Antennas (the stock ones)
 
 Two feeds on the top board (`ANT` via J5/J6, `ANT1` via J8), each with a
 matching network; the stock SoC board reaches them through coax connectors J1,
 J2. Both cover 2.4 GHz and arrive matched to 50 Ω, so the module's u.FL
-connects to one by a coax pigtail with no tuning; a functional check picks
-which ([[todo#MCU / radio]]).
+connects to one by a coax pigtail with no tuning. Rev1.1 uses this and
+links at ~0 % loss.
 
 ## Controller board
 

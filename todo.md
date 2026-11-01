@@ -192,15 +192,6 @@ Locked decisions: [README](README.md). Not yet locked:
 - [x] MCU: **nRF52840** (no audio in v1).
 - [x] Module: **Raytac MDBT50Q-U1MV2** (as the dongle; u.FL to the stock
       antennas via coax); size and fit checked.
-- [ ] **Stock antennas: verify before ordering the PCB (functional check).**
-      Top board: `ANT` (Z4, Z5, Z6 → J5/J6), `ANT1` (Z1, Z2, Z3 → J8).
-      Stock SoC board: coax J1, J2. Both are 2.4 GHz-band (Xbox Wireless,
-      Bluetooth) and already matched to 50 Ω at their connectors (the stock
-      board fed them over coax): module u.FL → pigtail → connector, no
-      tuning.
-	- [ ] Which connector goes where; connector/cable type.
-	- [ ] Pick the better of the two: RSSI/loss at distance with a Pro Micro
-	      (VNA sweep optional).
 - [ ] Analog inputs: all 8 used (4 stick, 2 trigger, battery, 1.8 V stick
       rail); plan in [[docs/hardware#Analog inputs]]. Rev1.1: all tested.
 - [ ] RF layout: short 50 Ω CPW to the coax, ground vias, away from motors and
