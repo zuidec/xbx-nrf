@@ -384,8 +384,10 @@ Up to 7 paired (least recently connected replaced), 4 connected; 1 kHz for
       and 500 Hz as controllers are plugged and replugged; replugged
       controllers rejoin.
       Default build: both at 1 kHz.
-- [ ] TDMA: margin check. Measured transaction
-      333–345 µs → ~155 µs margin in a 500 µs slot.
+- [x] TDMA: margin check. Measured transaction
+      333–345 µs → ~155 µs margin in a 500 µs slot. With the timer-driven
+      send, slot error within ±16 µs (stats `err`): ≥ ~140 µs left. Two
+      controllers at 1 kHz: ~1 % and ~0 % loss, no collisions.
 - [x] USB: 4 players via the XInput mode (Xbox 360 Wireless Receiver); HID
       stays single-player. Tested with 4 controllers.
 - [x] Test: 2 controllers at 1 kHz (two Pro Micros + PCA10059), then 4 at 500
