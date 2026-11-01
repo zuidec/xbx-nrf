@@ -2,7 +2,10 @@
  * xbx-nrf controller firmware.
  *
  * Sends an input report every 1 ms over ESB (PTX) and prints link statistics
- * once per second. The dongle replies with an output report in the ACK
+ * once per second. TIMER3 marks each period twice: an alarm
+ * CONFIG_XBX_TX_LEAD_US before the slot wakes the TX thread, which reads the
+ * inputs and queues the report (ESB manual TX); the wrap at the slot only
+ * starts the transmission, so the send time doesn't vary with the work. The dongle replies with an output report in the ACK
  * payload, which also says how far the report missed this controller's time
  * slot; the report timer shifts by that much (docs/protocol.md, "Time slots
  * (TDMA)"). The report period follows the dongle's frame: 1 ms, or 2 ms with
@@ -58,10 +61,19 @@ LOG_MODULE_REGISTER(ctrl, LOG_LEVEL_INF);
 #define RETRANSMIT_COUNT    0
 
 /*
- * Timing errors within this are left alone: mostly the TX thread's wake-up
- * jitter (~10 us), far inside the ~150 us slot margin.
+ * Timing errors within this are left alone: measurement noise (the dongle
+ * reads its timer in an event handler), far inside the ~150 us slot margin.
  */
 #define SYNC_DEADBAND_US 15
+
+/* the shortest period (a correction: half) must leave room for the work */
+#define TX_LEAD_US CONFIG_XBX_TX_LEAD_US
+/* trigger supply on this long before the TX thread wakes: A1304 power-on, 70 µs max */
+#define TRG_LEAD_US 80
+BUILD_ASSERT(TX_LEAD_US + TRG_LEAD_US < XBX_REPORT_PERIOD_US / 2,
+	     "TX and trigger lead must fit a shifted period");
+#define PREPARE_CHAN 0 /* TIMER3 alarm channels */
+#define TRG_CHAN     1
 
 /* Joining (no slot): periods between attempts */
 #define JOIN_GAP_MIN  5
@@ -88,12 +100,22 @@ struct link_stats {
 	uint32_t failed;
 	uint32_t attempts;
 	uint32_t skipped; /* tick arrived while the previous report was still in flight */
+	uint32_t late;    /* queued after its slot passed: dropped */
 	uint32_t acks_with_payload;
 	uint32_t join_attempts; /* reports sent without a slot */
 };
 
 static struct link_stats stats;
 static atomic_t in_flight;
+
+/* queued for the next wrap (TX_*), and the wraps so far: a report queued
+ * after its wrap is late
+ */
+enum { TX_NONE, TX_REPORT, TX_PAIR };
+static atomic_t tx_armed;
+static atomic_t tx_gen;
+static volatile uint32_t alarm_cyc; /* cycle count when the TX thread was woken */
+static atomic_t work_max_us;        /* longest wake → queued, since the last stats line */
 static volatile uint16_t next_seq; /* seq of the next report sent (tx thread) */
 
 /*
@@ -306,6 +328,7 @@ static int radio_init(void)
 	config.tx_output_power = XBX_TX_POWER_DBM;
 	config.use_fast_ramp_up = true;
 	config.selective_auto_ack = true;
+	config.tx_mode = ESB_TXMODE_MANUAL; /* the timer ISR starts each one */
 	config.event_handler = radio_event_handler;
 
 	err = esb_init(&config);
@@ -416,38 +439,163 @@ static void report_period_set(const struct device *dev, uint32_t us)
 	counter_set_top_value(dev, &top);
 }
 
+static bool prepare_pending; /* the alarm is set and hasn't fired (timer ISR) */
+
+/* Alarm, TX_LEAD_US before the slot: the TX thread's turn. */
+static void prepare_alarm(const struct device *dev, uint8_t chan, uint32_t ticks,
+			  void *user_data)
+{
+	ARG_UNUSED(dev);
+	ARG_UNUSED(chan);
+	ARG_UNUSED(ticks);
+	ARG_UNUSED(user_data);
+	prepare_pending = false;
+	alarm_cyc = k_cycle_get_32();
+	k_sem_give(&tick_sem);
+}
+
+#if !defined(CONFIG_XBX_FAKE_INPUT)
+static bool trg_pending; /* as prepare_pending, for the trigger alarm */
+
+/* Alarm, TRG_LEAD_US before the prepare alarm: the trigger sensors settle. */
+static void trg_alarm(const struct device *dev, uint8_t chan, uint32_t ticks, void *user_data)
+{
+	ARG_UNUSED(dev);
+	ARG_UNUSED(chan);
+	ARG_UNUSED(ticks);
+	ARG_UNUSED(user_data);
+	trg_pending = false;
+	input_trg_on();
+}
+#endif
+
+/* Both alarms, for the period that starts now, `us` long. */
+static void prepare_alarm_set(const struct device *dev, uint32_t us)
+{
+	struct counter_alarm_cfg alarm = {
+		.callback = prepare_alarm,
+		.ticks = counter_us_to_ticks(dev, us - TX_LEAD_US),
+		.flags = COUNTER_ALARM_CFG_ABSOLUTE | COUNTER_ALARM_CFG_EXPIRE_WHEN_LATE,
+	};
+
+#if !defined(CONFIG_XBX_FAKE_INPUT)
+	struct counter_alarm_cfg trg = {
+		.callback = trg_alarm,
+		.ticks = counter_us_to_ticks(dev, us - TX_LEAD_US - TRG_LEAD_US),
+		.flags = COUNTER_ALARM_CFG_ABSOLUTE | COUNTER_ALARM_CFG_EXPIRE_WHEN_LATE,
+	};
+
+	trg_pending = true;
+	counter_set_channel_alarm(dev, TRG_CHAN, &trg);
+#endif
+	prepare_pending = true;
+	counter_set_channel_alarm(dev, PREPARE_CHAN, &alarm);
+}
+
+/* Start what the TX thread queued (timer ISR). */
+static void tx_start(atomic_val_t kind)
+{
+	atomic_set(&in_flight, 1);
+	if (kind == TX_REPORT) {
+		timing_pin_set(1);
+	}
+	if (esb_start_tx() == 0) {
+		stats.sent++;
+		if (kind == TX_REPORT) {
+			next_seq++; /* only advances when a report is actually sent */
+		}
+	} else {
+		timing_pin_set(0);
+		atomic_set(&in_flight, 0);
+	}
+}
+
 /*
- * Timer ISR, once per period. Applies a pending frame length change, or a
- * slot correction to the period that starts now (late = shorter), and
- * restores the period after a shifted one. The report sent for this tick
- * still has the old timing.
+ * Timer ISR at the wrap, the slot time: starts the queued report first, so
+ * nothing before it varies. Then applies a pending frame length change, or a
+ * slot correction to the period that starts now (late = shorter), restores
+ * the period after a shifted one, and sets the alarm for this period. The
+ * report just started still has the old timing.
  */
 static void report_tick(const struct device *dev, void *user_data)
 {
-	k_spinlock_key_t key = k_spin_lock(&sync_lock);
+	atomic_val_t armed = atomic_set(&tx_armed, TX_NONE);
+	uint16_t seq = next_seq; /* the report starting now, if any */
+	uint32_t next_us;
+	k_spinlock_key_t key;
 
 	ARG_UNUSED(user_data);
+	if (armed != TX_NONE) {
+		tx_start(armed);
+	}
+	atomic_inc(&tx_gen);
+#if !defined(CONFIG_XBX_FAKE_INPUT)
+	if (trg_pending) {
+		/* as below; the triggers read unsettled this once */
+		counter_cancel_channel_alarm(dev, TRG_CHAN);
+		trg_pending = false;
+		input_trg_on();
+	}
+#endif
+	if (prepare_pending) {
+		/* both interrupts were held off (flash erase): wake the thread anyway */
+		counter_cancel_channel_alarm(dev, PREPARE_CHAN);
+		prepare_pending = false;
+		alarm_cyc = k_cycle_get_32();
+		k_sem_give(&tick_sem);
+	}
+
+	key = k_spin_lock(&sync_lock);
 	if (period_pending_us) {
 		period_us = period_pending_us;
 		period_pending_us = 0;
 		report_period_set(dev, period_us);
-		sync_after_seq = next_seq;
+		sync_after_seq = seq;
 		sync_valid = true;
 		sync_pending = false;
 		sync_restore = false;
+		next_us = period_us;
 	} else if (sync_pending) {
-		report_period_set(dev, period_us - sync_shift_us);
-		sync_after_seq = next_seq;
+		next_us = period_us - sync_shift_us;
+		report_period_set(dev, next_us);
+		sync_after_seq = seq;
 		sync_valid = true;
 		sync_pending = false;
 		sync_restore = true;
 		sync_corrections++;
-	} else if (sync_restore) {
-		report_period_set(dev, period_us);
-		sync_restore = false;
+	} else {
+		if (sync_restore) {
+			report_period_set(dev, period_us);
+			sync_restore = false;
+		}
+		next_us = period_us;
 	}
 	k_spin_unlock(&sync_lock, key);
-	k_sem_give(&tick_sem);
+	prepare_alarm_set(dev, next_us);
+}
+
+/*
+ * Queue what's in ESB's TX FIFO for the next wrap, unless that wrap already
+ * passed (the work overran TX_LEAD_US): then it's dropped.
+ */
+static void tx_arm(atomic_val_t kind, atomic_val_t gen)
+{
+	uint32_t work_us = k_cyc_to_us_floor32(k_cycle_get_32() - alarm_cyc);
+
+	unsigned int key = irq_lock();
+	bool in_time = atomic_get(&tx_gen) == gen;
+
+	if (in_time) {
+		atomic_set(&tx_armed, kind);
+	}
+	irq_unlock(key);
+	if (!in_time) {
+		esb_flush_tx();
+		stats.late++;
+	}
+	if (work_us > (uint32_t)atomic_get(&work_max_us)) {
+		atomic_set(&work_max_us, work_us);
+	}
 }
 
 static int report_timer_start(void)
@@ -463,11 +611,20 @@ static int report_timer_start(void)
 	if (!device_is_ready(report_counter)) {
 		return -ENODEV;
 	}
+	unsigned int key;
+
 	err = counter_set_top_value(report_counter, &top);
 	if (err) {
 		return err;
 	}
-	return counter_start(report_counter);
+	err = counter_start(report_counter);
+	if (err) {
+		return err;
+	}
+	key = irq_lock(); /* the timer ISR sets it from now on */
+	prepare_alarm_set(report_counter, XBX_REPORT_PERIOD_US);
+	irq_unlock(key);
+	return 0;
 }
 
 static void output_off(void)
@@ -484,7 +641,7 @@ static void host_output(const uint8_t rumble[4], uint8_t led)
 {
 	k_spinlock_key_t key = k_spin_lock(&host_lock);
 
-	ARG_UNUSED(led); /* Guide LED: later */
+	ARG_UNUSED(led); /* not used: the Guide LED shows our own state */
 	memcpy(host_rumble, rumble, sizeof(host_rumble));
 	k_spin_unlock(&host_lock, key);
 }
@@ -537,6 +694,7 @@ static void wired_update(void)
 		last_output.led = 0;
 		last_output.slot = XBX_SLOT_NONE;
 		irq_unlock(key);
+		atomic_set(&tx_armed, TX_NONE); /* the radio pauses */
 		period_request(XBX_REPORT_PERIOD_US);
 	}
 	LOG_INF("%s", wired ? "wired: USB host active, radio paused" : "wireless: radio resumed");
@@ -573,27 +731,132 @@ static void rumble_leds_update(void)
 }
 #endif
 
+/*
+ * Radio: queue this tick's report (tx holds it) or pairing message for the
+ * next slot, if one is due.
+ */
+static void radio_send(struct esb_payload *tx, atomic_val_t gen, uint32_t tick)
+{
+	static struct esb_payload pair_tx;
+	static struct pair_link link;
+	static bool was_pairing;
+	static uint32_t next_join; /* tick of the next join attempt */
+	struct xbx_input_report *report = (struct xbx_input_report *)tx->data;
+	bool pairing = pair_active();
+
+	if (pairing != was_pairing) {
+		/* pairing drops the link; after it, join again */
+		was_pairing = pairing;
+		last_output.slot = XBX_SLOT_NONE;
+	}
+
+	/* follow the address pairing asks for (radio idle: nothing in flight) */
+	if (!atomic_get(&in_flight) && pair_link_changed(&link) && link.pipe >= 1) {
+		if (radio_apply_link(&link)) {
+			LOG_ERR("radio address change failed");
+		}
+	}
+
+	bool linked = pair_link_get(&link);
+
+	if (!pairing && !linked) {
+		return; /* unpaired: nobody to talk to */
+	}
+
+	/*
+	 * No slot, or pairing: send only every JOIN_GAP periods, each at a
+	 * random phase (shifted two ticks ahead, so it's in place).
+	 */
+	if (pairing || !slot_held()) {
+		if (tick == next_join - 2) {
+			sync_random_shift();
+		}
+		if ((int32_t)(tick - next_join) < 0) {
+			return;
+		}
+		next_join = tick + ((!pairing && (last_output.flags & XBX_OUT_FLAG_FULL))
+					    ? JOIN_FULL_MS * 1000 / period_us
+					    : random_range(JOIN_GAP_MIN, JOIN_GAP_MAX));
+		if (!pairing) {
+			stats.join_attempts++;
+		}
+	}
+
+	if (atomic_get(&in_flight)) {
+		stats.skipped++;
+		return;
+	}
+
+	/* drop anything stale (a report left after TX_FAILED, or a late one) */
+	esb_flush_tx();
+
+	if (pairing) {
+		if (!pair_next_message(&pair_tx)) {
+			return;
+		}
+		if (radio_channel_set(pair_channel())) {
+			LOG_ERR("radio channel change failed");
+		}
+		if (esb_write_payload(&pair_tx) == 0) {
+			tx_arm(TX_PAIR, gen);
+		}
+		return;
+	}
+
+	tx->pipe = link.pipe;
+	report->seq = next_seq; /* the timer ISR advances it once sent */
+	report->timestamp_us = k_cyc_to_us_floor32(k_cycle_get_32());
+	last_input = *report;
+
+	if (esb_write_payload(tx) == 0) {
+		tx_arm(TX_REPORT, gen);
+	}
+}
+
+/* The tick's work that isn't in the report: the expander scan, rumble, LEDs, power. */
+static void after_send(const struct xbx_input_report *report, uint32_t elapsed_ms)
+{
+	uint8_t motors[4];
+
+#if !defined(CONFIG_XBX_FAKE_INPUT)
+	input_prefetch();
+	rumble_leds_update();
+#endif
+	power_tick(report, wired || slot_held(), pair_active(), elapsed_ms);
+	if (!wired && slot_held() && (last_output.flags & XBX_OUT_FLAG_POWER_OFF)) {
+		power_off("host request");
+	}
+
+	rumble_get(motors);
+#if !defined(CONFIG_XBX_FAKE_INPUT)
+	configurator_rumble(motors, elapsed_ms);
+#endif
+	if (!battery_rumble_ok()) {
+		memset(motors, 0, sizeof(motors));
+	}
+	rumble_update(motors, elapsed_ms);
+}
+
 static void tx_thread(void *p1, void *p2, void *p3)
 {
 	struct esb_payload tx = {
 		.noack = false,
 		.length = sizeof(struct xbx_input_report),
 	};
-	struct esb_payload pair_tx;
 	struct xbx_input_report *report = (struct xbx_input_report *)tx.data;
-	struct pair_link link;
-	bool was_pairing = false;
 	uint32_t tick = 0;
-	uint32_t ms = 0;        /* uptime in report periods, as ms */
-	uint32_t next_join = 0; /* tick of the next join attempt */
+	uint32_t ms = 0; /* uptime in report periods, as ms */
 
 	memset(report, 0, sizeof(*report));
 	report->type = XBX_MSG_INPUT;
 
 	while (true) {
 		uint32_t elapsed_ms;
+		atomic_val_t gen;
 
+		/* woken TX_LEAD_US before the slot; the timer ISR sends at the slot */
 		k_sem_take(&tick_sem, K_FOREVER);
+		gen = atomic_get(&tx_gen);
 		tick++;
 		elapsed_ms = period_us / 1000;
 		ms += elapsed_ms;
@@ -611,33 +874,15 @@ static void tx_thread(void *p1, void *p2, void *p3)
 #if defined(CONFIG_XBX_FAKE_INPUT)
 		fill_fake_input(report, ms);
 #else
-		/* every tick, even when not sending; input.c counts one call as 1 ms */
-		for (uint32_t i = 0; i < elapsed_ms; i++) {
-			input_read(report);
-		}
+		/* every tick, even when not sending */
+		input_read(report, elapsed_ms);
 		configurator_tick(report, wired, slot_held(), elapsed_ms);
 		if (wired ? usb_mode_get() == USB_MODE_XINPUT
 			  : (last_output.flags & XBX_OUT_FLAG_XINPUT)) {
 			input_paddles_to_xinput(report);
 		}
-		rumble_leds_update();
 #endif
-		power_tick(report, wired || slot_held(), pair_active(), elapsed_ms);
-		if (!wired && slot_held() && (last_output.flags & XBX_OUT_FLAG_POWER_OFF)) {
-			power_off("host request");
-		}
 		report->battery = battery_tick(elapsed_ms);
-
-		uint8_t motors[4];
-
-		rumble_get(motors);
-#if !defined(CONFIG_XBX_FAKE_INPUT)
-		configurator_rumble(motors, elapsed_ms);
-#endif
-		if (!battery_rumble_ok()) {
-			memset(motors, 0, sizeof(motors));
-		}
-		rumble_update(motors, elapsed_ms);
 
 		if (wired) {
 			if (usb_mode_get() == USB_MODE_XINPUT) {
@@ -649,87 +894,12 @@ static void tx_thread(void *p1, void *p2, void *p3)
 				hid_pad_update(&state);
 			}
 			last_input = *report;
-			continue;
-		}
-
-		bool pairing = pair_active();
-
-		if (pairing != was_pairing) {
-			/* pairing drops the link; after it, join again */
-			was_pairing = pairing;
-			last_output.slot = XBX_SLOT_NONE;
-		}
-
-		/* follow the address pairing asks for (radio idle: nothing in flight) */
-		if (!atomic_get(&in_flight) && pair_link_changed(&link) && link.pipe >= 1) {
-			if (radio_apply_link(&link)) {
-				LOG_ERR("radio address change failed");
-			}
-		}
-
-		bool linked = pair_link_get(&link);
-
-		if (!pairing && !linked) {
-			continue; /* unpaired: nobody to talk to */
-		}
-
-		/*
-		 * No slot, or pairing: send only every JOIN_GAP periods, each at a
-		 * random phase (shifted two ticks ahead, so it's in place).
-		 */
-		if (pairing || !slot_held()) {
-			if (tick == next_join - 2) {
-				sync_random_shift();
-			}
-			if ((int32_t)(tick - next_join) < 0) {
-				continue;
-			}
-			next_join = tick + ((!pairing && (last_output.flags & XBX_OUT_FLAG_FULL))
-						    ? JOIN_FULL_MS * 1000 / period_us
-						    : random_range(JOIN_GAP_MIN, JOIN_GAP_MAX));
-			if (!pairing) {
-				stats.join_attempts++;
-			}
-		}
-
-		if (atomic_get(&in_flight)) {
-			stats.skipped++;
-			continue;
-		}
-
-		/* drop anything stale (e.g. a report left behind after TX_FAILED) */
-		esb_flush_tx();
-
-		if (pairing) {
-			if (!pair_next_message(&pair_tx)) {
-				continue;
-			}
-			if (radio_channel_set(pair_channel())) {
-				LOG_ERR("radio channel change failed");
-			}
-			atomic_set(&in_flight, 1);
-			if (esb_write_payload(&pair_tx) == 0) {
-				stats.sent++;
-			} else {
-				atomic_set(&in_flight, 0);
-			}
-			continue;
-		}
-
-		tx.pipe = link.pipe;
-		report->seq = next_seq; /* only advances when a report is actually sent */
-		report->timestamp_us = k_cyc_to_us_floor32(k_cycle_get_32());
-		last_input = *report;
-
-		atomic_set(&in_flight, 1);
-		timing_pin_set(1);
-		if (esb_write_payload(&tx) == 0) {
-			stats.sent++;
-			next_seq++;
 		} else {
-			timing_pin_set(0);
-			atomic_set(&in_flight, 0);
+			radio_send(&tx, gen, tick);
 		}
+
+		/* not in the report: after it's queued, outside the lead time */
+		after_send(report, elapsed_ms);
 	}
 }
 
@@ -840,9 +1010,11 @@ int main(void)
 
 		uint32_t corrections = sync_corrections;
 
-		LOG_INF("sent %u/s  ok %u  failed %u  skipped %u  avg attempts %u.%02u  acks %u  "
+		LOG_INF("sent %u/s  ok %u  failed %u  skipped %u  late %u  work max %u us  "
+			"avg attempts %u.%02u  acks %u  "
 			"slot %d/%u err %d us  sync %u/s  join %u%s  rumble[%u %u %u %u] led %u",
-			sent, ok, failed, now.skipped - prev.skipped,
+			sent, ok, failed, now.skipped - prev.skipped, now.late - prev.late,
+			(uint32_t)atomic_set(&work_max_us, 0),
 			done ? attempts / done : 0, done ? (attempts * 100 / done) % 100 : 0,
 			now.acks_with_payload - prev.acks_with_payload,
 			slot_held() ? last_output.slot : -1, period_us / XBX_SLOT_US,

@@ -41,7 +41,7 @@
 		/* channel n = AINn */
 		io-channels = <&adc 0>, <&adc 1>, <&adc 2>, <&adc 3>, <&adc 4>,
 			      <&adc 5>, <&adc 6>, <&adc 7>;
-		io-channel-names = "v18", "rt", "ly", "lx", "lt", "ry", "vbat", "rx";
+		io-channel-names = "v18", "lx", "ly", "rx", "ry", "vbat", "lt", "rt";
 
 		/* scope timing pin (TP4) */
 		timing-gpios = <&gpio1 9 GPIO_ACTIVE_HIGH>;
@@ -71,24 +71,30 @@
  * Sticks: internal 0.6 V reference, gain 1/3 (0..1.8 V), read as a ratio to
  * v18 (gain 1/4, so 1.8 V doesn't clip; input.c's RAIL_GAIN_*). Triggers:
  * VDD/4 reference, gain 1/4 (0..VDD, ratiometric like the A1304).
+ *
+ * One scan per tick, in channel (reg) order, all at 3 µs (~40 µs in all):
+ * every input has 100 nF at the pin, which holds the sampling charge, so the
+ * source impedance doesn't matter. The trigger supply comes on from a timer
+ * alarm before the scan (the A1304 needs 50–70 µs: main.c's TRG_LEAD_US).
  */
-#define STICK_CH(n)                                                               \
+#define ACQ_3US ADC_ACQ_TIME(ADC_ACQ_TIME_MICROSECONDS, 3)
+#define STICK_CH(n, ain)                                                          \
 	channel@n {                                                               \
 		reg = <n>;                                                        \
 		zephyr,gain = "ADC_GAIN_1_3";                                     \
 		zephyr,reference = "ADC_REF_INTERNAL";                            \
-		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;                 \
-		zephyr,input-positive = <NRF_SAADC_AIN##n>;                       \
+		zephyr,acquisition-time = <ACQ_3US>;                              \
+		zephyr,input-positive = <NRF_SAADC_AIN##ain>;                     \
 		zephyr,resolution = <12>;                                         \
 	}
 
-#define TRIGGER_CH(n)                                                             \
+#define TRIGGER_CH(n, ain)                                                        \
 	channel@n {                                                               \
 		reg = <n>;                                                        \
 		zephyr,gain = "ADC_GAIN_1_4";                                     \
 		zephyr,reference = "ADC_REF_VDD_1_4";                             \
-		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;                 \
-		zephyr,input-positive = <NRF_SAADC_AIN##n>;                       \
+		zephyr,acquisition-time = <ACQ_3US>;                              \
+		zephyr,input-positive = <NRF_SAADC_AIN##ain>;                     \
 		zephyr,resolution = <12>;                                         \
 	}
 
@@ -101,27 +107,28 @@
 		reg = <0>;
 		zephyr,gain = "ADC_GAIN_1_4";
 		zephyr,reference = "ADC_REF_INTERNAL";
-		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,acquisition-time = <ACQ_3US>;
 		zephyr,input-positive = <NRF_SAADC_AIN0>;
 		zephyr,resolution = <12>;
 	};
 
-	TRIGGER_CH(1); /* RT */
-	STICK_CH(2);   /* LS_Y */
-	STICK_CH(3);   /* LS_X */
-	TRIGGER_CH(4); /* LT */
-	STICK_CH(5);   /* RS_Y */
-	STICK_CH(7);   /* RS_X */
+	STICK_CH(1, 3); /* LS_X */
+	STICK_CH(2, 2); /* LS_Y */
+	STICK_CH(3, 7); /* RS_X */
+	STICK_CH(4, 5); /* RS_Y */
 
-	/* VBAT (3v/B+): 0..3.6 V, read alone by battery.c */
-	channel@6 {
-		reg = <6>;
+	/* VBAT (3v/B+): 0..3.6 V, in the same scan (battery.c takes it) */
+	channel@5 {
+		reg = <5>;
 		zephyr,gain = "ADC_GAIN_1_6";
 		zephyr,reference = "ADC_REF_INTERNAL";
-		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,acquisition-time = <ACQ_3US>;
 		zephyr,input-positive = <NRF_SAADC_AIN6>;
 		zephyr,resolution = <12>;
 	};
+
+	TRIGGER_CH(6, 4); /* LT */
+	TRIGGER_CH(7, 1); /* RT */
 };
 
 /* 1 kHz report timer (TIMER2 is used by ESB) */

@@ -1,7 +1,7 @@
 ---
 title: xbx-nrf protocols (radio + USB)
 created: 2026-09-29
-updated: 2026-10-02
+updated: 2026-10-31
 tags:
   - xbx-nrf
   - firmware
@@ -88,7 +88,7 @@ through:
 | 0 | 1 | `type` | `0x02` (`XBX_MSG_OUTPUT`) |
 | 1 | 1 | `seq` | +1 per report queued |
 | 2 | 4 | `rumble[4]` | Heavy, weak, LT, RT; 0…255 |
-| 6 | 1 | `led` | Guide LED brightness, 0…255 |
+| 6 | 1 | `led` | Guide LED brightness, 0…255; unused: the controller shows its own state |
 | 7 | 1 | `flags` | Bit 0: dongle full (no slot free, retry slowly). Bit 1: power off (host request; set until the link is lost). Bit 2: dongle in XInput mode (the controller maps its paddles onto other buttons) |
 | 8 | 1 | `slot` | Time slot, 0…; `0xFF` = none yet |
 | 9 | 1 | `slots` | Slots per frame; frame = `slots` × 500 µs |
@@ -278,7 +278,13 @@ repeating **frame** and gives each connected controller its own **slot**:
   report period again. ACK payloads lag a report or two, so it ignores
   measurements of reports sent before its last shift (no double correction).
   Crystal drift is ~20 ns/ms, so this also keeps it in place. Errors within
-  ±15 µs are left alone: mostly the controller's thread jitter.
+  ±15 µs are left alone (measurement noise).
+- **Send time:** a TIMER3 alarm `CONFIG_XBX_TX_LEAD_US` (400 µs) before the
+  slot wakes the controller's TX thread, which reads the inputs and queues
+  the report (ESB manual TX); the timer interrupt at the slot only starts
+  it. So the send time doesn't vary with the work (I2C, ADC): when it did,
+  the Rev1.1 controller sent up to ~180 µs off and collided with the other
+  slot. A report not queued in time is dropped (`late` in the stats).
 - **No retries** within a frame: a lost report is replaced by the next one.
 - **Frame changes:** when more controllers connect than the 1 ms frame serves
   (2), the dongle stretches its frame to 2 ms; when they leave, the rest move
@@ -418,7 +424,7 @@ bits become the hat value.
 |---|---|---|---|
 | 0 | 1 | Report ID `0x02` | |
 | 1 | 4 | Rumble heavy, weak, LT, RT (0…255) | Vendor page `0xFF00`, usage `0x01` |
-| 5 | 1 | Guide LED (0…255) | Vendor page `0xFF00`, usage `0x01` |
+| 5 | 1 | Guide LED (0…255; forwarded, unused) | Vendor page `0xFF00`, usage `0x01` |
 
 Maps 1:1 onto the radio output report: the dongle forwards the values in the
 next ACK payloads (live within ~2 ms). Rumble stays on until changed; it's
@@ -540,8 +546,8 @@ The commands `xpad` sends; others are ignored.
 | Bytes | Command | Dongle action |
 |---|---|---|
 | `00 01 0F C0 00 <strong> <weak> …` | Rumble | Heavy = `strong`, weak = `weak` |
-| `00 00 08 4<n> …` | LED pattern `n` (0–15) | Guide LED: 0 = off, anything else = on |
-| `00 00 08 C0 …` | Power off (Guide held 5 s) | Logged ([[todo#Controller]]) |
+| `00 00 08 4<n> …` | LED pattern `n` (0–15) | `led` 0 for pattern 0, else 255 (unused) |
+| `00 00 08 C0 …` | Power off (Guide held 5 s) | `flags` bit 1 until the link drops: the controller powers off |
 | `08 00 0F C0 …` | Presence query (at bind) | Repeat the presence packet |
 
 ### Behaviour
@@ -608,7 +614,7 @@ Input report, 20 bytes: `00 14`, buttons (XInput `wButtons`, = radio
 | Bytes (PC → pad) | Command | Controller action |
 |---|---|---|
 | `00 08 00 <strong> <weak> …` | Rumble | Heavy = `strong`, weak = `weak` |
-| `01 03 <n>` | LED pattern | Logged (Guide LED later) |
+| `01 03 <n>` | LED pattern | Logged |
 | Vendor IN request `0x01` (to the interface) | `xpad`'s start-up request | Answered with 20 zero bytes |
 
 Windows untested ([[todo#Controller]]).

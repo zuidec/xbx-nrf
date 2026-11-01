@@ -77,7 +77,11 @@ struct config_usb_app {
 	void (*flush)(void);
 	/* Erase what scope (CFG_USB_RESET_*) names; the restart follows. */
 	int (*factory_reset)(uint8_t scope);
-	/* CFG_USB_CMD_*: args CFG_USB_ARGS_SIZE, result CFG_USB_DATA_SIZE bytes. */
+	/*
+	 * CFG_USB_CMD_*: args CFG_USB_ARGS_SIZE, result CFG_USB_DATA_SIZE bytes.
+	 * -EINPROGRESS: answered later by config_usb_finish(), result kept
+	 * until then (the channel takes no other request meanwhile).
+	 */
 	int (*command)(uint8_t cmd, const uint8_t *args, uint8_t *result);
 };
 
@@ -92,5 +96,8 @@ int config_usb_init(uint8_t usb_mode, const struct config_usb_app *app);
  * sent yet. -ENOTCONN: the interface is down (stop streaming).
  */
 int config_usb_stream(const uint8_t *data, size_t len);
+
+/* Send the response a command deferred with -EINPROGRESS; any thread. */
+void config_usb_finish(int err);
 
 #endif /* XBX_CONFIG_USB_H_ */

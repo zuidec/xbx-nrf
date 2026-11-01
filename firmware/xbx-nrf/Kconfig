@@ -15,6 +15,18 @@ config XBX_USB_CONSOLE
 	  Adds the CDC ACM serial port (log console) next to the wired-mode
 	  gamepad on the controller's USB device. On for development builds.
 
+config XBX_TX_LEAD_US
+	int "Report preparation lead before the time slot (us)"
+	range 100 400
+	default 400
+	help
+	  The TX thread reads the inputs and queues the report this long
+	  before its slot; the timer interrupt at the slot only starts the
+	  transmission, so the send time doesn't depend on how long that work
+	  took. Too short: reports miss their slot ("late" in the stats).
+	  Longer: the inputs are that much older when sent. Measured on Rev1.1:
+	  ~245 us typical, up to ~335 us (USB activity).
+
 config XBX_FAKE_INPUT
 	bool "Send a test pattern instead of real input"
 	help

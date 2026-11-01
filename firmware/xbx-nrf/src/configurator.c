@@ -74,19 +74,11 @@ static int cmd_rumble(const uint8_t *args)
  * state, targets, refused axes, stored axes, LT full pull %, then per axis
  * (calib_axis_id order) min, centre, max (i16 LE), then RT full pull %
  */
-static int cmd_calibrate(const uint8_t *args, uint8_t *result)
+static void cal_result_fill(uint8_t *result)
 {
 	struct input_raw raw;
 	size_t n = 0;
-	int err = 0;
 
-	if (args[0] != CAL_STATUS) {
-		err = input_cal_request(args[0], args[1]);
-		if (err) {
-			return err;
-		}
-		k_msleep(2); /* the TX thread takes the step on its next tick */
-	}
 	input_raw_get(&raw);
 	result[n++] = raw.cal_state;
 	result[n++] = raw.cal_targets;
@@ -100,7 +92,29 @@ static int cmd_calibrate(const uint8_t *args, uint8_t *result)
 	}
 	result[n++] = raw.full_pct[1];
 	BUILD_ASSERT(5 + 6 * CALIB_AXES + 1 <= CFG_USB_DATA_SIZE);
-	return 0;
+}
+
+static uint8_t *cal_result; /* the response waiting for the TX thread */
+
+/* TX thread: the step was taken, its state is in input_raw_get() now */
+static void cal_step_done(void)
+{
+	cal_result_fill(cal_result);
+	config_usb_finish(0);
+}
+
+static int cmd_calibrate(const uint8_t *args, uint8_t *result)
+{
+	int err;
+
+	if (args[0] == CAL_STATUS) {
+		cal_result_fill(result);
+		return 0;
+	}
+	cal_result = result;
+	err = input_cal_request(args[0], args[1], cal_step_done);
+	/* the response goes out once the TX thread took the step (next tick) */
+	return err ? err : -EINPROGRESS;
 }
 
 static int command(uint8_t cmd, const uint8_t *args, uint8_t *result)

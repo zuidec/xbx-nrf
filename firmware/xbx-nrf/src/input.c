@@ -5,11 +5,18 @@
  * triggers, rumble LEDs and supply switches exist only where the board's
  * zephyr,user node has them.
  *
+ * Nothing waits on the CPU: each tick starts the ADC scan (adc_read_async),
+ * reads the GPIOs, then sleeps until the scan is done (~40 µs). The expander
+ * scan (I2C, RTIO, ~200 µs) runs a tick ahead: input_prefetch() starts it
+ * after the report is sent, the next input_read() takes its result.
+ *
  * ADC: one sequence per tick over the io-channels by name: lx, ly (left
- * stick), rx, ry (right stick), lt, rt (analog triggers), v18 (stick supply).
- * With v18, stick values are a ratio to the supply (its error cancels);
- * without, raw counts against the channel's own reference. The trigger supply
- * (trg-enable-gpios) is on only around each sample.
+ * stick), rx, ry (right stick), lt, rt (analog triggers), v18 (stick supply),
+ * vbat (for battery.c). With v18, stick values are a ratio to the supply (its
+ * error cancels); without, raw counts against the channel's own reference.
+ * The trigger supply (trg-enable-gpios) is on only around each scan: main.c's
+ * timer turns it on early enough for the A1304 to settle (input_trg_on()),
+ * the scan's end turns it off.
  *
  * Sticks: with a stored calibration (calib.c) the range is used as it is; the
  * centre measured at boot replaces the stored one if the stick is still and
@@ -76,8 +83,10 @@ LOG_MODULE_REGISTER(input, LOG_LEVEL_INF);
 #define RAIL_GAIN_DEN 4
 #define RAIL_MIN      (ADC_MAX * 3 / 4 * 8 / 10) /* below 80 % of 1.8 V: supply off? */
 
+#define TRG_SETTLE_US 100 /* A1304 power-on: 70 µs max, plus TRG+'s ramp */
+#define ADC_WAIT_MS 2 /* a scan takes ~40 µs: longer = stuck, collect it later */
+
 /* Analog triggers, raw counts; tune on the real triggers */
-#define TRG_SETTLE_US      100           /* A1304 power-on 50–70 µs */
 #define TRG_DEADZONE       (ADC_MAX / 100)
 #define TRG_INITIAL_TRAVEL (ADC_MAX / 4) /* assumed until pulled further */
 
@@ -209,8 +218,8 @@ static uint8_t lockout_ms[PIN_BITS];
 static uint8_t rumble_heavy, rumble_weak;
 
 #if HAS_STICK
-/* ADC channels: the calib axes (sticks, triggers), then the stick supply */
-enum { CH_RAIL = CALIB_AXES, CH_COUNT };
+/* ADC channels: the calib axes (sticks, triggers), the stick supply, VBAT */
+enum { CH_RAIL = CALIB_AXES, CH_VBAT, CH_COUNT };
 #define STICK_AXES (CALIB_RY + 1)
 
 #define CH_SPEC(name)                                                                     \
@@ -224,6 +233,7 @@ static const struct adc_dt_spec adc_ch[CH_COUNT] = {
 	[CALIB_LT] = CH_SPEC(lt),
 	[CALIB_RT] = CH_SPEC(rt),
 	[CH_RAIL] = CH_SPEC(v18),
+	[CH_VBAT] = CH_SPEC(vbat),
 };
 
 static const char *const axis_name[CALIB_AXES] = {"lx", "ly", "rx", "ry", "lt", "rt"};
@@ -235,6 +245,10 @@ static struct adc_sequence adc_seq = {
 	.buffer = adc_buf,
 	.buffer_size = sizeof(adc_buf),
 };
+static struct k_poll_signal adc_sig;
+static struct k_poll_event adc_evt;
+static bool adc_pending; /* started, result not taken yet */
+static int16_t vbat_raw = -1; /* -1: no scan yet */
 
 struct stick_axis {
 	int16_t center, min, max; /* raw counts */
@@ -290,27 +304,68 @@ static int adc_setup(void)
 							 (BIT(adc_ch[ch].channel_id) - 1));
 		}
 	}
+	k_poll_signal_init(&adc_sig);
+	k_poll_event_init(&adc_evt, K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &adc_sig);
+	return 0;
+}
+
+/* Start a scan of every channel; returns at once. */
+static int sample_start(void)
+{
+	int err;
+
+	if (adc_pending) {
+		/* the last one outlasted ADC_WAIT_MS: still running? */
+		unsigned int signaled;
+		int result;
+
+		k_poll_signal_check(&adc_sig, &signaled, &result);
+		if (!signaled) {
+			return -EBUSY;
+		}
+		adc_pending = false;
+	}
+	k_poll_signal_reset(&adc_sig);
+	adc_evt.state = K_POLL_STATE_NOT_READY;
+	err = adc_read_async(adc_ch[CALIB_LX].dev, &adc_seq, &adc_sig);
+	if (err) {
+#if HAS_TRG_ENABLE
+		gpio_pin_set_dt(&trg_enable, 0);
+#endif
+		return err;
+	}
+	adc_pending = true;
 	return 0;
 }
 
 /*
- * One reading of every channel: sticks as counts of their supply (with v18),
- * triggers as raw counts; absent axes read 0.
+ * The scan's result, sleeping until it's done: sticks as counts of their
+ * supply (with v18), triggers as raw counts; absent axes read 0.
  */
-static int sample(int16_t v[CALIB_AXES])
+static int sample_finish(int16_t v[CALIB_AXES])
 {
+	unsigned int signaled;
+	int result;
 	int err;
 
-#if HAS_TRG_ENABLE
-	gpio_pin_set_dt(&trg_enable, 1);
-	k_busy_wait(TRG_SETTLE_US);
-#endif
-	err = adc_read(adc_ch[CALIB_LX].dev, &adc_seq);
+	if (!adc_pending) {
+		return -EAGAIN;
+	}
+
+	err = k_poll(&adc_evt, 1, K_MSEC(ADC_WAIT_MS));
 #if HAS_TRG_ENABLE
 	gpio_pin_set_dt(&trg_enable, 0);
 #endif
 	if (err) {
-		return err;
+		return -EBUSY; /* sample_start() collects it */
+	}
+	adc_pending = false;
+	k_poll_signal_check(&adc_sig, &signaled, &result);
+	if (result) {
+		return result;
+	}
+	if (ch_present(CH_VBAT)) {
+		vbat_raw = MAX(adc_buf[buf_idx[CH_VBAT]], 0);
 	}
 	for (int i = 0; i < CALIB_AXES; i++) {
 		/* single-ended can read slightly below 0 */
@@ -327,6 +382,18 @@ static int sample(int16_t v[CALIB_AXES])
 	}
 #endif
 	return 0;
+}
+
+/* Boot only: one scan, waited for (the trigger supply too). */
+static int sample(int16_t v[CALIB_AXES])
+{
+	int err;
+
+	input_trg_on();
+	k_usleep(TRG_SETTLE_US);
+	err = sample_start();
+
+	return err ? err : sample_finish(v);
 }
 
 static void axis_calibrate(struct stick_axis *axis, int32_t center)
@@ -446,6 +513,8 @@ static struct {
 
 /* from the configurator: enum input_cal_step | targets << 8; 0 = none */
 static atomic_t cal_request;
+static input_cal_done_t cal_done; /* set before cal_request */
+static bool cal_answered;         /* a request was taken this tick */
 
 #if HAS_TRIGGERS
 #define CAL_ALL (INPUT_CAL_STICKS | INPUT_CAL_TRIGGERS)
@@ -698,6 +767,9 @@ static void cal_step(const int16_t v[CALIB_AXES])
 	bool sticks = cal.targets & INPUT_CAL_STICKS;
 	bool trgs = cal.targets & INPUT_CAL_TRIGGERS;
 
+	if (app) {
+		cal_answered = true;
+	}
 	cal.ms++;
 	switch (cal.state) {
 	case CAL_IDLE:
@@ -935,8 +1007,8 @@ int input_init(void)
 #endif
 }
 
-/* every input's level now, bit per PIN_* / XBX_BTN_*; not debounced */
-static uint32_t buttons_now(void)
+/* the GPIO inputs' levels, bit per PIN_* / XBX_BTN_*; not debounced */
+static uint32_t buttons_gpio(void)
 {
 	uint32_t now = 0;
 
@@ -945,23 +1017,38 @@ static uint32_t buttons_now(void)
 			now |= pins[i].bit;
 		}
 	}
+	return now;
+}
+
+/* now plus the expander scan input_prefetch() queued (done by now) */
+static uint32_t buttons_expander(uint32_t now)
+{
 #if HAS_EXPANDER
 	uint16_t exp;
 
-	if (pcal6416_read(&exp) == 0) {
+	if (pcal6416_finish(&exp) == 0) {
 		for (size_t i = 0; i < ARRAY_SIZE(expander_map); i++) {
 			if (exp & BIT(expander_map[i].port_bit)) {
 				now |= expander_map[i].bit;
 			}
 		}
 	} else {
-		/* read failed: its buttons keep their state */
+		/* no scan this tick: its buttons keep their state */
 		for (size_t i = 0; i < ARRAY_SIZE(expander_map); i++) {
 			now |= pressed & expander_map[i].bit;
 		}
 	}
 #endif
 	return now;
+}
+
+/* every input's level now (boot: waits for the expander) */
+static uint32_t buttons_now(void)
+{
+#if HAS_EXPANDER
+	pcal6416_start();
+#endif
+	return buttons_expander(buttons_gpio());
 }
 
 #define BOOT_HOLD_SAMPLES 20 /* 1 ms apart: longer than any bounce */
@@ -977,10 +1064,8 @@ uint16_t input_held_at_boot(void)
 	return held & 0xFFFF;
 }
 
-static void buttons_scan(void)
+static void buttons_debounce(uint32_t now)
 {
-	uint32_t now = buttons_now();
-
 	for (int i = 0; i < PIN_BITS; i++) {
 		if (lockout_ms[i]) {
 			lockout_ms[i]--;
@@ -991,20 +1076,65 @@ static void buttons_scan(void)
 	}
 }
 
-void input_read(struct xbx_input_report *report)
+/* The configurator's calibration request was taken: tell it. */
+static void cal_answer(void)
 {
-	buttons_scan();
+	input_cal_done_t done;
 
-#if HAS_STICK
-	int16_t v[CALIB_AXES];
-
-	/* on an ADC error everything holds its last state */
-	if (sample(v) != 0) {
+	if (!cal_answered) {
 		return;
 	}
-	memcpy(last_adc, v, sizeof(last_adc));
-	cal_step(v);
+	cal_answered = false;
+	done = cal_done;
+	cal_done = NULL;
+	if (done) {
+		done();
+	}
+}
 
+void input_read(struct xbx_input_report *report, uint32_t elapsed_ms)
+{
+	uint32_t now;
+	int adc_err = 0;
+#if HAS_STICK
+	int16_t v[CALIB_AXES];
+#endif
+
+	/* the CPU only reads the GPIOs while the scan runs */
+#if HAS_STICK
+	adc_err = sample_start();
+#endif
+	now = buttons_gpio();
+#if HAS_STICK
+	if (!adc_err) {
+		adc_err = sample_finish(v);
+	}
+	if (!adc_err) {
+		memcpy(last_adc, v, sizeof(last_adc));
+	} else if (atomic_get(&cal_request)) {
+		/* no sample: answer the configurator anyway (state unchanged) */
+		atomic_clear(&cal_request);
+		cal_answered = true;
+	}
+#endif
+	now = buttons_expander(now);
+
+	/* one sample per tick; the 1 ms steps (debounce, calibration) per ms */
+	for (uint32_t ms = 0; ms < MAX(elapsed_ms, 1); ms++) {
+		buttons_debounce(now);
+#if HAS_STICK
+		if (!adc_err) {
+			cal_step(v);
+		}
+#endif
+	}
+	cal_answer();
+
+#if HAS_STICK
+	/* on an ADC error everything holds its last state */
+	if (adc_err) {
+		return;
+	}
 	if (cal.state != CAL_IDLE) {
 		/* neutral while calibrating: nothing moves in-game */
 		report->buttons = 0;
@@ -1053,6 +1183,32 @@ void input_read(struct xbx_input_report *report)
 	}
 }
 
+bool input_vbat_raw(int16_t *raw)
+{
+#if HAS_STICK
+	if (vbat_raw >= 0) {
+		*raw = vbat_raw;
+		return true;
+	}
+#endif
+	ARG_UNUSED(raw);
+	return false;
+}
+
+void input_prefetch(void)
+{
+#if HAS_EXPANDER
+	pcal6416_start();
+#endif
+}
+
+void input_trg_on(void)
+{
+#if HAS_TRG_ENABLE
+	gpio_pin_set_dt(&trg_enable, 1);
+#endif
+}
+
 void input_raw_get(struct input_raw *out)
 {
 	memset(out, 0, sizeof(*out));
@@ -1083,7 +1239,7 @@ void input_raw_get(struct input_raw *out)
 	memcpy(out->full_pct, trg_full_pct, sizeof(out->full_pct));
 }
 
-int input_cal_request(uint8_t step, uint8_t targets)
+int input_cal_request(uint8_t step, uint8_t targets, input_cal_done_t done)
 {
 #if HAS_STICK
 	enum cal_state state = cal.state;
@@ -1112,11 +1268,13 @@ int input_cal_request(uint8_t step, uint8_t targets)
 	if (!ok) {
 		return -EBUSY;
 	}
+	cal_done = done; /* before the request: the TX thread reads it after */
 	atomic_set(&cal_request, step == INPUT_CAL_START ? step | targets << 8 : step);
 	return 0;
 #else
 	ARG_UNUSED(step);
 	ARG_UNUSED(targets);
+	ARG_UNUSED(done);
 	return -ENOTSUP;
 #endif
 }

@@ -1,7 +1,9 @@
 /*
  * Battery monitoring on boards with a VBAT input (zephyr,user io-channel
  * "vbat"; 3v/B+, the switched AA rail). Low battery powers off. On USB power
- * the rail comes from USB: full. Without the input: unknown.
+ * the rail comes from USB: full. Without the input: unknown. The reading
+ * comes from input.c's scan (one ADC sequence for everything), so the fake
+ * input build has none.
  */
 
 #ifndef XBX_CTRL_BATTERY_H_

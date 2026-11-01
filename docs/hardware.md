@@ -189,6 +189,13 @@ Sticks are read as a ratio to AIN0 (same reference, so its error cancels;
 fixed gain differences are absorbed by calibration). Run the SAADC offset
 calibration at start-up.
 
+All eight go in one scan per tick (~40 µs), in SAADC channel order (not AIN
+order): 1V8_STICK, LSX, LSY, RSX, RSY, VBAT, LT, RT. Every channel uses a
+3 µs acquisition: the 100 nF at each pin supplies the sampling charge, so the
+source impedance (VBAT's 100 kΩ included) doesn't matter. The A1304 needs
+50–70 µs after power-on, so a timer alarm turns the trigger supply on 80 µs
+before the scan.
+
 VBAT needs no divider: `3v/B+` stays below 3.6 V (2 AAs ≤ ~3.0 V; on USB below
 3.3 V, as U5/U6 only boost) and is 0 V when off (behind Q6/Q7), so nothing
 drains. The 100 kΩ limits current into the pin's protection diode while

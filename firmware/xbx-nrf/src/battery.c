@@ -11,6 +11,7 @@
 #include <hal/nrf_power.h>
 
 #include "battery.h"
+#include "input.h"
 #include "power.h"
 #include "rumble.h"
 
@@ -25,7 +26,9 @@ LOG_MODULE_REGISTER(battery, LOG_LEVEL_INF);
 #define SENSE_MIN_MV 1500  /* lower can't be running AAs: sense fault, ignore */
 
 #define ZEPHYR_USER DT_PATH(zephyr_user)
-#define HAS_VBAT    DT_PROP_HAS_NAME(ZEPHYR_USER, io_channels, vbat)
+/* read in input.c's scan: none with the fake input */
+#define HAS_VBAT    (DT_PROP_HAS_NAME(ZEPHYR_USER, io_channels, vbat) && \
+		     !IS_ENABLED(CONFIG_XBX_FAKE_INPUT))
 
 #define UNKNOWN 0xFF
 
@@ -44,8 +47,6 @@ static const struct {
 	{2500, 70}, {2540, 85}, {2600, 95}, {2720, 100},
 };
 
-static struct adc_sequence seq;
-static int16_t raw;
 static uint32_t mv_q4; /* filtered, mV << FILTER_SHIFT; 0 = no reading yet */
 static uint32_t since_ms;
 static uint32_t quiet_ms; /* motors off this long */
@@ -70,14 +71,15 @@ static uint8_t mv_to_pct(uint32_t mv)
 	return 100;
 }
 
+/* the last scan's value (the channel's gain and reference: the overlay) */
 static int read_mv(int32_t *mv)
 {
-	int err = adc_read_dt(&vbat, &seq);
+	int16_t raw;
 
-	if (err) {
-		return err;
+	if (!input_vbat_raw(&raw)) {
+		return -ENODATA;
 	}
-	*mv = MAX(raw, 0);
+	*mv = raw;
 	return adc_raw_to_millivolts_dt(&vbat, mv);
 }
 #endif
@@ -85,19 +87,8 @@ static int read_mv(int32_t *mv)
 int battery_init(void)
 {
 #if HAS_VBAT
-	int err;
-
-	if (!adc_is_ready_dt(&vbat)) {
-		return -ENODEV;
-	}
-	err = adc_channel_setup_dt(&vbat);
-	if (err) {
-		return err;
-	}
-	err = adc_sequence_init_dt(&vbat, &seq);
-	seq.buffer = &raw;
-	seq.buffer_size = sizeof(raw);
-	return err;
+	/* the channel is set up by input.c, which scans it */
+	return adc_is_ready_dt(&vbat) ? 0 : -ENODEV;
 #else
 	return 0;
 #endif

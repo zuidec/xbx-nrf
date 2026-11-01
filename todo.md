@@ -314,9 +314,15 @@ Code: `firmware/{xbx-nrf,dongle}/src/main.c`,
       controller, ~1 % loss on the weaker link without retries.
 - [x] Latency on the scope (P0.17; results above). A 33 µs FRFR minimum was
       a measurement artifact.
-- [ ] Start each transmission from the TIMER3 interrupt (or PPI) instead of a
-      woken thread: today's period jitter is up to ~10 µs, which eats TDMA slot
-      margin.
+- [x] Start each transmission from the TIMER3 interrupt instead of a woken
+      thread: the Rev1.1 controller's work before the send (I2C, ADC) made it
+      send up to ~180 µs off (`sync` ~100/s), so two controllers collided
+      (10–20 % loss each, ~1 % alone). Done: alarm `XBX_TX_LEAD_US` (400 µs)
+      before the slot wakes the thread to queue the report, the wrap starts
+      it (ESB manual TX); `late` and `work max` in the stats. The Rev1.1 work
+      took ~700 µs (I2C, a 100 µs busy-wait, ADC, one after the other): now
+      asynchronous, ~245 µs (up to ~335). Two controllers: ~1 % and ~0 %
+      loss, `sync` 0–7/s, within ±16 µs.
 - [ ] Busy Wi-Fi, distance, other channels (`XBX_RF_CHANNELS`).
 - [x] Tune retransmit delay/count. Not needed: no retries with time slots.
 - [ ] Dongle timing pin once usable PCA10059 pads are known.
@@ -476,7 +482,10 @@ USB modes, in order; one active at a time.
 - [ ] USB-powered "off" state: System OFF for now (Guide wakes it, as a
       reset); the stick supply stays on.
 - [x] PCAL6416 polling ([[docs/pcal6416#Firmware notes]]): one 2-byte read
-      per 1 ms scan (`pcal6416.c`), pull-ups enabled at boot.
+      per 1 ms scan (`pcal6416.c`), pull-ups enabled at boot. Asynchronous
+      (RTIO), a tick ahead: started after the report is sent, collected by
+      the next scan. The setup and the 1 s pull-up check take a tick's
+      transfer.
 - [x] PCAL6416 setup again after failed reads (and a periodic check): an
       expander reset after boot (pin 9 glitch) leaves its inputs floating
       until the next boot. Caught by a failed read, a low unused input (P02,
@@ -487,7 +496,10 @@ USB modes, in order; one active at a time.
       internal 0.6 V reference, gain 1/3 (0–1.8 V), as a ratio to the
       measured 1.8 V rail (AIN0 at gain 1/4 so it doesn't clip); triggers on
       VDD/4, gain 1/4 (ratiometric, as TRG+ ≈ VDD). Trigger supply
-      pulsed around each sample; stick supply as its hardware item allows.
+      pulsed around each scan; stick supply as its hardware item allows.
+      One asynchronous scan per tick (`adc_read_async`), VBAT included,
+      3 µs acquisition; a timer alarm turns the trigger supply on 80 µs
+      early, so the A1304 settles without a wait.
       Triggers: rest measured at boot, travel grows to the furthest pull
       (calibration: [[#Stick and trigger calibration]]).
 - [x] **Custom board pins:** board definition for the controller (like
@@ -509,9 +521,9 @@ USB modes, in order; one active at a time.
       an SDL_GameControllerDB entry (one per device: dongle, wired).
 - [x] Guide LED: pairing indicator; outside pairing solid while linked,
       slow blink while searching.
-- [ ] Guide LED from the host: the output report's `led` brightness
-      (`host_output()` ignores it now). XInput's player pattern needs
-      nothing more: one LED.
+- [x] Guide LED from the host: not needed. Hosts never set it (HID) or
+      set it on (XInput, one LED: no pattern), and the controller and dongle
+      show their own state and errors. `led` stays in the protocol, unused.
 - [x] Rumble PWM ([[docs/a3910#Firmware notes]]): HIN on pwm1 at 25 kHz,
       LIN as GPIO; a stopping motor brakes 40 ms (`BRAKE_MS`; 0–80 ms felt
       the same), then both inputs low. All four motors tested

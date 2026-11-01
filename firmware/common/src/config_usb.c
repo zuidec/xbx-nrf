@@ -248,10 +248,15 @@ static void request_fn(struct k_work *work)
 		break;
 	case CFG_USB_CMD_STREAM:
 	case CFG_USB_CMD_CALIBRATE:
-	case CFG_USB_CMD_RUMBLE:
-		status = app && app->command ? status_of(app->command(req[0], args, out))
-					     : ST_UNSUPPORTED;
+	case CFG_USB_CMD_RUMBLE: {
+		int ret = app && app->command ? app->command(req[0], args, out) : -ENOTSUP;
+
+		if (ret == -EINPROGRESS) {
+			return; /* config_usb_finish() sends it */
+		}
+		status = status_of(ret);
 		break;
+	}
 	case CMD_FACTORY_RESET:
 		status = factory_reset(args[0]);
 		break;
@@ -272,6 +277,17 @@ static void request_fn(struct k_work *work)
 }
 
 static K_WORK_DEFINE(request_work, request_fn);
+
+void config_usb_finish(int err)
+{
+	k_spinlock_key_t key;
+
+	rsp[2] = status_of(err);
+	key = k_spin_lock(&lock);
+	rsp_pending = true;
+	k_spin_unlock(&lock, key);
+	try_submit();
+}
 
 int config_usb_stream(const uint8_t *data, size_t len)
 {

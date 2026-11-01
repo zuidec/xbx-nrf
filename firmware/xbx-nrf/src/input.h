@@ -34,8 +34,28 @@ int input_init(void);
 /* XBX_BTN_* bits held for the whole of ~20 ms; call after input_init(). */
 uint16_t input_held_at_boot(void);
 
-/* Scan buttons and stick into the report's input fields; call every 1 ms. */
-void input_read(struct xbx_input_report *report);
+/*
+ * Scan buttons, sticks and triggers into the report's input fields; call
+ * once per report period, elapsed_ms its length (the debounce and the
+ * calibration routine count in ms). The ADC scan runs asynchronously; the
+ * thread sleeps until it's done. Expander buttons: input_prefetch()'s scan.
+ */
+void input_read(struct xbx_input_report *report, uint32_t elapsed_ms);
+
+/*
+ * Start the expander scan for the next input_read() (a tick ahead: the
+ * I2C read is done by then). Call once per tick, after the report is sent.
+ */
+void input_prefetch(void);
+
+/* VBAT's raw counts from the last scan (its channel: vbat); false: none yet. */
+bool input_vbat_raw(int16_t *raw);
+
+/*
+ * Trigger supply on, for the next input_read() (its scan turns it off): the
+ * A1304 needs ~70 µs to settle. ISR-safe: main.c's timer calls it.
+ */
+void input_trg_on(void);
 
 void input_paddle_config_set(const struct input_paddle_config *cfg);
 
@@ -92,12 +112,16 @@ enum input_cal_step {
 	INPUT_CAL_ERASE,     /* back to auto-ranging */
 };
 
+/* The TX thread took a calibration request (its state is current now). */
+typedef void (*input_cal_done_t)(void);
+
 /*
- * Run a step on the next input_read(), as the button combos do. targets
- * (start only): INPUT_CAL_STICKS / _TRIGGERS, 0 = all there are. -EBUSY: not
- * in this step's state; -EINVAL: unknown step or target; -ENOTSUP: no sticks,
- * or no analog triggers to calibrate.
+ * Run a step on the next input_read(), as the button combos do, then call
+ * done from the TX thread. targets (start only): INPUT_CAL_STICKS /
+ * _TRIGGERS, 0 = all there are. -EBUSY: not in this step's state; -EINVAL:
+ * unknown step or target; -ENOTSUP: no sticks, or no analog triggers to
+ * calibrate (done isn't called then).
  */
-int input_cal_request(uint8_t step, uint8_t targets);
+int input_cal_request(uint8_t step, uint8_t targets, input_cal_done_t done);
 
 #endif /* XBX_CTRL_INPUT_H_ */
