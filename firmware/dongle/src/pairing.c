@@ -25,6 +25,7 @@
 #include <zephyr/settings/settings.h>
 #include <zephyr/sys/reboot.h>
 
+#include <stdio.h>
 #include <string.h>
 
 #include "leds.h"
@@ -233,10 +234,23 @@ static bool preamble_like(uint8_t b)
 	return b == 0x55 || b == 0xAA || b == 0x00 || b == 0xFF;
 }
 
-/* Usable as the prefix of pipe (1..7): not preamble-like, unique. */
+/*
+ * A prefix goes out right after the preamble: one with few level changes
+ * (0x0F, 0x80) or one bit off alternating (0x54, 0xD5) is hard to detect
+ * reliably. A pipe with such a prefix lost ~1.4 % at any signal level.
+ */
+static bool prefix_weak(uint8_t b)
+{
+	int transitions = __builtin_popcount((b ^ (b >> 1)) & 0x7F);
+
+	return transitions < 3 || __builtin_popcount(b ^ 0x55) <= 1 ||
+	       __builtin_popcount(b ^ 0xAA) <= 1;
+}
+
+/* Usable as the prefix of pipe (1..7): not weak, unique. */
 static bool prefix_ok(const struct pairing_addr *a, uint8_t pipe, uint8_t prefix)
 {
-	if (preamble_like(prefix) || prefix == XBX_PAIR_PREFIX) {
+	if (prefix_weak(prefix) || prefix == XBX_PAIR_PREFIX) {
 		return false;
 	}
 	for (uint8_t p = 1; p <= PAIRING_PIPES; p++) {
@@ -301,20 +315,49 @@ static int addr_create(void)
 	return err;
 }
 
-/* New random prefix for a pipe: locks out the controller that had it. */
-static void prefix_reroll(uint8_t pipe)
+/* New random prefix for a pipe (not saved): locks out the controller that had it. */
+static int prefix_new(uint8_t pipe)
 {
 	uint8_t prefix;
+	int err;
 
 	do {
-		if (random_bytes(&prefix, 1)) {
-			return;
+		err = random_bytes(&prefix, 1);
+		if (err) {
+			return err;
 		}
 	} while (!prefix_ok(&addr, pipe, prefix));
 
 	addr.prefixes[pipe - 1] = prefix;
-	addr_save();
-	radio_set_prefix(pipe, prefix);
+	return 0;
+}
+
+static void prefix_reroll(uint8_t pipe)
+{
+	if (prefix_new(pipe) == 0) {
+		addr_save();
+		radio_set_prefix(pipe, addr.prefixes[pipe - 1]);
+	}
+}
+
+/* At boot, before the radio starts: replace prefixes an older check let through. */
+static void prefixes_check(void)
+{
+	bool changed = false;
+
+	for (uint8_t p = 1; p <= PAIRING_PIPES; p++) {
+		uint8_t old = addr.prefixes[p - 1];
+
+		if (prefix_ok(&addr, p, old) || prefix_new(p)) {
+			continue;
+		}
+		LOG_WRN("pipe %u: weak prefix %02x replaced by %02x: pair its controller again",
+			p, old, addr.prefixes[p - 1]);
+		changed = true;
+	}
+	if (changed && addr_save()) {
+		LOG_WRN("address save failed");
+	}
 }
 
 static void table_save_fn(struct k_work *work)
@@ -672,6 +715,8 @@ int pairing_init(void)
 		if (err && !addr_loaded) {
 			return err;
 		}
+	} else {
+		prefixes_check();
 	}
 	if (!channel && !table_empty()) {
 		/* paired before channel choice existed: on the old fixed channel */
@@ -693,9 +738,15 @@ int pairing_init(void)
 	for (int i = 0; i < PAIRING_PIPES; i++) {
 		paired += table.entry[i].last_connected != 0;
 	}
-	LOG_INF("address %02x%02x%02x%02x, channel %u, %d controller(s) paired",
+	char pfx[PAIRING_PIPES * 3 + 1];
+
+	for (int i = 0; i < PAIRING_PIPES; i++) {
+		snprintf(&pfx[i * 3], 4, "%02x ", addr.prefixes[i]);
+	}
+	pfx[PAIRING_PIPES * 3 - 1] = '\0'; /* no trailing space */
+	LOG_INF("address %02x%02x%02x%02x, prefixes %s, channel %u, %d controller(s) paired",
 		addr.base_addr1[0], addr.base_addr1[1], addr.base_addr1[2], addr.base_addr1[3],
-		channel, paired);
+		pfx, channel, paired);
 
 	if (table_empty()) {
 		pairing_start("nothing paired");

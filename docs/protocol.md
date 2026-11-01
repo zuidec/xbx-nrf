@@ -138,7 +138,11 @@ through:
   controller can't reach another dongle, and nobody reaches the pairing pipe
   unless that dongle is in pairing mode.
 - Random addresses are chosen once, at first use; patterns resembling the
-  preamble (mostly `0x55`/`0xAA`) are rejected.
+  preamble (mostly `0x55`/`0xAA`) are rejected. Prefixes, sent right after
+  the preamble, also need ≥ 3 level changes and must be more than one bit
+  off `0x55`/`0xAA`: a pipe with a weak prefix lost ~1.4 % at any signal
+  level. At boot the dongle replaces a stored prefix that fails (its
+  controller pairs again) and logs all prefixes.
 - **Channel:** each dongle picks the quietest channel from a fixed
   **candidate list** at first use: **24, 49, 74, 76, 78** *(tune)*, i.e.
   2424–2478 MHz in the gaps between Wi-Fi channels 1/6/11, clear of BLE
