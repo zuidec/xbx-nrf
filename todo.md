@@ -680,7 +680,11 @@ Python + Tkinter desktop app over a vendor HID channel, direct USB only
 - [x] **M4:** first custom board fits; inputs + rumble work. Rev1.1:
       buttons, sticks, triggers, AUX inputs, all four motors, power on/off
       and battery level work.
-- [ ] **M5:** battery life on NiMH AAs.
+- [x] **M5:** battery life on NiMH AAs. Rev1.1 on Eneloops, linked at
+      1 kHz, no rumble: ~3.0 mA from the cells (Guide LED 1 or 255: 3.01 /
+      3.06 mA), so ~600 h on ~1900 mAh; off: below the meter's µA range.
+      Rough (DMM on a pulsed load, below the A1304 rating alone): recheck
+      with a bench supply.
 - [ ] **M6 (later):** Elite Series 2 port (broken 1797 donor, AcidMods scans).
 
 ---
