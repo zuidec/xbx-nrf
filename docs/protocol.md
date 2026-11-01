@@ -113,8 +113,8 @@ through:
 > [!note] Status
 > Designed 2026-09-29, implemented: addresses, channel choice, pairing mode,
 > the exchange and its checks, stored data, factory reset, time slots,
-> join/full/drop. Later: channel hopping, encryption. Numbers marked *(tune)*
-> are starting values to adjust on hardware.
+> join/full/drop. Later: adaptive channel switching, encryption. Numbers
+> marked *(tune)* are starting values to adjust on hardware.
 
 ### Requirements
 - A controller only ever talks to the dongle it's paired with.
@@ -149,8 +149,8 @@ through:
   advertising. It samples RSSI 400 times per channel (100 ms each) and takes
   the one with the fewest samples above −85 dBm (then the weakest average);
   stored as `pair/chan`, chosen again after a factory reset. A dongle paired
-  before channel choice existed keeps 76. Channel hopping later follows a
-  per-dongle sequence.
+  before channel choice existed keeps 76. Later: an adaptive switch to
+  another candidate when the channel degrades ([[todo#Link]]).
 - **Pairing scan:** a pairing controller tries each candidate in turn (one
   request per attempt, sparse as when joining); an ACK means a dongle in
   pairing mode listens there, so it stays (moving on after 3 misses). Two

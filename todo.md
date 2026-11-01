@@ -285,7 +285,7 @@ Code: `firmware/{xbx-nrf,dongle}/src/main.c`,
 > | Scope, P0.17 | One-way ~232 µs (max 232.2); round trip mean 350.5 µs (332.8 min, 983.9 max = retry, ~2 % of reports); period mean 999.94 µs (999.91–1010) |
 >
 > Clone antennas are weak. Remaining loss looks like fades/interference →
-> channel hopping.
+> adaptive channel (below).
 
 - [x] **Build targets in `build.sh`**: two per app, each with its own
       board and folder ([[docs/building#Building]]): `xbx-nrf`,
@@ -318,7 +318,14 @@ Code: `firmware/{xbx-nrf,dongle}/src/main.c`,
 - [x] Tune retransmit delay/count. Not needed: no retries with time slots.
 - [ ] Dongle timing pin once usable PCA10059 pads are known.
 - [x] Packet format v1 ([[docs/protocol#Radio (controller ↔ dongle)]]).
-- [ ] Channel hopping (per-dongle sequence, driven by the TDMA schedule).
+- [ ] Adaptive channel instead of hopping: the dongle watches loss and noise
+      on its channel and scans the other candidates in the background; when
+      the channel degrades it announces "channel N at frame F" in the ACK
+      payloads and everyone switches at that frame. A controller that misses
+      it loses the link and rejoins. Hopping every frame would need a shared
+      sequence and frame count, a dongle retune (~40–130 µs) in the last
+      slot's margin, and harder joining and pairing. First: test on a busy
+      Wi-Fi channel whether it's needed.
 
 ### Pairing & multiple controllers (protocol v3)
 Design: [[docs/protocol#Pairing & multiple controllers]].
