@@ -211,6 +211,7 @@ static const struct pwm_dt_spec led_status = PWM_DT_SPEC_GET_BY_NAME(ZEPHYR_USER
 static uint32_t pressed;               /* debounced, bit per PIN_* / XBX_BTN_* */
 
 static struct input_paddle_config paddles; /* set by config_init() */
+static uint16_t trg_pulled[2]; /* report lt, rt without the aux switches */
 static uint8_t trg_full_pct[2] = {INPUT_TRG_FULL_DEFAULT, INPUT_TRG_FULL_DEFAULT};
 static uint8_t lockout_ms[PIN_BITS];
 
@@ -1142,6 +1143,7 @@ void input_read(struct xbx_input_report *report, uint32_t elapsed_ms)
 		report->lx = report->ly = 0;
 		report->rx = report->ry = 0;
 		report->lt = report->rt = 0;
+		trg_pulled[0] = trg_pulled[1] = 0;
 		return;
 	}
 	int16_t x, y; /* the report is packed: no pointers into it */
@@ -1175,6 +1177,8 @@ void input_read(struct xbx_input_report *report, uint32_t elapsed_ms)
 	report->lt = (pressed & PIN_LT) ? TRIGGER_MAX : 0;
 	report->rt = (pressed & PIN_RT) ? TRIGGER_MAX : 0;
 #endif
+	trg_pulled[0] = report->lt;
+	trg_pulled[1] = report->rt;
 	if (pressed & PIN_LT_SW) {
 		report->lt = TRIGGER_MAX;
 	}
@@ -1200,6 +1204,11 @@ void input_prefetch(void)
 #if HAS_EXPANDER
 	pcal6416_start();
 #endif
+}
+
+void input_trigger_pulled(uint16_t out[2])
+{
+	memcpy(out, trg_pulled, sizeof(trg_pulled));
 }
 
 void input_trg_on(void)

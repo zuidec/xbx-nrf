@@ -151,7 +151,8 @@ static int factory_reset(uint8_t scope)
 }
 
 static const uint8_t setting_ids[] = {CFG_SETTING_PADDLES, CFG_SETTING_BINDINGS,
-				      CFG_SETTING_LED, CFG_SETTING_TRG_FULL};
+				      CFG_SETTING_LED, CFG_SETTING_TRG_FULL,
+				      CFG_SETTING_TRG_FX};
 
 static const struct config_usb_app app = {
 	.ids = setting_ids,
@@ -242,5 +243,9 @@ void configurator_rumble(uint8_t level[4], uint32_t elapsed_ms)
 		left_ms = left_ms > elapsed_ms ? left_ms - elapsed_ms : 0;
 		memcpy(level, test, sizeof(test));
 	}
+}
+
+void configurator_motors_shown(const uint8_t level[4])
+{
 	memcpy(motors_shown, level, sizeof(motors_shown));
 }

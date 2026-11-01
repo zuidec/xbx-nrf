@@ -295,26 +295,117 @@ class CalibrationPanel(Panel):
 class RumblePanel(Panel):
     title = "Rumble"
     MOTORS = ("Heavy (left grip)", "Weak (right grip)", "LT trigger", "RT trigger")
+    # trigger effect sliders: key, label, range, the on/off key it belongs to
+    FX = (("click", "Strength", 1, 255, "click_on"),
+          ("click_ms", "Length (ms)", 5, 100, "click_on"),
+          ("from_heavy", "From heavy rumble %", 0, 100, "rumble_on"),
+          ("from_weak", "From weak rumble %", 0, 100, "rumble_on"),
+          ("threshold", "From trigger pull %", 1, 100, "rumble_on"))
+    SEND_MS = 50
 
     def __init__(self, master):
         super().__init__(master)
+        self.fx = {}  # what the device has
+        self.pending = None
+        fx = ttk.LabelFrame(self, text="Trigger effects", padding=8)
+        fx.grid(row=0, column=0, sticky="w")
+        self.checks, self.scales, self.values = {}, {}, {}
+        rows = (("click_on", "Click when a trigger reaches full pull"),
+                ("rumble_on", "Trigger rumble with the game's rumble while pulled"))
+        r = 0
+        for on_key, text in rows:
+            v = tk.BooleanVar()
+            ttk.Checkbutton(fx, text=text, variable=v,
+                            command=lambda k=on_key: self.switched(k)).grid(
+                row=r, column=0, columnspan=3, sticky="w", pady=(8 if r else 0, 2))
+            self.checks[on_key] = v
+            r += 1
+            for key, label, lo, hi, on in self.FX:
+                if on != on_key:
+                    continue
+                ttk.Label(fx, text=label).grid(row=r, column=0, sticky="w", padx=(20, 12))
+                sc = ttk.Scale(fx, from_=lo, to=hi, length=260,
+                               command=lambda _v, k=key: self.slid(k))
+                sc.grid(row=r, column=1)
+                self.scales[key] = sc
+                self.values[key] = ttk.Label(fx, width=4)
+                self.values[key].grid(row=r, column=2, padx=8)
+                r += 1
+        self.missing = ttk.Label(fx, text="This firmware has no trigger effects; update it.")
+        self.missing.grid(row=r, column=0, columnspan=3, sticky="w", pady=(8, 0))
+        self.missing.grid_remove()
+
+        test = ttk.LabelFrame(self, text="Test (not saved)", padding=8)
+        test.grid(row=1, column=0, sticky="w", pady=(12, 0))
+        ttk.Label(test, text="Heavy and weak go through the trigger effects: hold a trigger "
+                  "to feel its rumble.", wraplength=480).grid(
+            row=6, column=0, columnspan=4, sticky="w", pady=(8, 0))
         self.levels = []
         for i, name in enumerate(self.MOTORS):
-            ttk.Label(self, text=name).grid(row=i, column=0, sticky="w", padx=(0, 12))
+            ttk.Label(test, text=name).grid(row=i, column=0, sticky="w", padx=(0, 12))
             v = tk.IntVar(value=160)
-            ttk.Scale(self, from_=0, to=255, variable=v, length=260).grid(row=i, column=1)
-            ttk.Label(self, textvariable=v, width=4).grid(row=i, column=2)
-            ttk.Button(self, text="Test", command=lambda m=i: self.run(m)).grid(
+            ttk.Scale(test, from_=0, to=255, variable=v, length=260).grid(row=i, column=1)
+            ttk.Label(test, textvariable=v, width=4).grid(row=i, column=2)
+            ttk.Button(test, text="Test", command=lambda m=i: self.run(m)).grid(
                 row=i, column=3, padx=8, pady=2)
             self.levels.append(v)
-        ttk.Label(self, text="Duration (ms)").grid(row=4, column=0, sticky="w", pady=(12, 0))
+        ttk.Label(test, text="Duration (ms)").grid(row=4, column=0, sticky="w", pady=(12, 0))
         self.ms = tk.IntVar(value=1000)
-        ttk.Spinbox(self, from_=100, to=2000, increment=100, textvariable=self.ms,
+        ttk.Spinbox(test, from_=100, to=2000, increment=100, textvariable=self.ms,
                     width=6).grid(row=4, column=1, sticky="w", pady=(12, 0))
-        row = ttk.Frame(self)
-        row.grid(row=5, column=0, columnspan=4, sticky="w", pady=12)
+        row = ttk.Frame(test)
+        row.grid(row=5, column=0, columnspan=4, sticky="w", pady=(12, 0))
         ttk.Button(row, text="All together", command=lambda: self.run(None)).pack(side="left")
         ttk.Button(row, text="Stop", command=self.stop).pack(side="left", padx=8)
+
+    def on_show(self):
+        self.fx = {}
+        if not self.device:
+            return
+        has = p.SET_TRG_FX in (self.call("setting_ids") or [])
+        if has:
+            self.missing.grid_remove()
+        else:
+            self.missing.grid()
+        v = self.call("trigger_fx") if has else None
+        if v is None:
+            for sc in self.scales.values():
+                sc.state(["disabled"])
+            return
+        for key, sc in self.scales.items():
+            sc.set(v[key])
+            self.values[key].configure(text=str(v[key]))
+        for key, var in self.checks.items():
+            var.set(v[key])
+        self.fx = v
+        self.enable()
+
+    def enable(self):
+        for key, _label, _lo, _hi, on in self.FX:
+            self.scales[key].state(["!disabled"] if self.fx.get(on) else ["disabled"])
+
+    def slid(self, key):
+        v = round(self.scales[key].get())
+        self.values[key].configure(text=str(v))
+        if not self.fx or v == self.fx[key]:
+            return
+        self.fx[key] = v
+        self.queue()
+
+    def switched(self, key):
+        if not self.fx:
+            return
+        self.fx[key] = self.checks[key].get()
+        self.enable()
+        self.queue()
+
+    def queue(self):
+        if self.pending is None:
+            self.pending = self.after(self.SEND_MS, self.send)
+
+    def send(self):
+        self.pending = None
+        self.call("set_trigger_fx", dict(self.fx))
 
     def run(self, motor):
         levels = [int(v.get()) if motor in (None, i) else 0 for i, v in enumerate(self.levels)]
@@ -481,7 +572,7 @@ class DongleLedPanel(LedPanel):
 
 class ResetPanel(Panel):
     title = "Factory reset"
-    SCOPES = (("Settings (paddles, LED, trigger full pull, stored USB mode)",
+    SCOPES = (("Settings (paddles, LED, trigger full pull and effects, stored USB mode)",
                p.RESET_SETTINGS),
               ("Stick and trigger calibration", p.RESET_CALIBRATION),
               ("Pairing (forget the dongle)", p.RESET_PAIRING))

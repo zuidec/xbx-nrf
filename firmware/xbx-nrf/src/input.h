@@ -57,13 +57,19 @@ bool input_vbat_raw(int16_t *raw);
  */
 void input_trg_on(void);
 
+/*
+ * LT, RT from the last input_read() without the aux trigger switches (0..1023),
+ * for the trigger effects: the switches click on their own. TX thread.
+ */
+void input_trigger_pulled(uint16_t out[2]);
+
 void input_paddle_config_set(const struct input_paddle_config *cfg);
 
 /*
  * Trigger full pull threshold: LT, RT report full from this % of their
  * calibrated travel (uncalibrated triggers: their full range).
  */
-#define INPUT_TRG_FULL_MIN     50
+#define INPUT_TRG_FULL_MIN     5 /* hair trigger */
 #define INPUT_TRG_FULL_DEFAULT 95
 void input_trigger_full_set(const uint8_t pct[2]);
 

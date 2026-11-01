@@ -266,8 +266,9 @@ look even; off is a separate switch.
 | `0x01` | Paddles on | Controller | u8 (0 / 1) |
 | `0x02` | Paddle XInput bindings | Controller | 4 × u16 LE `XBX_BTN_*`, P1–P4 (0 = none) |
 | `0x03` | Guide LED brightness | Controller | u8 1–255 (default 255) |
-| `0x05` | Trigger full pull threshold | Controller | 2 × u8 %, LT, RT (50–100; default 95): calibrated triggers report full from there |
+| `0x05` | Trigger full pull threshold | Controller | 2 × u8 %, LT, RT (5–100; default 95): calibrated triggers report full from there |
 | `0x06` | LED brightness | Dongle | 4 × u8: pair, player, power (1–255, default 255); on bits `0x01` player, `0x02` power (default both) |
+| `0x07` | Trigger effects | Controller | 6 × u8: flags (`0x01` click, `0x02` trigger rumble; default both), click strength 1–255 (255), trigger rumble from heavy % (30), from weak % (30), from trigger pull % of the output 1–100 (10), click length 5–100 ms (30) |
 
 ### Versioning
 

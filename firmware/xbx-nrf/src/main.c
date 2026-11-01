@@ -48,6 +48,7 @@
 #include "battery.h"
 #include "power.h"
 #include "rumble.h"
+#include "trigger_fx.h"
 #include "xinput_wired.h"
 #include "protocol.h"
 #include "usb.h"
@@ -813,7 +814,10 @@ static void radio_send(struct esb_payload *tx, atomic_val_t gen, uint32_t tick)
 	}
 }
 
-/* The tick's work that isn't in the report: the expander scan, rumble, LEDs, power. */
+/*
+ * The tick's work that isn't in the report: the expander scan, rumble (with
+ * the trigger effects), LEDs, power.
+ */
 static void after_send(const struct xbx_input_report *report, uint32_t elapsed_ms)
 {
 	uint8_t motors[4];
@@ -829,7 +833,12 @@ static void after_send(const struct xbx_input_report *report, uint32_t elapsed_m
 
 	rumble_get(motors);
 #if !defined(CONFIG_XBX_FAKE_INPUT)
-	configurator_rumble(motors, elapsed_ms);
+	uint16_t pulled[2];
+
+	configurator_rumble(motors, elapsed_ms); /* a test replaces the game's rumble */
+	input_trigger_pulled(pulled);
+	trigger_fx_apply(motors, pulled[0], pulled[1], elapsed_ms);
+	configurator_motors_shown(motors);
 #endif
 	if (!battery_rumble_ok()) {
 		memset(motors, 0, sizeof(motors));

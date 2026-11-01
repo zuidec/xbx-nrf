@@ -31,6 +31,7 @@ static const struct config_data defaults = {
 		.enabled = true,
 		.xinput = {XBX_BTN_A, XBX_BTN_B, XBX_BTN_X, XBX_BTN_Y},
 	},
+	.trigger_fx = TRIGGER_FX_DEFAULTS,
 };
 
 static struct config_data current;
@@ -40,18 +41,18 @@ static struct k_spinlock lock;
 
 static int cfg_load(const char *name, size_t len, settings_read_cb read_cb, void *cb_arg)
 {
-	struct config_data data;
+	struct config_data data = defaults; /* fields an older entry lacks */
 	ssize_t n;
 
 	if (strcmp(name, "data") != 0) {
 		return -ENOENT;
 	}
-	if (len != sizeof(data)) {
+	if (len < CONFIG_DATA_MIN_SIZE || len > sizeof(data)) {
 		LOG_WRN("stored config has size %zu, expected %zu: ignored", len, sizeof(data));
 		return 0;
 	}
-	n = read_cb(cb_arg, &data, sizeof(data));
-	if (n != sizeof(data)) {
+	n = read_cb(cb_arg, &data, len);
+	if (n != (ssize_t)len) {
 		return n < 0 ? n : -EIO;
 	}
 	if (data.version != CFG_VERSION) {
@@ -81,12 +82,17 @@ int config_init(void)
 			current.trigger_full[t] = INPUT_TRG_FULL_DEFAULT; /* older entry: 0 */
 		}
 	}
+	if (current.trigger_fx.click_ms < TRIGGER_FX_CLICK_MS_MIN ||
+	    current.trigger_fx.click_ms > TRIGGER_FX_CLICK_MS_MAX) {
+		current.trigger_fx.click_ms = 30; /* 0.8.2 test builds: 0 */
+	}
 	if (current.led_dim == 255) {
 		current.led_dim = 254; /* level 0 (an earlier build): lowest level, not off */
 	}
 	input_paddle_config_set(&current.paddles);
 	input_trigger_full_set(current.trigger_full);
 	pair_indicator_level(255 - current.led_dim);
+	trigger_fx_set(&current.trigger_fx);
 	return err;
 }
 
@@ -135,6 +141,7 @@ static void apply(const struct config_data *cfg, bool erase)
 	input_paddle_config_set(&cfg->paddles);
 	input_trigger_full_set(cfg->trigger_full);
 	pair_indicator_level(255 - cfg->led_dim);
+	trigger_fx_set(&cfg->trigger_fx);
 	k_work_reschedule(&save_work, SAVE_DELAY);
 }
 
@@ -179,6 +186,12 @@ int config_setting_get(uint8_t id, uint8_t *value, size_t size)
 	case CFG_SETTING_TRG_FULL:
 		memcpy(value, cfg.trigger_full, sizeof(cfg.trigger_full));
 		return sizeof(cfg.trigger_full);
+	case CFG_SETTING_TRG_FX:
+		if (size < sizeof(cfg.trigger_fx)) {
+			return -EINVAL;
+		}
+		memcpy(value, &cfg.trigger_fx, sizeof(cfg.trigger_fx));
+		return sizeof(cfg.trigger_fx);
 	default:
 		return -ENOTSUP;
 	}
@@ -223,6 +236,22 @@ int config_setting_set(uint8_t id, const uint8_t *value, size_t len)
 			cfg.trigger_full[t] = value[t];
 		}
 		break;
+	case CFG_SETTING_TRG_FX: {
+		struct trigger_fx_config fx;
+
+		if (len < sizeof(fx)) {
+			return -EINVAL;
+		}
+		memcpy(&fx, value, sizeof(fx));
+		if ((fx.flags & ~(TRIGGER_FX_CLICK | TRIGGER_FX_RUMBLE)) || fx.click == 0 ||
+		    fx.from_heavy > 100 || fx.from_weak > 100 || fx.threshold == 0 ||
+		    fx.threshold > 100 || fx.click_ms < TRIGGER_FX_CLICK_MS_MIN ||
+		    fx.click_ms > TRIGGER_FX_CLICK_MS_MAX) {
+			return -EINVAL;
+		}
+		cfg.trigger_fx = fx;
+		break;
+	}
 	default:
 		return -ENOTSUP;
 	}

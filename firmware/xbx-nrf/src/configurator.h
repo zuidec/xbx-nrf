@@ -24,4 +24,7 @@ void configurator_tick(const struct xbx_input_report *report, bool wired, bool l
 /* TX thread: a running RUMBLE test replaces the motor levels (XBX_RUMBLE_*). */
 void configurator_rumble(uint8_t level[4], uint32_t elapsed_ms);
 
+/* TX thread: the levels the motors get, for the stream. */
+void configurator_motors_shown(const uint8_t level[4]);
+
 #endif /* XBX_CTRL_CONFIGURATOR_H_ */

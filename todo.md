@@ -152,13 +152,12 @@ Locked decisions: [README](README.md). Not yet locked:
 
 ### Power (rechargeable AA)
 - [x] nRF on J3 3.3 V (VDD, normal voltage mode; max 3.6 V).
-- [ ] Hold / off:
+- [x] Hold / off:
 	- [x] GPIO → J3 pin 9 (hold + expander reset); low at reset, raised early.
 	      Rev1.1: P1.12, raised by a GPIO hog at boot; holds power on AAs.
 	- [x] GPIO ← J3 pin 2 (Guide), pull-up (internal; none on the board).
-	- [ ] GPIO ← J3 pin 13 (Pair), pull-up, if confirmed; readable while the
-	      expander is in reset.
-- [ ] Battery sense: `3v/B+` (J3 pin 3) to AIN6 via 100 kΩ, 100 nF at the
+	- [x] Pair (J3 pin 13): read through the PCAL6416, no own GPIO.
+- [x] Battery sense: `3v/B+` (J3 pin 3) to AIN6 via 100 kΩ, 100 nF at the
       pin, no divider ([[docs/hardware#Analog inputs]]).
 	- [x] Measure `3v/B+` on USB: must stay below 3.6 V. 2.99 V. Rev1.1
 	      reads 2537 mV against 2509 mV on a meter (+1 %).
@@ -173,7 +172,8 @@ Locked decisions: [README](README.md). Not yet locked:
 	- [ ] Lithium primary AAs rest at up to 1.8 V/cell: 3.6 V, the top of
 	      the VBAT range and the pin limit. Support them or not.
 	- Alkaline: no own curve; reads full for about half its life.
-- [ ] VBUS detect (J3 pin 12).
+- [x] VBUS detect (J3 pin 12): not needed; wired mode goes by USB
+      enumeration, and USB doesn't charge.
 - [x] **Charging:** external; no Play & Charge in v1 (in-controller charging
       would need chemistry detection; not worth it).
 - [x] Stick supply 1V8_STICK: **TLV70018DDCR** with EN on a GPIO and
@@ -192,10 +192,10 @@ Locked decisions: [README](README.md). Not yet locked:
 - [x] MCU: **nRF52840** (no audio in v1).
 - [x] Module: **Raytac MDBT50Q-U1MV2** (as the dongle; u.FL to the stock
       antennas via coax); size and fit checked.
-- [ ] Analog inputs: all 8 used (4 stick, 2 trigger, battery, 1.8 V stick
+- [x] Analog inputs: all 8 used (4 stick, 2 trigger, battery, 1.8 V stick
       rail); plan in [[docs/hardware#Analog inputs]]. Rev1.1: all tested.
-- [ ] RF layout: short 50 Ω CPW to the coax, ground vias, away from motors and
-      battery wiring.
+- [x] RF layout: short 50 Ω CPW to the coax, ground vias, away from motors and
+      battery wiring. Rev1.1: ~0 % loss.
 - [x] SWD header / pads.
 - [x] USB D+/D− from J3 (90 Ω pair); ESD on the top board?
 
@@ -205,8 +205,8 @@ Locked decisions: [README](README.md). Not yet locked:
       pins are fixed by the stock pinout (never swap them on TMR sticks).
       Measured (stock pots): Y inverted, X not. The breadboard stick reads X
       reversed. Rev1.1 TMR sticks: the same, both sticks.
-- [ ] Calibration button on its own GPIO, reachable without opening the
-      shell (battery bay?) ([[#Stick and trigger calibration]]).
+- [x] Calibration button: not needed; View + Menu held 3 s, or the
+      configurator ([[#Stick and trigger calibration]]).
 - [x] Triggers: A1304 at the stock positions.
 - [x] I2C to the PCAL6416 + pull-ups ([[docs/pcal6416#Connections]]).
 - [x] B, LSC, RSC switches.
@@ -214,12 +214,12 @@ Locked decisions: [README](README.md). Not yet locked:
 ### Rumble
 [[docs/a3910|A3910 notes]]
 - [x] Stock wiring: 2× A3910, 8 GPIOs (LIN to GND on Heavy/Weak frees 2).
-- [ ] Schematic block ([[docs/a3910#Schematic checklist]]).
-- [ ] A3910 symbol (draw, or `easyeda2kicad` C150818).
-- [ ] Motor pads at the stock positions.
+- [x] Schematic block ([[docs/a3910#Schematic checklist]]).
+- [x] A3910 symbol (draw, or `easyeda2kicad` C150818).
+- [x] Motor pads at the stock positions. Rev1.1: all four motors run.
 
 ### Connectors
-- [ ] J3 mating connector.
+- [x] J3 mating connector.
 - [x] Play & Charge contacts (stock J7): dropped for v1.
 - [x] J3 pin 11: no load on our side (a pull-down partly turns on Q6/Q7).
 - [x] J8 expansion port: dropped for v1.
@@ -566,9 +566,9 @@ Raw ADC counts, board-independent; both sticks on the controller board. Tune
 the constants (deadzone, drift window, settle time) on the TMR sticks.
 - [x] Calibration data in flash (Zephyr settings on the storage partition):
       per axis min / centre / max and direction.
-- [x] On-device routine: calibration button → move sticks and triggers
-      through their full range → press again → saved. Breadboard: a button
-      combo stands in (all header pins are used).
+- [x] On-device routine: View + Menu held 3 s → move sticks and triggers
+      through their full range → press View + Menu again → saved (B
+      cancels).
 - [x] Radial inner deadzone, outer saturation (full deflection = ±32767).
 - [x] Boot-time centre check: re-centre within a small window of the stored
       centre, else keep it (stick held at power-up).
@@ -581,8 +581,7 @@ the constants (deadzone, drift window, settle time) on the TMR sticks.
 - [ ] Triggers: stops, remapping, hair trigger.
 - [x] Commands for the host program: `CALIBRATE` ([[#Configurator]]).
 - [ ] User page `docs/controller.md`: wired / wireless, X / B mode,
-      calibration controls. Write once the calibration button and Guide LED
-      exist (the routine's controls change with the hardware).
+      calibration controls.
 
 ### Build & versions
 [[docs/building|Building]]
@@ -704,10 +703,14 @@ Python + Tkinter desktop app over a vendor HID channel, direct USB only
 
 ### Trigger rumble (controller-side)
 Games rarely drive the trigger motors, and XInput can't (2 motors only).
-- **Rumble mixing:** feed part of the heavy/weak rumble into the trigger
-  motors when the host sends only 2 values. Configurable strength.
-- **Local trigger effects:** click when a trigger crosses a threshold, buzz at a
-  trigger stop; generated on the controller, pairs with hair-trigger mode.
+- [x] **Trigger rumble** (`trigger_fx.c`): while a trigger is pulled past
+      a threshold, its motor runs at the larger of heavy × % and weak × %.
+      Setting `0x07`, Rumble panel.
+- [x] **Click:** one pulse when a trigger reaches full (default 255 for
+      30 ms: a weaker or shorter one isn't felt); again only after it drops
+      below 75 %. The heavy / weak test runs through both effects. The aux
+      trigger switches trigger neither (they click on their own).
+- [ ] Buzz at a trigger stop; pairs with hair-trigger mode.
 - **4-value output report:** exists (HID vendor report: heavy, weak, LT,
   RT); games and Steam don't use it.
 - [ ] **Tune trigger rumble / impulse-trigger feel:** level → PWM curve

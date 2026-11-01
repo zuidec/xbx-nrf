@@ -144,6 +144,21 @@ class Device:
     def set_trigger_full(self, lt, rt):
         self.setting_set(p.SET_TRG_FULL, bytes([lt, rt]))
 
+    def trigger_fx(self):
+        """{"click_on", "click" strength 1-255, "click_ms", "rumble_on",
+        "from_heavy", "from_weak" %, "threshold" % of the trigger output}."""
+        v = self.setting_get(p.SET_TRG_FX)
+        return {"click_on": bool(v[0] & p.TRG_FX_CLICK), "click": v[1],
+                "rumble_on": bool(v[0] & p.TRG_FX_RUMBLE), "from_heavy": v[2],
+                "from_weak": v[3], "threshold": v[4], "click_ms": v[5]}
+
+    def set_trigger_fx(self, fx):
+        flags = ((p.TRG_FX_CLICK if fx["click_on"] else 0)
+                 | (p.TRG_FX_RUMBLE if fx["rumble_on"] else 0))
+        self.setting_set(p.SET_TRG_FX, bytes([flags, fx["click"], fx["from_heavy"],
+                                              fx["from_weak"], fx["threshold"],
+                                              fx["click_ms"]]))
+
     def stream(self, hz):
         self.request(p.STREAM, bytes([hz]))
 
