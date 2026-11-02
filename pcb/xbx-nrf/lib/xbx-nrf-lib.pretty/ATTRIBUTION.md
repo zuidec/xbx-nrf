@@ -4,7 +4,8 @@ Footprints used by the controller board, copied from the dongle project
 library (`pcb/xbx-nrf-dongle/lib/xbx-nrf-lib.pretty/`; its `ATTRIBUTION.md`
 has the full history): unchanged, except the test point is renamed from
 `-NoSilkscreen` to `-BigSilkscreen`. Each one is a copy of an existing
-footprint, so it keeps that footprint's license.
+footprint, so it keeps that footprint's license; except the membrane
+contact, which is ours.
 
 ## From KiCad's libraries
 
@@ -26,6 +27,12 @@ them in a design doesn't put the design under CC BY-SA.
 | `USB_C_Receptacle_16P_Amphenol_10155435-00011LF.kicad_mod` | `../USB_C_Receptacle_16P_Amphenol_10155435-00011LF/` (SnapMagic, see its `ATTRIBUTION.md` for the original changes) | Board fields only |
 
 License: [CC BY-SA 4.0][cc] with the SnapMagic Design Exception 1.0.
+
+## Ours
+
+| File | Notes |
+|---|---|
+| `Membrane_Contact_D8.0mm_Interdigitated.kicad_mod` | Drawn for this project: carbon-pill button contact. CERN-OHL-S-2.0, like the rest of `pcb/` |
 
 [cc]: https://creativecommons.org/licenses/by-sa/4.0/
 [exc]: https://spdx.org/licenses/KiCad-libraries-exception.html

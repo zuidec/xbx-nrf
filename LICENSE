@@ -7,20 +7,32 @@ This project uses different licenses for different kinds of content. The full
 license texts are in LICENSES/. Per-path details are in REUSE.toml
 (https://reuse.software).
 
-  Firmware and scripts (firmware/, build scripts, config)   MPL-2.0
+  Firmware, configurator and scripts (firmware/, tools/,    MPL-2.0
+  build scripts, config)
   Hardware design (pcb/, mech/)                             CERN-OHL-S-2.0
-  Documentation (docs/, *.md)                              CC-BY-4.0
+  Documentation (docs/, *.md)                               CC-BY-4.0
 
 Exceptions (third-party CAD parts; see ATTRIBUTION.md in each folder):
 
-  pcb/xbx-nrf/lib/RKJXV122400R/,      SnapMagic CAD files, CC-BY-SA-4.0 with
-  pcb/xbx-nrf-dongle/lib/USB_C_*/,    the SnapMagic Design Exception 1.0.
+  pcb/xbx-nrf/lib/RKJXV122400R/,       SnapMagic CAD files, CC-BY-SA-4.0
+  pcb/xbx-nrf/lib/USB_C_*/,            with the SnapMagic Design Exception
+  pcb/xbx-nrf-dongle/lib/USB_C_*/,     1.0.
   pcb/xbx-nrf-dongle/lib/JS102011SAQN/
 
-  pcb/xbx-nrf-dongle/lib/             Footprints copied from KiCad's
-    xbx-nrf-lib.pretty/               libraries: CC-BY-SA-4.0 WITH
-                                      KiCad-libraries-exception (the USB-C
-                                      footprint there is SnapMagic's, above).
+  pcb/xbx-nrf/lib/xbx-nrf-lib.pretty/, Footprints copied from KiCad's
+  pcb/xbx-nrf-dongle/lib/              libraries: CC-BY-SA-4.0 WITH
+    xbx-nrf-lib.pretty/                KiCad-libraries-exception. The USB-C
+                                       footprints there are SnapMagic's
+                                       (above); the controller's membrane
+                                       contact is ours (CERN-OHL-S-2.0).
+
+  pcb/xbx-nrf/lib/xbx-nrf.kicad_sym    Symbols from KiCad's libraries
+                                       (CC-BY-SA-4.0 WITH
+                                       KiCad-libraries-exception), from
+                                       SnapMagic and our own (CC-BY-SA-4.0).
+
+Release binaries (.uf2 firmware, the configurator) also contain third-party
+code; its notices come with each release (THIRD-PARTY-NOTICES).
 
 Not included: references/third-party/ (git-ignored) holds third-party documents
 that are not part of this project and not covered by its licenses; see
