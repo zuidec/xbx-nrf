@@ -74,33 +74,6 @@ class DeviceTab(ttk.Frame):
         except (p.ProtocolError, OSError):
             pass  # unplugged: the watcher notices
 
-    def uninstall(self):
-        paths = files.installed()
-        app = files.app_file()
-        rest = (f"To remove the app itself, delete {app}." if app else
-                "Running from source: nothing else to remove.")
-        if not paths:
-            messagebox.showinfo("xbx-config", f"Nothing installed on this system.\n\n{rest}",
-                                parent=self)
-            return
-        listing = "\n".join(f"• {p}" for p in paths)
-        if not messagebox.askyesno(
-                "Remove installed files",
-                f"Remove (asks for the admin password):\n{listing}\n\nWithout the udev rule "
-                f"this user may lose access to the devices.\n\n{rest}", parent=self):
-            return
-
-        def run():
-            try:
-                files.uninstall()
-            except OSError as e:
-                self.after(0, lambda: messagebox.showerror("xbx-config", str(e), parent=self))
-            else:
-                self.after(0, lambda: messagebox.showinfo(
-                    "xbx-config", f"Removed.\n\n{rest}", parent=self))
-
-        threading.Thread(target=run, daemon=True).start()
-
     def tick(self):
         if self.shown and self.device:
             self.shown.tick()
@@ -121,6 +94,7 @@ class App(tk.Tk):
         self.banner_btn = ttk.Button(self.banner, text="Give access...", command=self.install)
         menubar = tk.Menu(self, tearoff=False)
         file_menu = tk.Menu(menubar, tearoff=False)
+        file_menu.add_command(label="Install files...", command=self.install_files)
         file_menu.add_command(label="Remove installed files...", command=self.uninstall)
         file_menu.add_separator()
         file_menu.add_command(label="Quit", command=self.quit_app)
@@ -193,6 +167,46 @@ class App(tk.Tk):
 
         threading.Thread(target=run, daemon=True).start()
 
+    def install_files(self):
+        items = files.missing()
+        if not items:
+            messagebox.showinfo("xbx-config", "Nothing to install: all installed (Windows "
+                                "and macOS need nothing).", parent=self)
+            return
+        dlg = tk.Toplevel(self)
+        dlg.title("Install files")
+        dlg.transient(self)
+        frame = ttk.Frame(dlg, padding=12)
+        frame.pack(fill="both", expand=True)
+        chosen = []
+        for label, fn, _root in items:
+            v = tk.BooleanVar(value=True)
+            ttk.Checkbutton(frame, text=label, variable=v).pack(anchor="w", pady=4)
+            chosen.append((v, fn))
+        row = ttk.Frame(frame)
+        row.pack(anchor="e", pady=(12, 0))
+
+        def go():
+            fns = [fn for v, fn in chosen if v.get()]
+            dlg.destroy()
+            if fns:
+                threading.Thread(target=run, args=(fns,), daemon=True).start()
+
+        def run(fns):
+            try:
+                for fn in fns:
+                    fn()
+            except OSError as e:
+                self.after(0, lambda: messagebox.showerror("xbx-config", str(e), parent=self))
+            else:
+                self.after(0, lambda: messagebox.showinfo(
+                    "xbx-config", "Installed. The udev rule needs the devices replugged, the "
+                    "SDL / Steam mapping a new login.", parent=self))
+
+        ttk.Button(row, text="Install", command=go).pack(side="left")
+        ttk.Button(row, text="Cancel", command=dlg.destroy).pack(side="left", padx=(8, 0))
+        dlg.grab_set()
+
     def uninstall(self):
         paths = files.installed()
         app = files.app_file()
@@ -203,10 +217,13 @@ class App(tk.Tk):
                                 parent=self)
             return
         listing = "\n".join(f"• {p}" for p in paths)
+        root = files.needs_root(paths)
+        admin = " (asks for the admin password)" if root else ""
+        warn = ("Without the udev rule this user may lose access to the devices.\n\n"
+                if root else "")
         if not messagebox.askyesno(
                 "Remove installed files",
-                f"Remove (asks for the admin password):\n{listing}\n\nWithout the udev rule "
-                f"this user may lose access to the devices.\n\n{rest}", parent=self):
+                f"Remove{admin}:\n{listing}\n\n{warn}{rest}", parent=self):
             return
 
         def run():

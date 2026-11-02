@@ -10,6 +10,15 @@ import tempfile
 UDEV_RULE = "70-xbx-nrf.rules"
 UDEV_DIR = "/etc/udev/rules.d"
 
+# SDL mapping with Share and the paddles (HID mode; docs/protocol.md), for the
+# user only: SDL (Steam, games) reads the file named by the variable, which
+# systemd sets for the session from environment.d at login.
+SDL_DB = "gamecontrollerdb.txt"
+SDL_VAR = "SDL_GAMECONTROLLERCONFIG_FILE"
+_CONFIG = os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")
+SDL_DB_PATH = os.path.join(_CONFIG, "xbx-nrf", SDL_DB)
+SDL_ENV_PATH = os.path.join(_CONFIG, "environment.d", "50-xbx-nrf.conf")
+
 
 def path(name):
     """A bundled file: next to the package, or in PyInstaller's unpack dir."""
@@ -52,11 +61,69 @@ def install_udev_rule():
                  f"installing {UDEV_DIR}/{UDEV_RULE}")
 
 
+def _same(a, b):
+    try:
+        with open(a, "rb") as fa, open(b, "rb") as fb:
+            return fa.read() == fb.read()
+    except OSError:
+        return False
+
+
+def _env_line():
+    return f"{SDL_VAR}={SDL_DB_PATH}\n"
+
+
+def sdl_mapping_installed():
+    try:
+        with open(SDL_ENV_PATH) as f:
+            env_ok = f.read() == _env_line()
+    except OSError:
+        env_ok = False
+    return env_ok and _same(SDL_DB_PATH, path(SDL_DB))
+
+
+def install_sdl_mapping():
+    """Write the mapping and the environment.d entry (no root). Takes effect
+    at the next login."""
+    other = os.environ.get(SDL_VAR)
+    if other and other != SDL_DB_PATH:
+        raise OSError(f"{SDL_VAR} is already set to {other}: add the lines of "
+                      f"{path(SDL_DB)} to that file instead")
+    os.makedirs(os.path.dirname(SDL_DB_PATH), exist_ok=True)
+    os.makedirs(os.path.dirname(SDL_ENV_PATH), exist_ok=True)
+    shutil.copyfile(path(SDL_DB), SDL_DB_PATH)
+    with open(SDL_ENV_PATH, "w") as f:
+        f.write(_env_line())
+
+
+def missing():
+    """What isn't installed yet: (label, install function, needs root) per
+    item. Linux only; Windows and macOS need nothing."""
+    if not sys.platform.startswith("linux"):
+        return []
+    items = []
+    if not sdl_mapping_installed():
+        items.append((f"SDL / Steam mapping: Share and the paddles in HID mode, from the "
+                      f"next login\n{SDL_DB_PATH}\n{SDL_ENV_PATH}", install_sdl_mapping,
+                      False))
+    if not udev_rule_installed():
+        items.append((f"udev rule: device access (admin password)\n{UDEV_DIR}/{UDEV_RULE}",
+                      install_udev_rule, True))
+    return items
+
+
 def installed():
-    """What the app put on this system (paths); only the Linux udev rule.
-    Windows and macOS: nothing (no driver, no settings files)."""
-    target = os.path.join(UDEV_DIR, UDEV_RULE)
-    return [target] if sys.platform.startswith("linux") and os.path.exists(target) else []
+    """What the app put on this system (paths): on Linux the udev rule and the
+    SDL mapping files. Windows and macOS: nothing (no driver, no settings
+    files)."""
+    if not sys.platform.startswith("linux"):
+        return []
+    paths = [os.path.join(UDEV_DIR, UDEV_RULE), SDL_DB_PATH, SDL_ENV_PATH]
+    return [p for p in paths if os.path.exists(p)]
+
+
+def needs_root(paths):
+    return any(p.startswith(UDEV_DIR) for p in paths)
 
 
 def app_file():
@@ -65,9 +132,18 @@ def app_file():
 
 
 def uninstall():
-    """Remove what installed() lists, as root; returns the paths removed."""
+    """Remove what installed() lists (the udev rule as root); returns the
+    paths removed."""
     paths = installed()
-    if paths:
-        quoted = " ".join(f"'{p}'" for p in paths)
-        _as_root(f"rm -f {quoted} && {RELOAD}", f"removing {', '.join(paths)}")
+    for p in paths:
+        if not p.startswith(UDEV_DIR):
+            os.remove(p)
+    root = [p for p in paths if p.startswith(UDEV_DIR)]
+    if root:
+        quoted = " ".join(f"'{p}'" for p in root)
+        _as_root(f"rm -f {quoted} && {RELOAD}", f"removing {', '.join(root)}")
+    try:
+        os.rmdir(os.path.dirname(SDL_DB_PATH))  # ours, if empty now
+    except OSError:
+        pass
     return paths

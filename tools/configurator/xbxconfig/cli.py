@@ -218,6 +218,11 @@ def cmd_install_udev(args):
     print("installed; unplug and replug the device")
 
 
+def cmd_install_sdl_mapping(args):
+    files.install_sdl_mapping()
+    print(f"installed {files.SDL_DB_PATH} and {files.SDL_ENV_PATH}; log out and in again")
+
+
 def cmd_uninstall(args):
     paths = files.installed()
     if paths:
@@ -291,8 +296,10 @@ def main(argv=None):
     sub.add_parser("reboot").set_defaults(fn=cmd_reboot)
     sub.add_parser("install-udev", help="Linux: give the user access (admin prompt)"
                    ).set_defaults(fn=cmd_install_udev)
+    sub.add_parser("install-sdl-mapping", help="Linux: Share and the paddles in SDL / Steam "
+                   "(HID mode), from the next login").set_defaults(fn=cmd_install_sdl_mapping)
     sub.add_parser("uninstall", help="remove what the app installed (Linux: the udev "
-                   "rule; admin prompt)").set_defaults(fn=cmd_uninstall)
+                   "rule, admin prompt; the SDL mapping)").set_defaults(fn=cmd_uninstall)
     args = ap.parse_args(argv)
     if getattr(args, "pct", None) and (len(args.pct) != 2 or not all(
             p.TRG_FULL_MIN <= v <= 100 for v in args.pct)):

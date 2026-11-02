@@ -515,9 +515,11 @@ USB modes, in order; one active at a time.
 - [x] Paddle config stored in flash: `config.c` (`config/data`,
       versioned); the configurator calls `config_set()` /
       `config_reset()`. Tested: save, load after power-cycle, reset.
-- [ ] Steam / SDL map Share and the paddles only with the mapping line in
-      [[docs/protocol#Input report (dongle → PC)]]; needs our own USB ID and
-      an SDL_GameControllerDB entry (one per device: dongle, wired).
+- [ ] Steam / SDL map Share and the paddles only with our mapping
+      ([[docs/protocol#Input report (dongle → PC)]]): the configurator
+      installs it per user (Linux, HID mode; tested in Steam). Built in
+      needs our own USB IDs and an SDL_GameControllerDB entry (one per
+      device: dongle, wired).
 - [x] Guide LED: pairing indicator; outside pairing solid while linked,
       slow blink while searching.
 - [x] Guide LED from the host: not needed. Hosts never set it (HID) or

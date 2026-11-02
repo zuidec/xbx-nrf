@@ -48,7 +48,7 @@ so fixing one means editing that file.
 | `transport.py` | Finding and opening the interface (`hidraw` / `hidapi`) |
 | `device.py` | Requests; a reader thread splits responses from `STREAM` reports |
 | `uf2.py` | File check (marker), bootloader drive, the update |
-| `files.py` | Bundled files, udev rule install and uninstall |
+| `files.py` | Bundled files: udev rule and SDL mapping, install and uninstall |
 | `cli.py`, `gui/` | CLI; window (`app.py`, `panels.py`, `widgets.py`) |
 
 Finds devices by VID `0x1209`, the app PIDs (`0x0001`–`0x0004`) and the
@@ -98,13 +98,23 @@ app asks the user to mount it.
 - **Linux:** a udev rule (`files/70-xbx-nrf.rules`) gives the user the
   `hidraw` nodes. The app detects missing access and offers to install it
   into `/etc/udev/rules.d/` (`pkexec`, or `sudo` from the CLI).
+- **Linux, SDL / Steam:** the SDL mapping with Share and the paddles
+  ([[protocol#Input report (dongle → PC)]]) goes to
+  `~/.config/xbx-nrf/gamecontrollerdb.txt`, and
+  `~/.config/environment.d/50-xbx-nrf.conf` sets
+  `SDL_GAMECONTROLLERCONFIG_FILE` to it from the next login (no root).
+  Steam's own stored mappings (`config.vdf`) can't hold these buttons: Steam
+  drops them when it saves. Flatpak Steam can't read the file (no access to
+  `~/.config` from its sandbox).
+- **Install:** File → Install files offers what's missing, one checkbox
+  each (CLI `install-udev`, `install-sdl-mapping`).
 - **macOS:** unsigned: right-click → Open the first time.
 - **Windows:** no driver needed.
 - **Uninstall:** File → Remove installed files (CLI `uninstall`) removes what
-  the app put on the system: only the Linux udev rule; Windows and macOS
-  have nothing. Then delete the app file. Firmware updates write only to
-  the device's drive, and the one-file build unpacks into a temporary
-  folder that it deletes on exit.
+  the app put on the system: the Linux udev rule and SDL mapping files;
+  Windows and macOS have nothing. Then delete the app file. Firmware
+  updates write only to the device's drive, and the one-file build unpacks
+  into a temporary folder that it deletes on exit.
 
 ### Building
 

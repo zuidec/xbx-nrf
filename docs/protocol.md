@@ -406,15 +406,15 @@ Layout chosen so Linux's generic HID driver emits the same event codes as
 | 16 | Share | extra button |
 | 17–20 | Paddles P1–P4 | `BTN_TRIGGER_HAPPY1`–`4` |
 
-SDL's automatic mapping leaves out Share and the paddles. For testing, start
-Steam with this mapping (dongle, test PID; the GUID changes with the VID, PID
-and name). Quit Steam first: a second `steam` only signals the running one,
-which ignores the variable. Tested: Share and the paddles show up on the
-correct sides.
-
-```
-SDL_GAMECONTROLLERCONFIG='03009265091200000100000011010000,zuidec XBX-NRF Dongle,a:b0,b:b1,x:b3,y:b4,back:b10,guide:b12,start:b11,leftstick:b13,rightstick:b14,leftshoulder:b6,rightshoulder:b7,dpup:h0.1,dpdown:h0.4,dpleft:h0.8,dpright:h0.2,leftx:a0,lefty:a1,rightx:a3,righty:a4,lefttrigger:a2,righttrigger:a5,misc1:b15,paddle2:b16,paddle4:b17,paddle1:b18,paddle3:b19,platform:Linux,' steam
-```
+SDL's automatic mapping leaves out Share and the paddles: it maps them only
+for Microsoft's vendor ID. The mapping in
+`tools/configurator/files/gamecontrollerdb.txt` adds them, for the dongle
+and the wired controller (HID mode), each with and without the name CRC in
+the GUID. The configurator installs it (File → Install files; see
+[[configurator#Platforms]]); for a one-off test, quit Steam and start it
+with `SDL_GAMECONTROLLERCONFIG_FILE=<that file> steam`. Tested in Steam:
+Share and the paddles show up on the correct sides. XInput mode can't
+carry them (the 360 report has no such buttons).
 
 SDL's paddle names, held face-up: `paddle1` right upper, `paddle2` left
 upper, `paddle3` right lower, `paddle4` left lower.
