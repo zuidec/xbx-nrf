@@ -26,6 +26,7 @@
 
 #include "pairing.h"
 #include "radio.h"
+#include "usb.h"
 
 LOG_MODULE_REGISTER(radio, LOG_LEVEL_INF);
 
@@ -195,7 +196,10 @@ static bool handle_input(uint8_t link, const struct esb_payload *rx, int32_t pos
 		return false;
 	}
 
-	if (l->have_seq) {
+	if (!l->have_seq) {
+		/* joined: a controller turned on (Guide), not one already linked */
+		usb_host_wake();
+	} else {
 		uint16_t gap = (uint16_t)(in->seq - l->expected_seq);
 
 		/* a huge gap means the controller restarted (sequence back near 0), not ~65k losses */

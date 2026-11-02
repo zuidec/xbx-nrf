@@ -21,4 +21,10 @@ enum usb_mode usb_mode_get(void);
 /* Build the USB device and enable it; call after configurator_init(). */
 int usb_start(void);
 
+/*
+ * A controller joined: wake the host if it's asleep and allowed us to (remote
+ * wakeup). Any context.
+ */
+void usb_host_wake(void);
+
 #endif /* XBX_DONGLE_USB_H_ */

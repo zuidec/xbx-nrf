@@ -53,7 +53,7 @@ USBD_DESC_PRODUCT_DEFINE(xbx_product, "XBX-NRF Dongle");
 USBD_DESC_SERIAL_NUMBER_DEFINE(xbx_sn); /* chip DEVICEID via hwinfo */
 
 USBD_DESC_CONFIG_DEFINE(xbx_fs_cfg_desc, "FS Configuration");
-USBD_CONFIGURATION_DEFINE(xbx_fs_config, 0 /* bus powered, no remote wakeup */,
+USBD_CONFIGURATION_DEFINE(xbx_fs_config, USB_SCD_REMOTE_WAKEUP /* bus powered */,
 			  XBX_USB_MAX_POWER, &xbx_fs_cfg_desc);
 
 /*
@@ -71,6 +71,25 @@ static void host_asleep_fn(struct k_work *work)
 }
 
 static K_WORK_DELAYABLE_DEFINE(host_asleep_work, host_asleep_fn);
+
+static void host_wake_fn(struct k_work *work)
+{
+	int err;
+
+	ARG_UNUSED(work);
+	if (!usbd_is_suspended(&xbx_usbd)) {
+		return;
+	}
+	err = usbd_wakeup_request(&xbx_usbd); /* -EACCES: the host didn't allow it */
+	LOG_INF("controller joined: waking the host: %d", err);
+}
+
+static K_WORK_DEFINE(host_wake_work, host_wake_fn);
+
+void usb_host_wake(void)
+{
+	k_work_submit(&host_wake_work);
+}
 
 static void usb_msg_cb(struct usbd_context *const ctx, const struct usbd_msg *const msg)
 {
