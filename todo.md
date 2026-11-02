@@ -474,6 +474,14 @@ USB modes, in order; one active at a time.
       (`00 00 08 C0`, sent by `xpad` when Guide is held 5 s) and sets
       `flags` bit 1 until the link drops; the controller powers off. Tested
       by sending the packet with libusb. HID mode has no such command.
+- [ ] PC sleep / wake:
+	- [ ] PC asleep or off → controllers off: the dongle sets the power-off
+	      flag after 1 s of USB suspend (`usb.c`). A host that cuts USB
+	      power gives no warning (2 min no-dongle timeout).
+	- [ ] Controller wakes the PC: remote wakeup when a paired controller
+	      joins during suspend; host side: BIOS, `power/wakeup` (udev).
+	- [ ] Wired: low-power wait on suspend instead of System OFF; Guide →
+	      remote wakeup.
 - [ ] Find out how Steam turns controllers off: it can over Bluetooth;
       unknown whether it does for `xpad` / USB receivers. Steam shows no
       "Turn off" for the dongle (`1209:0002`), likely as its own drivers

@@ -13,6 +13,7 @@
 
 #include <app_version.h>
 
+#include "radio.h"
 #include "usb.h"
 
 LOG_MODULE_REGISTER(usb, LOG_LEVEL_INF);
@@ -55,10 +56,37 @@ USBD_DESC_CONFIG_DEFINE(xbx_fs_cfg_desc, "FS Configuration");
 USBD_CONFIGURATION_DEFINE(xbx_fs_config, 0 /* bus powered, no remote wakeup */,
 			  XBX_USB_MAX_POWER, &xbx_fs_cfg_desc);
 
+/*
+ * The host asleep or off (suspended this long): the controllers power off. The
+ * delay rides out short suspends; a host that cuts USB power gives no warning,
+ * and the controllers time out on their own.
+ */
+#define SLEEP_OFF_MS 1000
+
+static void host_asleep_fn(struct k_work *work)
+{
+	ARG_UNUSED(work);
+	LOG_INF("host asleep: controllers off");
+	radio_power_off_all();
+}
+
+static K_WORK_DELAYABLE_DEFINE(host_asleep_work, host_asleep_fn);
+
 static void usb_msg_cb(struct usbd_context *const ctx, const struct usbd_msg *const msg)
 {
 	ARG_UNUSED(ctx);
 	LOG_INF("USB: %s", usbd_msg_type_string(msg->type));
+	switch (msg->type) {
+	case USBD_MSG_SUSPEND:
+		k_work_reschedule(&host_asleep_work, K_MSEC(SLEEP_OFF_MS));
+		break;
+	case USBD_MSG_RESUME:
+	case USBD_MSG_RESET:
+		k_work_cancel_delayable(&host_asleep_work);
+		break;
+	default:
+		break;
+	}
 }
 
 static enum usb_mode mode_sample(void)

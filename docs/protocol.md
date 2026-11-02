@@ -89,7 +89,7 @@ through:
 | 1 | 1 | `seq` | +1 per report queued |
 | 2 | 4 | `rumble[4]` | Heavy, weak, LT, RT; 0…255 |
 | 6 | 1 | `led` | Guide LED brightness, 0…255; unused: the controller shows its own state |
-| 7 | 1 | `flags` | Bit 0: dongle full (no slot free, retry slowly). Bit 1: power off (host request; set until the link is lost). Bit 2: dongle in XInput mode (the controller maps its paddles onto other buttons) |
+| 7 | 1 | `flags` | Bit 0: dongle full (no slot free, retry slowly). Bit 1: power off (host request, or the host suspended the dongle for 1 s: asleep or off; set until the link is lost). Bit 2: dongle in XInput mode (the controller maps its paddles onto other buttons) |
 | 8 | 1 | `slot` | Time slot, 0…; `0xFF` = none yet |
 | 9 | 1 | `slots` | Slots per frame; frame = `slots` × 500 µs |
 | 10 | 2 | `sync_seq` | Input report `seq` the timing was measured on |

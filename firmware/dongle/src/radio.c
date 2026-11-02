@@ -593,3 +593,16 @@ void radio_power_off(uint8_t link)
 		links[link].power_off = true; /* read by the radio interrupt */
 	}
 }
+
+void radio_power_off_all(void)
+{
+	unsigned int key = irq_lock();
+
+	/* not idle links: the flag would turn off the next controller to join */
+	for (int i = 0; i < RADIO_LINKS; i++) {
+		if (links[i].have_seq || links[i].slot != XBX_SLOT_NONE) {
+			links[i].power_off = true;
+		}
+	}
+	irq_unlock(key);
+}

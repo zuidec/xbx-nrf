@@ -83,4 +83,7 @@ void radio_set_xinput(bool xinput);
 /* Ask the controller to power off; in its ACK payloads until the link is lost. */
 void radio_power_off(uint8_t link);
 
+/* radio_power_off() for every controller linked now (the host went to sleep). */
+void radio_power_off_all(void);
+
 #endif /* XBX_DONGLE_RADIO_H_ */
