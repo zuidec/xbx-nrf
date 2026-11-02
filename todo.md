@@ -722,6 +722,8 @@ Games rarely drive the trigger motors, and XInput can't (2 motors only).
       30 ms: a weaker or shorter one isn't felt); again only after it drops
       below 75 %. The heavy / weak test runs through both effects. The aux
       trigger switches trigger neither (they click on their own).
+      Only while connected: searching for the dongle, a trigger can
+      read full for a tick (tick phase shifts), which clicked.
 - [ ] Buzz at a trigger stop; pairs with hair-trigger mode.
 - **4-value output report:** exists (HID vendor report: heavy, weak, LT,
   RT); games and Steam don't use it.

@@ -894,10 +894,16 @@ static void after_send(const struct xbx_input_report *report, uint32_t elapsed_m
 
 	rumble_get(motors);
 #if !defined(CONFIG_XBX_FAKE_INPUT)
-	uint16_t pulled[2];
+	uint16_t pulled[2] = {0, 0};
 
 	configurator_rumble(motors, elapsed_ms); /* a test replaces the game's rumble */
-	input_trigger_pulled(pulled);
+	/*
+	 * effects only with a host to play for; searching for the dongle shifts
+	 * the tick phase, and a trigger can read full for a tick then
+	 */
+	if (wired ? !host_asleep : slot_held()) {
+		input_trigger_pulled(pulled);
+	}
 	trigger_fx_apply(motors, pulled[0], pulled[1], elapsed_ms);
 	configurator_motors_shown(motors);
 #endif
