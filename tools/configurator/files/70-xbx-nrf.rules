@@ -1,5 +1,5 @@
 # xbx-nrf controller and dongle: the configurator's hidraw access for the
-# logged-in user, and the dongle allowed to wake the PC (a controller turned
-# on with Guide). Installed by xbx-config into /etc/udev/rules.d/.
+# logged-in user, and both allowed to wake the PC (Guide; the dongle: a
+# controller turned on). Installed by xbx-config into /etc/udev/rules.d/.
 KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="000[1-4]", TAG+="uaccess"
-SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="1209", ATTR{idProduct}=="000[12]", ATTR{power/wakeup}="enabled"
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="1209", ATTR{idProduct}=="000[1-4]", ATTR{power/wakeup}="enabled"

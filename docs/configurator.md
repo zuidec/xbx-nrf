@@ -96,7 +96,8 @@ app asks the user to mount it.
 ### Platforms
 
 - **Linux:** a udev rule (`files/70-xbx-nrf.rules`) gives the user the
-  `hidraw` nodes and lets the dongle wake the PC (`power/wakeup`). The app detects missing access and offers to install it
+  `hidraw` nodes and lets the dongle and the wired controller wake the PC
+  (`power/wakeup`). The app detects missing access and offers to install it
   into `/etc/udev/rules.d/` (`pkexec`, or `sudo` from the CLI).
 - **Linux, SDL / Steam:** the SDL mapping with Share and the paddles
   ([[protocol#Input report (dongle → PC)]]) goes to

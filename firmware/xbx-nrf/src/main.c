@@ -137,6 +137,16 @@ static struct xbx_output_report last_output;
 static struct xbx_input_report last_input; /* for the stats line */
 static bool wired;
 
+/*
+ * Wired, the PC asleep: no reports, motors and LED off, Guide wakes the PC.
+ * No wake within WAKE_WAIT_MS of the press (PC off, or wake not allowed):
+ * wireless instead until the bus comes back.
+ */
+#define WAKE_WAIT_MS 3000
+static bool host_asleep;
+static bool asleep_gave_up;
+static uint32_t wake_wait_ms; /* since the Guide press; 0: none */
+
 /* wired mode: last HID vendor output report (USB thread) */
 static uint8_t host_rumble[4];
 static struct k_spinlock host_lock;
@@ -678,10 +688,61 @@ static void rumble_get(uint8_t level[4])
 	}
 }
 
-/* follow the USB host: wired while one is active (never with CONFIG_XBX_WIRED=n) */
+/* the PC asleep: enter or leave the wait for Guide */
+static void asleep_update(void)
+{
+	bool suspended = IS_ENABLED(CONFIG_XBX_WIRED) && usb_host_suspended();
+	bool asleep;
+
+	if (!suspended) {
+		asleep_gave_up = false;
+	}
+	asleep = suspended && !asleep_gave_up;
+	if (asleep == host_asleep) {
+		return;
+	}
+	host_asleep = asleep;
+	wake_wait_ms = 0;
+	if (asleep) {
+		k_spinlock_key_t key = k_spin_lock(&host_lock);
+
+		memset(host_rumble, 0, sizeof(host_rumble));
+		k_spin_unlock(&host_lock, key);
+		pair_indicator_off();
+		LOG_INF("host asleep: Guide wakes it");
+	} else {
+		pair_indicator_hold(false);
+		LOG_INF("host awake");
+	}
+}
+
+/* wired, the PC asleep: Guide pressed → wake it; no wake → give up */
+static void asleep_tick(const struct xbx_input_report *report, uint32_t elapsed_ms)
+{
+	static bool guide_was;
+	bool guide = report->buttons & XBX_BTN_GUIDE;
+
+	if (guide && !guide_was && !wake_wait_ms) {
+		usb_host_wake();
+		wake_wait_ms = 1;
+	}
+	guide_was = guide;
+	if (wake_wait_ms && (wake_wait_ms += elapsed_ms) > WAKE_WAIT_MS) {
+		LOG_INF("host didn't wake: wireless");
+		asleep_gave_up = true;
+	}
+}
+
+/*
+ * follow the USB host: wired while one is active or asleep (never with
+ * CONFIG_XBX_WIRED=n)
+ */
 static void wired_update(void)
 {
-	bool now = IS_ENABLED(CONFIG_XBX_WIRED) && usb_host_active();
+	bool now;
+
+	asleep_update();
+	now = IS_ENABLED(CONFIG_XBX_WIRED) && (usb_host_active() || host_asleep);
 
 	if (now == wired) {
 		return;
@@ -840,7 +901,7 @@ static void after_send(const struct xbx_input_report *report, uint32_t elapsed_m
 	trigger_fx_apply(motors, pulled[0], pulled[1], elapsed_ms);
 	configurator_motors_shown(motors);
 #endif
-	if (!battery_rumble_ok()) {
+	if (!battery_rumble_ok() || host_asleep) {
 		memset(motors, 0, sizeof(motors));
 	}
 	rumble_update(motors, elapsed_ms);
@@ -871,7 +932,9 @@ static void tx_thread(void *p1, void *p2, void *p3)
 		ms += elapsed_ms;
 
 		wired_update();
-		pair_tick(elapsed_ms, wired || slot_held());
+		if (!host_asleep) {
+			pair_tick(elapsed_ms, wired || slot_held());
+		}
 
 		/* fires once per outage */
 		atomic_val_t age = atomic_add(&ack_age_ms, elapsed_ms);
@@ -893,7 +956,9 @@ static void tx_thread(void *p1, void *p2, void *p3)
 #endif
 		report->battery = battery_tick(elapsed_ms);
 
-		if (wired) {
+		if (host_asleep) {
+			asleep_tick(report, elapsed_ms);
+		} else if (wired) {
 			if (usb_mode_get() == USB_MODE_XINPUT) {
 				xinput_wired_update(report);
 			} else {

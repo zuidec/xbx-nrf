@@ -46,7 +46,7 @@ USBD_DESC_PRODUCT_DEFINE(xbx_product, "XBX-NRF Gamepad");
 USBD_DESC_SERIAL_NUMBER_DEFINE(xbx_sn); /* chip DEVICEID via hwinfo */
 
 USBD_DESC_CONFIG_DEFINE(xbx_fs_cfg_desc, "FS Configuration");
-USBD_CONFIGURATION_DEFINE(xbx_fs_config, 0 /* bus powered, no remote wakeup */,
+USBD_CONFIGURATION_DEFINE(xbx_fs_config, USB_SCD_REMOTE_WAKEUP /* bus powered */,
 			  XBX_USB_MAX_POWER, &xbx_fs_cfg_desc);
 
 static enum usb_mode mode = USB_MODE_HID;
@@ -148,6 +148,25 @@ static void usb_msg_cb(struct usbd_context *const ctx, const struct usbd_msg *co
 bool usb_host_active(void)
 {
 	return atomic_get(&configured) && !atomic_get(&suspended);
+}
+
+bool usb_host_suspended(void)
+{
+	return atomic_get(&configured) && atomic_get(&suspended);
+}
+
+static void host_wake_fn(struct k_work *work)
+{
+	ARG_UNUSED(work);
+	/* -EACCES: the host didn't allow it */
+	LOG_INF("Guide: waking the host: %d", usbd_wakeup_request(&xbx_usbd));
+}
+
+static K_WORK_DEFINE(host_wake_work, host_wake_fn);
+
+void usb_host_wake(void)
+{
+	k_work_submit(&host_wake_work);
 }
 
 static int usb_setup(void)

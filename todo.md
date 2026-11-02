@@ -481,8 +481,9 @@ USB modes, in order; one active at a time.
 	- [x] Controller wakes the PC: remote wakeup when a paired controller
 	      joins during suspend; host side: BIOS, `power/wakeup` (udev).
 	      Tested: Guide wakes the PC from sleep.
-	- [ ] Wired: low-power wait on suspend instead of System OFF; Guide →
-	      remote wakeup.
+	- [x] Wired: PC asleep → no reports, motors and LED off; Guide → remote
+	      wakeup; no wake within 3 s (PC off) → wireless. Tested. CPU still
+	      ticks at 1 ms: a slower tick while waiting would save power.
 - [ ] Find out how Steam turns controllers off: it can over Bluetooth;
       unknown whether it does for `xpad` / USB receivers. Steam shows no
       "Turn off" for the dongle (`1209:0002`), likely as its own drivers

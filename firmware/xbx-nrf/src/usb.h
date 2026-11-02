@@ -32,4 +32,10 @@ int usb_start(void);
 /* A PC has the device configured and the bus isn't suspended (wired mode). */
 bool usb_host_active(void);
 
+/* Configured, but the bus is suspended: the PC is asleep (or off, bus powered). */
+bool usb_host_suspended(void);
+
+/* Ask the suspended host to wake (remote wakeup, if it allowed it). Any context. */
+void usb_host_wake(void);
+
 #endif /* XBX_CTRL_USB_H_ */
