@@ -9,13 +9,6 @@ tags:
 
 # xbx-nrf TODO
 
-Locked decisions: [README](README.md). Not yet locked:
-
-> [!info] Working assumptions
-> - **Antenna:** reuse the stock Xbox antennas via u.FL and coax (already
->   50 Ω), if they check out ([[#MCU / radio]]).
-> - **Power switching:** stock top board latch; our board holds it via J3 pin 9
->   ([[docs/hardware]]).
 
 ## References
 
@@ -38,285 +31,22 @@ Locked decisions: [README](README.md). Not yet locked:
 
 ---
 
-## 1. Verify / reverse-engineer (stock hardware)
-
-### Power latch (top board)
-
-> [!note] Current reading
-> - **Guide** (SW13 → Q8) or **Pair** (SW2 → R46 → Q14) drives Q9 → Q6/Q7 →
->   `3v/B+` → boosts.
-> - **Hold:** J3 pin 9 → R7 → D26 → Q9; same net as the
->   [[docs/pcal6416#Connections|PCAL6416 reset]].
-> - **Not self-holding**: 3.3 V stays up while Guide or Pair is held, drops
->   shortly after release; pin 9 high holds it (measured). Firmware must
->   raise pin 9 while the button is pressed.
-> - **J3 pin 13** (via D30) is probably Pair sense, not a force-off input.
-
-- [x] R46 → SW2 Pair / PCAL6416 P10 net (Pair power-on path).
-- [x] Bench test: bottom board out, 2.0–2.8 V on the AA wires, watch TP35:
-	- [x] Guide / Pair: 3.3 V on TP35 stays up while held, drops shortly
-	      after release. One early reading held ~3 s (not repeated).
-	- [x] Pin 9 pulled high (1 kΩ to 3.3 V) keeps power after release (Guide
-	      and Pair); removing it turns it off.
-- [x] Trace R25's source: J3 pin 11 (battery switch status, see J3 pinout).
-- [x] Q8 and Q14 polarity: both PNP (measured).
-- [x] Pin 9 holds power *and* resets the PCAL6416 (R4/EG2): low → no ACK
-      at `0x21` (measured, top board on USB).
-- [x] Pin 13 reads low while Pair is pressed (with a pull-up); Guide doesn't
-      affect it.
-- [ ] How the stock SoC powers off (pin 9 release only?).
-- [x] Standby current from the AAs, controller off: < 0.1 µA (meter reads
-      0.0 µA; top board alone). Held on, no bottom board: 0.35 mA.
-- [x] USB plugged in: all rails up without a button; pin 9 has no effect.
-	- [ ] AA side still sees ~0.25 mA: source unclear (the gate network,
-	      R21 220 kΩ + R23 10 kΩ, would pass only ~10 µA); check direction.
-
-### J3/J5 connector (top ↔ bottom)
-- [x] Connector pitch and geometry: 2 × 7, 1.27 mm; J3 male (top board), J5
-      female (ours) ([[docs/hardware#J3: top ↔ bottom board connector]]).
+## Verify / reverse-engineer (stock hardware)
 - [ ] Source the J5 replacement: female, SMT, ~3.5 mm tall, body within the
       9.5 × 3.25 mm shroud, pin 1 chamfer (or the shroud corner gets cut). No
       direct match found yet; test-fit candidates on J3.
-	- [x] Measure the stock J5 pad span against the KiCad footprint (5.7 mm
-	      outer edge to outer edge).
-- [x] Full pinout vs. schematic:
-	- [x] Pin 11: battery switch status, R25 (25.5 kΩ) from Q9's drain: VBAT
-	      = off, 0 V = on (measured). Also J7 pin 1 and SoC pin 1; protection
-	      diode to GND on the bottom board (not a resistor).
-	- [x] Pin 13: Pair sense (measured).
-- [x] Pin 2 (Guide) active-low, pull-up on our side (read on the test
-      controller).
-- [x] 3.3 V / 3.6 V / `3v/B+` on J3: as expected when on; all up on USB.
-
-### PCAL6416 expander (top board)
-[[docs/pcal6416|PCAL6416 notes]]
-- [x] Port → button map ([[docs/pcal6416#Port → button map]]).
-- [x] INT not connected → poll.
-- [x] Register map checked against the datasheet
-      ([[docs/pcal6416#Register map]]).
-- [x] I2C scan finds `0x21` (nice!nano, 100 kHz, 4.7 kΩ pull-ups to TP35).
-- [x] I2C pull-ups: none on the top board; ours required (4.7 kΩ to 3.3 V
-      works at 100 kHz).
-- [x] Every button on real hardware: all match the port map.
-
-### Bottom board (being replaced)
-- [x] Sticks are on the bottom board.
-- [x] Stick footprint: Alps **RKJXV122400R** (SnapMagic), in
-      `pcb/xbx-nrf/lib/RKJXV122400R/`; pads checked against
-      [[references/third-party/product_catalog_rkjxv.pdf]].
-- [x] Stock sticks really are RKJXV122400R (measured; fit check).
-- [x] Stick pinout: VR1 = X, VR2 = Y; 1.8 V on VR1_3 + VR2_1, GND on
-      VR1_1 + VR2_3 ([[docs/hardware#Sticks (RKJXV122400R footprint)]]).
-	- [x] Wipers (TP64/63/112/65) and click (TP42/43): continuity checked.
-	- [x] Axis directions, stock pots: X higher to the right, Y higher
-	      downwards.
-	- [ ] Same with the TMR modules.
-- [x] Push-switch contact pairs: A/C = signal (LSC/RSC), B/D = GND.
-- [x] A1304 placement relative to the trigger magnets.
-- [x] Stick supply `AN+`: U8 TLV70718 (1.8 V LDO from 3.3 V, EN from the
-      SoC, 100 kΩ pull-down).
-- [x] Trigger sensor supply `TRG+`: U9 TLV70732 from 3.3 V as a switch;
-      pulsed, 125 Hz, 17 % duty.
-- [x] Rumble drivers: 2× A3910 (U4: LT + Heavy, U5: RT + Weak)
-      ([[docs/a3910#Stock wiring (bottom board)]]).
-- [x] Motor pad positions, VBB decoupling, CR1–CR4 parts
-      ([[docs/a3910#To verify]]).
-- [x] Headset jack: dropped for v1 (no audio; I/O is short).
-- [x] **J7** (Play & Charge: 1 status, 2 SCL2, 3 SDA2, 4 VBUS): dropped for
+- [ ] Headset jack: dropped for v1 (no audio; I/O is short).
+- [ ] **J7** (Play & Charge: 1 status, 2 SCL2, 3 SDA2, 4 VBUS): dropped for
       v1; charge the AAs externally.
-- [x] **J8** (expansion port): dropped for v1. Stock: 1/12 GND, 2 SDA2, 3
+- [ ] **J8** (expansion port): dropped for v1. Stock: 1/12 GND, 2 SDA2, 3
       SCL2, 6 3.3 V, the rest likely digital audio. Keep its opening clear.
-- [x] **J3 ground spring** (J2 next to it is unfitted; both to GND): our J5
-      GND pad takes its place; no spring fitted.
-- [x] Mounting holes, outline, keep-outs (calipers, from a datum hole).
-
----
-
-## 2. Mechanical
-
-- [x] Fully constrained FreeCAD outline.
-	- [x] Image scale: the scan was off; corrected from the test print.
-	- [x] J3, stick centres, trigger sensors from calipers (J7 dropped).
-- [x] DXF → KiCad `Edge.Cuts`; holes → MountingHole footprints.
-- [x] Fit check: 3D-printed 1.6 mm board fits the shell (replaces the 1:1
-      paper print).
-- [x] STEP fit check in the shell.
-- [ ] Trigger stops (independent of the side rails):
-	- [ ] Blu-Tack clearance test behind each trigger.
-	- [ ] Fixed stop / adjustable screw (non-magnetic) / modified triggers.
-	- [ ] Click switches: hard stop within the switch's overtravel.
-
----
-
-## 3. Hardware design — controller board
-
-### Power (rechargeable AA)
-- [x] nRF on J3 3.3 V (VDD, normal voltage mode; max 3.6 V).
-- [x] Hold / off:
-	- [x] GPIO → J3 pin 9 (hold + expander reset); low at reset, raised early.
-	      Rev1.1: P1.12, raised by a GPIO hog at boot; holds power on AAs.
-	- [x] GPIO ← J3 pin 2 (Guide), pull-up (internal; none on the board).
-	- [x] Pair (J3 pin 13): read through the PCAL6416, no own GPIO.
-- [x] Battery sense: `3v/B+` (J3 pin 3) to AIN6 via 100 kΩ, 100 nF at the
-      pin, no divider ([[docs/hardware#Analog inputs]]).
-	- [x] Measure `3v/B+` on USB: must stay below 3.6 V. 2.99 V. Rev1.1
-	      reads 2537 mV against 2509 mV on a meter (+1 %).
-	- [x] NiMH curve and cutoff (`battery.c`): typical low self-discharge
-	      NiMH data, 2.0 V for 10 s → off; read only while the motors are
-	      off, level only falls per session; no rumble below 25 %. Both
-	      tested on a worn pack run flat: rumble cut at 14 %, then the
-	      controller switched itself off.
-	- [ ] Flat NiMH curve → coarse gauge (~1 % per 2 mV mid-range; the ADC
-	      read +1 % on one board); maybe coulomb counting.
-	- [ ] Regulated Li-ion AAs: no gauge possible.
-	- [ ] Lithium primary AAs rest at up to 1.8 V/cell: 3.6 V, the top of
-	      the VBAT range and the pin limit. Support them or not.
-	- Alkaline: no own curve; reads full for about half its life.
-- [x] VBUS detect (J3 pin 12): not needed; wired mode goes by USB
-      enumeration, and USB doesn't charge.
-- [x] **Charging:** external; no Play & Charge in v1 (in-controller charging
-      would need chemistry detection; not worth it).
-- [x] Stick supply 1V8_STICK: **TLV70018DDCR** with EN on a GPIO and
-      100 kΩ pull-down ([[docs/hardware#Supplies]]), on while the controller
-      is on, off in sleep. Pulse it around
-      samples only if the TMR sticks' start-up time allows (check their
-      1.8 V rating, current and start-up time). Rev1.1: works, on while
-      running; off in sleep with the power state machine.
-- [x] Trigger sensor supply TRG+: **P-FET** from 3.3 V, gate pull-up,
-      GPIO low = on; pulsed (on, ≥ 100 µs, sample, off). Rev1.1: works,
-      100 µs before each 1 ms sample.
-	- [x] FET: AO3401A, one for both triggers.
 - [ ] No back-powering: float GPIOs before a rail goes down.
-
-### MCU / radio
-- [x] MCU: **nRF52840** (no audio in v1).
-- [x] Module: **Raytac MDBT50Q-U1MV2** (as the dongle; u.FL to the stock
-      antennas via coax); size and fit checked.
-- [x] Analog inputs: all 8 used (4 stick, 2 trigger, battery, 1.8 V stick
-      rail); plan in [[docs/hardware#Analog inputs]]. Rev1.1: all tested.
-- [x] RF layout: short 50 Ω CPW to the coax, ground vias, away from motors and
-      battery wiring. Rev1.1: ~0 % loss.
-- [x] SWD header / pads.
-- [x] USB D+/D− from J3 (90 Ω pair); ESD on the top board?
-
-### Inputs
-- [x] Sticks: **TMR** (low noise, no wear drift).
-- [x] Stick directions (right, up = positive) set in firmware: the supply
-      pins are fixed by the stock pinout (never swap them on TMR sticks).
-      Measured (stock pots): Y inverted, X not. The breadboard stick reads X
-      reversed. Rev1.1 TMR sticks: the same, both sticks.
-- [x] Calibration button: not needed; View + Menu held 3 s, or the
-      configurator ([[#Stick and trigger calibration]]).
-- [x] Triggers: A1304 at the stock positions.
-- [x] I2C to the PCAL6416 + pull-ups ([[docs/pcal6416#Connections]]).
-- [x] B, LSC, RSC switches.
-
-### Rumble
-[[docs/a3910|A3910 notes]]
-- [x] Stock wiring: 2× A3910, 8 GPIOs (LIN to GND on Heavy/Weak frees 2).
-- [x] Schematic block ([[docs/a3910#Schematic checklist]]).
-- [x] A3910 symbol (draw, or `easyeda2kicad` C150818).
-- [x] Motor pads at the stock positions. Rev1.1: all four motors run.
-
-### Connectors
-- [x] J3 mating connector.
-- [x] Play & Charge contacts (stock J7): dropped for v1.
-- [x] J3 pin 11: no load on our side (a pull-down partly turns on Q6/Q7).
-- [x] J8 expansion port: dropped for v1.
+- [ ] Next rev: a test point on every module GPIO, to check each joint
+      after assembly (short to GND / drive and read back over SWD).
 
 ---
 
-## 4. Hardware design — dongle
-
-- [x] PCA10059: prototype and supported off-the-shelf dongle (overlay with
-      the mode switch on P0.29; build default). Tested: HID (one
-      controller), XInput, rumble, pairing.
-- [ ] **Custom dongle PCB** (the plan), module **Raytac MDBT50Q-U1MV2**
-      (u.FL; 32.768 kHz crystal; USB with VBUS and VDDH):
-	- [x] Power: LDS3985M33R LDO, VBUS → VDD + VDDH (3.3 V, normal voltage
-	      mode); VBUS also to the module for USB.
-	- [x] USB-C (CC: 5.1 kΩ to GND each), ESD diodes at the connector,
-	      VBUS ≤ 10 µF.
-	- [x] Antenna: Kyocera AVX **1003893FT-AA10L0050** (FPC, 87 %, 50 mm
-	      cable, u.FL) flat on the lid, over no PCB copper; flat puck on a
-	      USB cable, USB at the rear. Backup: Taoglas CBD01.07.0100C cable
-	      dipole along the front wall (straight, ≥ 15 mm from metal).
-	- [ ] Compare both antennas with the dongle's rx/lost/RSSI stats.
-	- [x] USB mode switch read at boot ([[#Dongle]] step 4), pair button,
-	      status LEDs; none on P0.09/P0.10 (NFC) or P0.18 (reset).
-	- [x] SWD on J1 (JST-SH, Pi pinout).
-	- [x] First flash over SWD (`./build.sh xbx-dongle -f swd`). Tested on
-	      the RC clock: USB, pairing, rx/loss.
-	- [x] LFXO didn't start at first (firmware waits in
-	      `lfclk_spinwait()`); runs after rework (LFCLKSTAT: crystal).
-	      C6, C7 are 9 pF; Nordic uses 12 pF for a 9 pF crystal: check
-	      which FC-135 load version is fitted.
-	- [x] Player LEDs: Pn lit while player n is connected (HID: P1);
-	      power LED on from boot. LEDs tested; two or more players not yet.
-	- [x] Module joints: P1.12 (pair), P1.14, P1.15, P0.03, P0.06, P0.27
-	      didn't reach the chip until a third reflow; all LEDs and the pair
-	      button work now. Green LEDs (D2–D5) were fitted backwards: the
-	      part's cathode marking differs.
-	- [ ] Next rev: a test point on every module GPIO, to check each joint
-	      after assembly (short to GND / drive and read back over SWD).
-	- [x] Firmware: board `xbx_dongle/nrf52840` (`firmware/boards/xbx/`),
-	      pins from the Rev1.1 schematic. Normal voltage mode (3.3 V LDO), so
-	      no REGOUT0 change.
-	- [x] Layout: Rev1.1, JLC rules, DRC and schematic parity clean; ready
-	      for fab.
-	- [ ] Order the PCBs (JLC) and 5–6 modules (one DigiKey Marketplace
-	      order, $25 flat shipping, shared with the controller) together.
-
----
-
-## 5. Firmware
-
-### Link
-Code: `firmware/{xbx-nrf,dongle}/src/main.c`,
-`firmware/common/include/protocol.h`. [[docs/building]], [[docs/flashing]].
-
-> [!note] M1 results (2026-09-29, two Pro Micros)
-> | Test | Result |
-> |---|---|
-> | Desk, 0 dBm | ~993/s (k_timer rounding), RSSI −46 dBm |
-> | Desk, TIMER3 + seq fix | 1000/s, lost 0, RSSI −55 dBm; `failed` > 0 with `lost` 0 = lost ACKs only |
-> | Across the room, 0 dBm | RSSI −79…−89 dBm, 0–65 % delivered |
-> | Across the room, +8 dBm | RSSI −69…−74 dBm, 98–99.8 % delivered |
-> | Scope, P0.17 | One-way ~232 µs (max 232.2); round trip mean 350.5 µs (332.8 min, 983.9 max = retry, ~2 % of reports); period mean 999.94 µs (999.91–1010) |
->
-> Clone antennas are weak. Remaining loss looks like fades/interference →
-> adaptive channel (below).
-
-- [x] **Build targets in `build.sh`**: two per app, each with its own
-      board and folder ([[docs/building#Building]]): `xbx-nrf`,
-      `xbx-nrf-promicro` (test build), `xbx-dongle`, `xbx-dongle-pca10059`.
-      Pro Micro dongle, no-bootloader overlays, `XBX_FAST_FRAME_MAX` and the
-      stick X invert options dropped.
-- [x] Test firmware: ESB 2 Mbps, 1 ms fake reports, ACK payloads, stats,
-      P0.17 timing pin.
-- [x] Report timing from hardware TIMER3 (exact 1 kHz; ESB uses TIMER2).
-- [x] Sequence number advances only on sent reports; 16-bit (protocol v1,
-      23-byte report); gap ≥ 0x8000 = restart.
-- [x] TX power +8 dBm both ends (`XBX_TX_POWER_DBM`).
-- [x] Check controller `skipped` when the dongle shows `rx` < 1000 with low
-      `lost` (seen once: `rx 942 lost 2`). With time slots: `skipped` 0–3/s,
-      `rx` ~1000.
-- [x] If still marginal: 1 Mbps (+3–4 dB). Not needed: ~1000/s per
-      controller, ~1 % loss on the weaker link without retries.
-- [x] Latency on the scope (P0.17; results above). A 33 µs FRFR minimum was
-      a measurement artifact.
-- [x] Start each transmission from the TIMER3 interrupt instead of a woken
-      thread: the Rev1.1 controller's work before the send (I2C, ADC) made it
-      send up to ~180 µs off (`sync` ~100/s), so two controllers collided
-      (10–20 % loss each, ~1 % alone). Done: alarm `XBX_TX_LEAD_US` (400 µs)
-      before the slot wakes the thread to queue the report, the wrap starts
-      it (ESB manual TX); `late` and `work max` in the stats. The Rev1.1 work
-      took ~700 µs (I2C, a 100 µs busy-wait, ADC, one after the other): now
-      asynchronous, ~245 µs (up to ~335). Two controllers: ~1 % and ~0 %
-      loss, `sync` 0–7/s, within ±16 µs.
-- [x] Tune retransmit delay/count. Not needed: no retries with time slots.
-- [ ] Dongle timing pin once usable PCA10059 pads are known.
-- [x] Packet format v1 ([[docs/protocol#Radio (controller ↔ dongle)]]).
+## Firmware
 - [ ] Adaptive channel instead of hopping: the dongle watches loss and noise
       on its channel and scans the other candidates in the background; when
       the channel degrades it announces "channel N at frame F" in the ACK
@@ -325,380 +55,56 @@ Code: `firmware/{xbx-nrf,dongle}/src/main.c`,
       sequence and frame count, a dongle retune (~40–130 µs) in the last
       slot's margin, and harder joining and pairing. Only if interference
       shows up in use.
-
-### Pairing & multiple controllers (protocol v3)
-Design: [[docs/protocol#Pairing & multiple controllers]].
-Up to 7 paired (least recently connected replaced), 4 connected; 1 kHz for
-1–2, 500 Hz for 3–4.
-- [x] Step 1: fixed test pipes 1–4 (`CONFIG_XBX_TEST_PIPE`), per-pipe stats
-      and ACK payloads on the dongle, pipe n = XInput slot n − 1; HID mode
-      follows the first controller. Fake input: circling sticks, random
-      buttons. Two Pro Micros: both received, slots connect/disconnect
-      independently. Without TDMA one controller starves: ~40 of 1000
-      reports/s get through (avg attempts 1.97), its slot flaps. The phase
-      doesn't drift (crystals), so it stays starved; the retry collides too.
-      Rumble routing: test after TDMA.
-- [x] Step 4.1: pairing mode and storage. Dongle: random address (base 1 +
-      7 prefixes, hardware RNG) created once, `pair/addr`; pair button
-      (`pair-sw`), blue LED (`pair-led`) blinks. Controller: Pair = P1.01
-      to GND held 3 s or at power-on, on-board LED blinks. Both enter
-      pairing at boot while unpaired; 30 s timeout. No radio change yet.
-      Tested: address persists, LEDs/buttons/pin enter pairing.
-- [x] Step 4.2: the exchange (protocol v3). Pipe 0 = pairing address,
-      open while pairing; pipes 1–7 on the dongle's address; REQ → OFFER →
-      CONFIRM → DONE, sparse like joining; dongle table (7, least recently
-      connected replaced, its prefix re-rolled), `pair/table`; controller
-      `pair/link`; XInput player = first free slot at connect. Tested:
-      both pair in ~25 ms (pipes 1, 2; players 1, 2), reconnect after a
-      power cycle, re-pairing keeps the pipe, an unpaired controller is
-      silent.
-- [x] Step 4.3: checks. Dongle: RSSI ≥ −50 dBm
-      (`CONFIG_XBX_PAIR_RSSI_MIN`), second controller in a window → abort
-      (answers ABORTED for 2 s). Controller: collects 3 offers, two dongles
-      → abort. Error blink (three slow), factory reset (Pair held 10 s,
-      both sides). Timing corrections: ±15 µs dead band. Tested: far away
-      ignored, two controllers abort, both resets, sync rate drops. Not
-      testable yet: two dongles, dongle full.
-- [x] Step 4.4: channel choice. Dongle: at first use samples RSSI on
-      24/49/74/76/78 (100 ms each), keeps the quietest, `pair/chan`
-      (cleared by factory reset; already-paired dongles keep 76).
-      Controller: pairing requests cycle the candidates until one is
-      acknowledged; the link stores the channel. Tested: existing pairings
-      kept 76; after a dongle reset the scan picks a channel and both
-      controllers find it when re-paired and after a power cycle.
-- [x] Pairing success: dongle pair LED and controller Guide LED blink
-      three times quickly (200 ms; errors: 400 ms) when the exchange
-      completes. Tested.
-- [x] Step 2, TDMA (protocol v2): 1 ms dongle frame (TIMER3), 2 slots, first
-      free slot per link; timing error in ACKs, controller shifts one
-      TIMER3 period; no retries. Two Pro Micros: both 971–1001/s (was ~40
-      for the starved one), err within ±30 µs (mostly 0/±11: thread
-      jitter), weaker link (−48 dBm) loses ~1 % without retries; rumble
-      reaches the right controller.
-- [x] Step 3: join (sparse attempts at random phases), full flag, 2 ms frame
-      for 3–4 controllers and back (slots compacted). Two Pro Micros with
-      `CONFIG_XBX_FAST_FRAME_MAX=1` (since removed): switches between 1 kHz
-      and 500 Hz as controllers are plugged and replugged; replugged
-      controllers rejoin.
-      Default build: both at 1 kHz.
-- [x] TDMA: margin check. Measured transaction
-      333–345 µs → ~155 µs margin in a 500 µs slot. With the timer-driven
-      send, slot error within ±16 µs (stats `err`): ≥ ~140 µs left. Two
-      controllers at 1 kHz: ~1 % and ~0 % loss, no collisions.
-- [x] USB: 4 players via the XInput mode (Xbox 360 Wireless Receiver); HID
-      stays single-player. Tested with 4 controllers.
-- [x] Test: 2 controllers at 1 kHz (two Pro Micros + PCA10059), then 4 at 500
-      Hz (more Pro Micro clones). Done: 2 at 1 kHz; 3 controllers (three Pro
-      Micros + PCA10059): 500/s each, slots 0–2 of 4, err within ±25 µs;
-      weakest link (−58 dBm) ~0.5 % loss. 4 controllers: 500/s each, slots
-      0–3 of 4, err within ±18 µs, 0 loss (−35 to −42 dBm).
 - [ ] Tune: pairing timeout, RSSI threshold (drop timeout set: 1000 ms).
-
-### Dongle
-USB modes, in order; one active at a time.
-1. [x] **HID gamepad, 1 player** ([[docs/protocol#USB HID mode]]):
-	- [x] Move the ESB receiver code into `radio.c` (no behaviour change);
-	      re-run the link test.
-	- [x] USB device: own context, VID `0x1209` / test PID `0x0001`, strings,
-	      serial from `DEVICEID`; board's CDC-at-boot off.
-	- [x] `CONFIG_XBX_USB_CONSOLE`: CDC ACM console as a composite function, on
-	      in development builds, off in release builds.
-	- [x] HID interface + report descriptor; check with `lsusb -v`,
-	      `evtest`. evtest: every control maps as designed.
-	- [x] Radio → HID: button remap, D-pad → hat, Y inversion; latest-wins
-	      submit; neutral report on link loss (1000 ms). evtest: ~1000
-	      updates/s, neutral report 0.999 s after unplugging.
-	- [x] Output report → rumble/LED in the ACK payload (replaces fake
-	      rumble); reset on USB and link loss. Test: `printf` to
-	      `/dev/hidrawN`, watch `rumble[…] led` on the controller. OUT
-	      endpoint must exceed the report size (else reports merge).
-	- [x] Steam: detected, correct layout, Steam Input works (breadboard
-	      input). Rumble: step 3 (PID).
-	- [x] Finalize the descriptor in `protocol.md`.
 2. [ ] **XInput, 1–4 players** as an **Xbox 360 Wireless Receiver** (4
        interfaces, in-band connect/disconnect; after GP2040-CE / `xpad`): 8-bit
        triggers, 2 motors, no Share. pid.codes IDs: `xpad` binds any `0x1209`
        interface of the receiver type (FF/5D/81). Windows untested: check
        whether its driver binds the receiver type with our IDs. All 4 slots
        work (tested with 4 controllers); open only for Windows.
-	- [x] Mode strap (P0.06 to GND = XInput, PID `0x0002`) and XInput USB
-	      class: 4 interfaces, interrupt IN/OUT 32 bytes at 1 ms, presence
-	      packets and presence-query replies. Test: `xpad` binds all 4,
-	      no gamepad until a controller connects.
-	- [x] Slot 0 bridge: radio → 360 report, connect on link up,
-	      disconnect after the link timeout. Test: `evtest`, Steam.
-	- [x] Output: rumble → heavy/weak separately, LED pattern → Guide
-	      LED, power-off command. Test: `fftest`, `sdl-rumble` low/high.
-	- [x] XInput section in `protocol.md`.
-3. [x] **HID PID force feedback** (HID mode game rumble via `hid-pidff`).
-       Sine only: the kernel emulates `FF_RUMBLE` as a sine (⅔ strong +
-       ⅓ weak), so SDL/Steam rumble works but as one blended strength;
-       separate heavy/weak needs XInput. Engine on the dongle:
-       output = 4 motor levels in the existing output report, no radio
-       change; trigger mixing stays controller-side
-       ([[#Trigger rumble (controller-side)]]).
-	- [x] PID descriptor (sine + envelope, required reports), effect table,
-	      block load / pool / free, device control, gain. Test: no
-	      `hid-pidff` errors in `dmesg`, `fftest` uploads a sine.
-	- [x] Engine: active effects → motor strength every 1 ms (magnitude ×
-	      effect gain × device gain; duration, delay, loops), max with the
-	      vendor report, both motors. Tested: `fftest` (gain, delay,
-	      duration, summing), SDL `SDL_JoystickRumble`.
-	- [x] PID section in `protocol.md`.
-4. [x] **Mode switching:** `mode-gpios`, read once at boot before USB
-       starts. Pro Micro: jumper on P0.06; PCA10059: switch to GND on the
-       P0.29 pad; custom board: SW3 (P1.09, low = XInput).
-   - [x] Switch changed while running: restart after 1 s (`usb.c`, sampled
-         every 250 ms). Tested.
-5. [x] Open-source license + `LICENSE` file (MPL-2.0 / CERN-OHL-S-2.0 /
-       CC-BY-4.0, REUSE compliant).
 6. [ ] USB IDs: pid.codes test PIDs `0x0001`–`0x0004` for now (dongle HID /
        XInput, controller HID / XInput: one per interface set, since Windows
        and SDL/Steam cache drivers and mappings per VID:PID). Apply for our
        own once the repo is public, bootloaders too (now `0x0005` dongle,
        `0x0006` controller).
-7. [x] **LED brightness from the configurator**: LEDs on PWM (open-drain
-       kept); pair, player and power levels 1–255 each, player and power
-       switchable off (`cfg/leds`). Tested.
-
-### Controller
-- [x] Power-off: Guide held 6 s releases the hold (`power.c`); a press held
-      since power-on doesn't count. Tested on AAs and USB.
-- [x] Auto power-off on AAs (`power.c`): idle 15 min, no dongle 2 min;
-      tested with short timeouts. Low battery: [[#Power (rechargeable AA)]].
 - [ ] Boot reason: Guide / Pair (→ pairing) / USB.
 - [ ] Pair shouldn't power the controller on (SW2 → R46 → Q14 does in
       hardware). On AAs, with Pair held at boot and Guide not, release the
       hold; or remove R46 (Pair still reaches the PCAL6416).
-- [x] Power-off from the PC: the dongle decodes XInput power-off
-      (`00 00 08 C0`, sent by `xpad` when Guide is held 5 s) and sets
-      `flags` bit 1 until the link drops; the controller powers off. Tested
-      by sending the packet with libusb. HID mode has no such command.
-- [x] PC sleep / wake:
-	- [x] PC asleep or off → controllers off: the dongle sets the power-off
-	      flag after 1 s of USB suspend (`usb.c`). A host that cuts USB
-	      power gives no warning (2 min no-dongle timeout). Tested.
-	- [x] Controller wakes the PC: remote wakeup when a paired controller
-	      joins during suspend; host side: BIOS, `power/wakeup` (udev).
-	      Tested: Guide wakes the PC from sleep.
-	- [x] Wired: PC asleep → no reports, motors and LED off; Guide → remote
-	      wakeup; no wake within 3 s (PC off) → wireless. Tested. CPU still
-	      ticks at 1 ms: a slower tick while waiting would save power.
 - [ ] Find out how Steam turns controllers off: it can over Bluetooth;
       unknown whether it does for `xpad` / USB receivers. Steam shows no
       "Turn off" for the dongle (`1209:0002`), likely as its own drivers
       only know listed IDs.
 - [ ] USB-powered "off" state: System OFF for now (Guide wakes it, as a
       reset); the stick supply stays on.
-- [x] PCAL6416 polling ([[docs/pcal6416#Firmware notes]]): one 2-byte read
-      per 1 ms scan (`pcal6416.c`), pull-ups enabled at boot. Asynchronous
-      (RTIO), a tick ahead: started after the report is sent, collected by
-      the next scan. The setup and the 1 s pull-up check take a tick's
-      transfer.
-- [x] PCAL6416 setup again after failed reads (and a periodic check): an
-      expander reset after boot (pin 9 glitch) leaves its inputs floating
-      until the next boot. Caught by a failed read, a low unused input (P02,
-      P06, P16) or the pull-up register (1 s); retried every 100 ms, buttons
-      hold meanwhile. Tested: 5 ms reset pulse, back in 100 ms. The
-      unused-input check is untested.
-- [x] Stick/trigger ADC ([[docs/hardware#Analog inputs]]): sticks on the
-      internal 0.6 V reference, gain 1/3 (0–1.8 V), as a ratio to the
-      measured 1.8 V rail (AIN0 at gain 1/4 so it doesn't clip); triggers on
-      VDD/4, gain 1/4 (ratiometric, as TRG+ ≈ VDD). Trigger supply
-      pulsed around each scan; stick supply as its hardware item allows.
-      One asynchronous scan per tick (`adc_read_async`), VBAT included,
-      3 µs acquisition; a timer alarm turns the trigger supply on 80 µs
-      early, so the A1304 settles without a wait.
-      Triggers: rest measured at boot, travel grows to the furthest pull
-      (calibration: [[#Stick and trigger calibration]]).
-- [x] **Custom board pins:** board definition for the controller (like
-      `xbx_dongle`), replacing the Pro Micro overlay's pins with the
-      schematic's: analog inputs, LSC / RSC / B, Guide, Pair, power hold,
-      I2C, A3910 inputs, supply enables, LEDs. Board
-      `xbx_controller/nrf52840`.
-- [x] **AUX inputs:** paddles P1–P4 (left upper/lower, right upper/lower;
-      AUX2, AUX1, AUX3, AUX4) in `buttons_ext` bits 2–5 → HID buttons
-      17–20; XInput: each presses mapped buttons (default A, B, X, Y; the
-      dongle flags XInput mode in the ACK). Paddles can be turned off. LT_AUX
-      / RT_AUX force their trigger full. Tested: evtest (both modes), SDL,
-      Steam. [[#Elite-style paddles]], [[#2. Mechanical]] (trigger stops).
-- [x] Paddle config stored in flash: `config.c` (`config/data`,
-      versioned); the configurator calls `config_set()` /
-      `config_reset()`. Tested: save, load after power-cycle, reset.
 - [ ] Steam / SDL map Share and the paddles only with our mapping
       ([[docs/protocol#Input report (dongle → PC)]]): the configurator
       installs it per user (Linux, HID mode; tested in Steam). Built in
       needs our own USB IDs and an SDL_GameControllerDB entry (one per
       device: dongle, wired).
-- [x] Guide LED: pairing indicator; outside pairing solid while linked,
-      slow blink while searching.
-- [x] Guide LED from the host: not needed. Hosts never set it (HID) or
-      set it on (XInput, one LED: no pattern), and the controller and dongle
-      show their own state and errors. `led` stays in the protocol, unused.
-- [x] Rumble PWM ([[docs/a3910#Firmware notes]]): HIN on pwm1 at 25 kHz,
-      LIN as GPIO; a stopping motor brakes 40 ms (`BRAKE_MS`; 0–80 ms felt
-      the same), then both inputs low. All four motors tested
-      (`tools/test-rumble.sh`).
-- [x] **LT motor didn't run** (Rev1.1): an incomplete U5 joint that looked
-      fine; reflowing U5 fixed it. Firmware was correct throughout (checked
-      over SWD).
-- [x] Rumble safety: rumble/LED values off if no ACK payload for 100 ms
-      (`OUTPUT_TIMEOUT_MS`); the motor driver will read these values.
-- [x] Battery monitoring, low-battery shutdown (`battery.c`): level in the
-      report, 100 % on USB. Shutdown tested.
-- [x] Battery on the PC (HID mode): Battery Strength in the HID input report
-      → Linux `power_supply` → UPower / the tray (tested). The last value
-      stays after the controller goes off. XInput: none (`xpad` has no
-      battery support).
 - [ ] Steam / SDL don't show it: SDL's Linux joystick backend never reads
       `power_supply` (SDL2 reports "unknown"). Look into an upstream SDL
       patch; pairs with our own USB ID and an SDL_GameControllerDB entry.
 - [ ] **Wired USB gamepad mode:** a PC enumerating the controller = wired
       (radio off); a charger alone keeps it wireless. `CONFIG_XBX_WIRED`
       (default on) off for wireless tests with the USB console attached.
-	- [x] Share the dongle's HID gamepad and PID code in `firmware/common`
-	      (dongle unchanged).
-	- [x] Controller USB device "XBX-NRF Gamepad", test PID `0x0003`: HID
-	      gamepad + PID + CDC console (development builds).
-	- [x] Wired switch: enumerated → radio off, input → HID, rumble (PID /
-	      vendor report) → local motors; unplugged → radio again.
-	- [x] Mode at plug-in, 8BitDo-style: X held → XInput, B held →
-	      HID; remembered in flash until changed. Read at boot for now;
-	      plugged in while running needs a USB restart (power state
-	      machine).
-	- [x] Wired XInput (test PID `0x0004`): wired 360 interface (FF/5D/01),
-	      20-byte report, rumble `00 08 …`, LED `01 03 …`, `xpad`'s vendor
-	      "magic" request.
-	- [ ] Windows: HID PID rumble (Windows' PID driver likely also wants a
+    - [ ] Windows: HID PID rumble (Windows' PID driver likely also wants a
 	      PID State report and Axes Enable) and wired XInput (driver binds
 	      by interface class?).
 
 ### Stick and trigger calibration
-Raw ADC counts, board-independent; both sticks on the controller board. Tune
-the constants (deadzone, drift window, settle time) on the TMR sticks.
-- [x] Calibration data in flash (Zephyr settings on the storage partition):
-      per axis min / centre / max and direction.
-- [x] On-device routine: View + Menu held 3 s → move sticks and triggers
-      through their full range → press View + Menu again → saved (B
-      cancels).
-- [x] Radial inner deadzone, outer saturation (full deflection = ±32767).
-- [x] Boot-time centre check: re-centre within a small window of the stored
-      centre, else keep it (stick held at power-up).
-- [x] Trigger calibration in the same routine: rest, full pull and
-      direction stored; refused if too short or moved both ways from rest.
-      Tested on Rev1.1.
-- [x] Full pull threshold per trigger: setting `0x05` (default 95 % of the
-      travel), set in the app's calibration view.
 - [ ] Tune `CAL_MIN_TRAVEL` and the default threshold with use.
 - [ ] Triggers: stops, remapping, hair trigger.
-- [x] Commands for the host program: `CALIBRATE` ([[#Configurator]]).
-- [x] User page `docs/controller.md`: power, pairing, LED, wired /
-      wireless, X / B mode, calibration controls, trigger effects, waking
-      the PC.
-
-### Build & versions
-[[docs/building|Building]]
-- [x] SDK pinned in `firmware/ncs-version` (v3.4.1, toolchain 8285d8ad56),
-      checked by the build script.
-- [x] App `VERSION` files (0.1.0); boot log shows version, build ID, protocol.
-- [x] `git tag v0.1.0` once M1 is done.
-- [x] Per-component versions and tags (`controller-v*`, `dongle-v*`,
-      `bootloader-v*`, `configurator-v*`, `hw-rev*`); build ID per
-      component ([[docs/building#Versions]]).
-
-### Bootloader
-Adafruit nRF52 UF2 bootloader on both boards, unsigned
-([[docs/signing|why not signed]]).
-- [x] Build setup: `firmware/bootloader/` (upstream `0.11.0` plus our
-      board folders), `./build.sh xbx-nrf-bootloader` /
-      `xbx-dongle-bootloader`; needs the Arm GNU Toolchain
-      ([[docs/building#Bootloader]]).
-- [x] `xbx_dongle` board: PAIR_LED, Pair held at boot enters it,
-      `1209:0005`, `XBXDONGLE` drive. Zephyr `xbx_dongle/nrf52840/uf2`
-      (app at `0x26000`), the `xbx-dongle` default. Tested: install, UF2
-      flash, entry with Pair + reset / plug-in.
-- [x] `xbx_controller` board: Guide LED, `1209:0006`, `XBXCTRL` drive.
-      Power hold raised in `board_init2()` and again in `board_teardown2()`
-      (upstream's teardown resets every pin). Zephyr
-      `xbx_controller/nrf52840/uf2`, the `xbx-nrf` default. Tested:
-      install, UF2 flash, power-on on AAs.
-- [x] Controller DFU entry: LS + RS held at power-on; `board_init2()`
-      reads them (internal pull-ups) and sets `GPREGRET = 0x57` before
-      `check_dfu_mode()`. Tested on USB and AAs.
-- [x] App entry, controller: the configurator's `BOOTLOADER` command →
-      `GPREGRET = 0x57` + reset ([[#Configurator]]). Tested.
-- [x] App entry, dongle: the same, with the dongle's channel. Tested.
-- [ ] Measure power-on to pin 9 high (the 500 ms double-reset wait only
-      follows a reset-pin reset).
-
 
 ### Configurator
-Python + Tkinter desktop app over a vendor HID channel, direct USB only
-([[docs/configurator]]). Code: `tools/configurator/`, one code base;
-`build.sh` makes one file per OS in `output/`
-(`xbx-config-<version>-<os>-<cpu>`). Linux first.
-- [ ] Review the design ([[docs/configurator]]): tabs, commands, settings
-      ids, open questions.
-- [x] Firmware: vendor HID interface (`config_usb.c`) on the controller in
-      every USB mode; `INFO`, `SETTING_GET` / `SET` (paddles, bindings),
-      `REBOOT`, `BOOTLOADER`; image marker; save 1 s after the last change.
-      Tested in HID and XInput mode.
-- [x] Firmware: `STREAM`, `CALIBRATE` (sticks and triggers, status),
-      `RUMBLE`, `FACTORY_RESET` on the controller; Pair in the report for the
-      input test. Tested.
-- [x] Test factory reset (each scope). Tested.
-- [x] Firmware: LED brightness on the controller (Guide LED 1–255,
-      `config.c`). Tested. A stored USB mode
-      setting isn't needed: X / B held at power-on already switches it.
-- [x] Firmware: the channel on the dongle (`dongle/src/configurator.c`):
-      `INFO`, `BOOTLOADER`, `REBOOT`, `FACTORY_RESET` (pairing), image
-      marker. Firmware update through the app tested.
-- [x] Test the dongle channel in XInput mode (with the console it takes the
-      7th and last IN endpoint) and factory reset. Tested.
-- [x] Firmware: LED brightness on the dongle ([[#Dongle]] item 7).
-- [x] Test the dongle's LED sliders and on/off boxes, saved after a restart;
-      `XBX_LED_FLOOR` (level 1 = 24/255) kept. Tested.
-- [x] App: protocol module, CLI, window (controller: info, input test,
-      calibration, rumble, paddles, factory reset, firmware update; dongle:
-      info, update). Firmware update tested, also the auto-mount.
-- [x] App: dongle tab with factory reset (pairing).
-- [x] App: LED brightness (controller: Guide; dongle: pair, player, power
-      with on/off; CLI `led`).
-- [x] Linux build (PyInstaller one-file, [[docs/configurator#Building]]):
-      `build.sh`, `--release` in a Debian 12 container. CLI tested on
-      Debian 12, Ubuntu 24.04, Fedora 41 containers; window here.
 - [ ] Windows and macOS builds (on those systems; `hidapi` path untested).
-- [x] Uninstall: File → Remove installed files, CLI `uninstall` (Linux: the
-      udev rule). Tested.
-- [x] udev install and uninstall on the real system: tested. The "Give
-      access" banner isn't (the VIA rule `92-viia.rules` here opens every
-      hidraw node anyway).
-- [ ] Later: the controller's settings through the dongle (needs a reliable
-      radio command channel).
----
-
-## 6. Prototyping milestones
-
-- [x] **M1:** 1 kHz link, latency and loss measured ([[#Link]]).
-- [x] **M2:** dongle works as HID, then XInput ([[#Dongle]]).
-- [x] **M2b:** pairing; 2 controllers at 1 kHz, then 4 at 500 Hz
-      ([[#Pairing & multiple controllers (protocol v3)]]). Done: pairing,
-      2 at 1 kHz, 3 and 4 at 500 Hz (2 ms frame, 0–0.5 % loss).
-- [x] **M3:** dev board on a stock top board via J3: buttons, Guide, power
-      hold/off. Done on the Rev1.1 board instead.
-- [x] **M4:** first custom board fits; inputs + rumble work. Rev1.1:
-      buttons, sticks, triggers, AUX inputs, all four motors, power on/off
-      and battery level work.
-- [x] **M5:** battery life on NiMH AAs. Rev1.1 on Eneloops, linked at
-      1 kHz, no rumble: ~3.0 mA from the cells (Guide LED 1 or 255: 3.01 /
-      3.06 mA), so ~600 h on ~1900 mAh; off: below the meter's µA range.
-      Rough (DMM on a pulsed load, below the A1304 rating alone): recheck
-      with a bench supply.
-- [ ] **M6 (later):** Elite Series 2 port (broken 1797 donor, AcidMods scans).
-
 ---
 
 ## Future / v2
+
+### Battery packs
+- Play & Charge (after v1): what does a pack do with J7 pin 1 (power
+  status), and does it need I2C commands to charge?
 
 ### Headset audio
 - New board revision: codec (MAX9867 / WM8960 / NAU88C22), 3.5 mm jack with
@@ -715,17 +121,6 @@ Python + Tkinter desktop app over a vendor HID channel, direct USB only
 - Decide after real-hardware link margin and M5.
 
 ### Trigger rumble (controller-side)
-Games rarely drive the trigger motors, and XInput can't (2 motors only).
-- [x] **Trigger rumble** (`trigger_fx.c`): while a trigger is pulled past
-      a threshold, its motor runs at the larger of heavy × % and weak × %.
-      Setting `0x07`, Rumble panel.
-- [x] **Click:** one pulse when a trigger reaches full (default 255 for
-      30 ms: a weaker or shorter one isn't felt); again only after it drops
-      below 75 %. The heavy / weak test runs through both effects. The aux
-      trigger switches trigger neither (they click on their own).
-      Only while connected: searching for the dongle, a trigger can
-      read full for a tick (tick phase shifts), which clicked.
-- [ ] Buzz at a trigger stop; pairs with hair-trigger mode.
 - **4-value output report:** exists (HID vendor report: heavy, weak, LT,
   RT); games and Steam don't use it.
 - [ ] **Heavy / weak rumble feels weak in games** (trigger rumble is fine):
@@ -748,24 +143,3 @@ metadata needs Microsoft's compiler, and on Linux `xpad` drops trigger rumble.
       buzz → GIP isn't worth it on Linux.
 - [ ] Get the "gipdocs" download (metadata compiler, gamepad JSON template).
 - [ ] Decide VID/PID (Microsoft's for `xpad` auto-binding, or bind manually).
-
----
-
-## Add-ons (no board change)
-
-Mods on top of the v1 board, using pads that are already there.
-
-### Elite-style paddles
-- [ ] Four steel paddles held by a magnet, switches on the AUX1–AUX4 pads.
-- [x] Magnet near the right stick: a 10 mm cube neodymium magnet under a
-      GuliKit TMR stick (stock Series X) shifted its rest position by ~2.6 %
-      on one axis, the other unchanged; attaching steel changed it only
-      slightly. Calibration and the deadzone cover it.
-- [ ] Mechanical design: magnet position and size, switch mounting.
-- [ ] If paddles shift the centre in use: re-centre slowly while the stick
-      is at rest.
-
-## Open questions
-
-- Play & Charge (after v1): what does a pack do with J7 pin 1 (power
-  status), and does it need I2C commands to charge?
