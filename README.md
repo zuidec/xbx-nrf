@@ -68,6 +68,7 @@ cd firmware
 
 | Doc | Covers |
 |---|---|
+| [docs/controller.md](docs/controller.md) | Using it: power, pairing, LED, wired modes, calibration, waking the PC |
 | [docs/building.md](docs/building.md) | SDK setup, versions, build script |
 | [docs/flashing.md](docs/flashing.md) | Flashing and debugging |
 | [docs/protocol.md](docs/protocol.md) | Radio (pairing, time slots) and USB (HID, XInput) protocols |

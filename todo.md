@@ -474,7 +474,7 @@ USB modes, in order; one active at a time.
       (`00 00 08 C0`, sent by `xpad` when Guide is held 5 s) and sets
       `flags` bit 1 until the link drops; the controller powers off. Tested
       by sending the packet with libusb. HID mode has no such command.
-- [ ] PC sleep / wake:
+- [x] PC sleep / wake:
 	- [x] PC asleep or off → controllers off: the dongle sets the power-off
 	      flag after 1 s of USB suspend (`usb.c`). A host that cuts USB
 	      power gives no warning (2 min no-dongle timeout). Tested.
@@ -592,8 +592,9 @@ the constants (deadzone, drift window, settle time) on the TMR sticks.
 - [ ] Tune `CAL_MIN_TRAVEL` and the default threshold with use.
 - [ ] Triggers: stops, remapping, hair trigger.
 - [x] Commands for the host program: `CALIBRATE` ([[#Configurator]]).
-- [ ] User page `docs/controller.md`: wired / wireless, X / B mode,
-      calibration controls.
+- [x] User page `docs/controller.md`: power, pairing, LED, wired /
+      wireless, X / B mode, calibration controls, trigger effects, waking
+      the PC.
 
 ### Build & versions
 [[docs/building|Building]]
@@ -727,6 +728,10 @@ Games rarely drive the trigger motors, and XInput can't (2 motors only).
 - [ ] Buzz at a trigger stop; pairs with hair-trigger mode.
 - **4-value output report:** exists (HID vendor report: heavy, weak, LT,
   RT); games and Steam don't use it.
+- [ ] **Heavy / weak rumble feels weak in games** (trigger rumble is fine):
+      likely the low PWM levels barely spin the motors. A minimum drive
+      level per motor (non-zero starts where it spins), measured with the
+      configurator's test sliders.
 - [ ] **Tune trigger rumble / impulse-trigger feel:** level → PWM curve
   (lowest level that still spins, perceived steps), response to short
   pulses (impulse effects are brief clicks and ticks), and how the mixing
