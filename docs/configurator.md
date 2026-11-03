@@ -15,7 +15,8 @@ aliases:
 
 Desktop app for settings, calibration, testing and firmware updates of the
 controller and the dongle. Controller and dongle tabs and the CLI work, from
-source or as one Linux file ([[#Building]]). Steps: [[todo#Configurator]].
+source or as one Linux file ([Building](#Building)). Steps: 
+[Todo](../todo.md#Configurator).
 
 ## Decisions
 
@@ -29,7 +30,7 @@ source or as one Linux file ([[#Building]]). Steps: [[todo#Configurator]].
   port, not through the dongle. Relaying over the radio can come later
   without changing the commands.
 - **Vendor HID interface** on both devices, in every USB mode: no driver on
-  any OS ([[#USB channel]]).
+  any OS [USB Channel](#USB-channel).
 - Same code as a **CLI** (`info`, `bootloader`, …) for development and
   tests.
 
@@ -100,7 +101,7 @@ app asks the user to mount it.
   (`power/wakeup`). The app detects missing access and offers to install it
   into `/etc/udev/rules.d/` (`pkexec`, or `sudo` from the CLI).
 - **Linux, SDL / Steam:** the SDL mapping with Share and the paddles
-  ([[protocol#Input report (dongle → PC)]]) goes to
+  [Protocol Input Report](protocol.md#Input-report-(dongle-→-PC)) goes to
   `~/.config/xbx-nrf/gamecontrollerdb.txt`, and
   `~/.config/environment.d/50-xbx-nrf.conf` sets
   `SDL_GAMECONTROLLERCONFIG_FILE` to it from the next login (no root).

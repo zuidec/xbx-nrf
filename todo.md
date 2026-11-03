@@ -70,9 +70,9 @@ tags:
 - [ ] **Wired USB gamepad mode:** a PC enumerating the controller = wired
       (radio off); a charger alone keeps it wireless. `CONFIG_XBX_WIRED`
       (default on) off for wireless tests with the USB console attached.
-    - [ ] Windows: HID PID rumble (Windows' PID driver likely also wants a
-	      PID State report and Axes Enable) and wired XInput (driver binds
-	      by interface class?).
+- [ ] Windows: HID PID rumble (Windows' PID driver likely also wants a
+      PID State report and Axes Enable) and wired XInput (driver binds
+      by interface class?).
 
 ### Stick and trigger calibration
 - [ ] Tune `CAL_MIN_TRAVEL` and the default threshold with use.

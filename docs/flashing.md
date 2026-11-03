@@ -20,8 +20,8 @@ aliases:
 |---|---|---|---|
 | Pro Micro nRF52840 (nice!nano clone) | Controller test build | nice!nano UF2 bootloader  | `promicro_nrf52840/nrf52840/uf2` |
 | Nordic nRF52840 Dongle (PCA10059) | Dongle (off-the-shelf option) | Nordic USB DFU bootloader  | `nrf52840dongle/nrf52840` |
-| Custom controller board | Controller | Semi-custom UF2 bootloader | `xbx_controller/nrf52840/uf2` |
-| Custom dongle board | Dongle | Semi-custom UF2 bootloader | `xbx_dongle/nrf52840/uf2` |
+| Custom controller board | Controller | None; needs flashed with Semi-custom UF2 bootloader | `xbx_controller/nrf52840/uf2` |
+| Custom dongle board | Dongle | None; needs flashed with Semi-custom UF2 bootloader | `xbx_dongle/nrf52840/uf2` |
 
 | Debug probe | Notes |
 |---|---|
