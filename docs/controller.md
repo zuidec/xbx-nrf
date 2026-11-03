@@ -5,7 +5,7 @@ Settings beyond these: the configurator ([[configurator]]).
 
 ## Batteries
 
-Rechargeable AAs only: NiMH, or regulated 1.5 V Li-ion AAs. **Never a bare
+AAs only: alkaline, NiMH, or regulated 1.5 V Li-ion AAs. **Never a bare
 Li-ion cell** ([[hardware]]). On USB the AAs are disconnected; the
 controller doesn't charge them.
 
@@ -73,14 +73,14 @@ SDL mapping (configurator: File → Install files).
 | Erase | Hold **View + Menu + LS** 3 s: back to auto-ranging |
 
 The configurator does the same with live views, and sets where a trigger
-reports full pull (5–100 % of its travel; low = hair trigger).
+reports full pull (5–100 % of its travel).
 
 ## Trigger effects
 
 Made on the controller, so they work in every game, wired or wireless:
 
-- **Click:** a short pulse when a trigger reaches full pull (not from the
-  aux trigger buttons).
+- **Click:** a short pulse when a trigger reaches full pull (disabled when the
+  aux trigger buttons are detected as the input source).
 - **Trigger rumble:** while a trigger is pulled, part of the game's rumble
   in that trigger.
 

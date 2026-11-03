@@ -10,27 +10,6 @@ tags:
 # xbx-nrf TODO
 
 
-## References
-
-- Schematics: [[references/third-party/XB1 1914 TOP BOARD.pdf]],
-  [[references/third-party/XB1_1914_BOTTOM_BOARD_SOME_VALUES.pdf]],
-  [[references/third-party/XB1_1914_SOC_SOME_VALUES.pdf]]
-- Pinouts: [[references/third-party/controller-pinouts.txt]],
-  [[references/third-party/soc-pinout.txt]]
-- Notes: [[docs/hardware|Hardware]], [[docs/pcal6416|PCAL6416]],
-  [[docs/a3910|A3910]], [[docs/protocol|Protocols]], [[docs/gip|GIP]],
-  [[docs/building|Building]], [[docs/flashing|Flashing]]
-- Datasheets: [[references/third-party/A1304-Datasheet.pdf]] (trigger sensor,
-  7.7 mA,
-  t_PO 50–70 µs), [[references/third-party/A3910-datasheet.pdf]],
-  [[references/third-party/PCAL6416A-datasheet.pdf]]
-- Outline (stock bottom board, FreeCAD; DXF for KiCad `Edge.Cuts`):
-  [[mech/controller-bottom-board/controller-bottom-board.FCStd]],
-  [[mech/controller-bottom-board/controller-bottom-board-outline.dxf]];
-  KiCad: `pcb/xbx-nrf/`
-
----
-
 ## Verify / reverse-engineer (stock hardware)
 - [ ] Source the J5 replacement: female, SMT, ~3.5 mm tall, body within the
       9.5 × 3.25 mm shroud, pin 1 chamfer (or the shroud corner gets cut). No
@@ -56,6 +35,7 @@ tags:
       slot's margin, and harder joining and pairing. Only if interference
       shows up in use.
 - [ ] Tune: pairing timeout, RSSI threshold (drop timeout set: 1000 ms).
+- [ ] Power on bug: controller turns on PC then turns off instead of staying on
 2. [ ] **XInput, 1–4 players** as an **Xbox 360 Wireless Receiver** (4
        interfaces, in-band connect/disconnect; after GP2040-CE / `xpad`): 8-bit
        triggers, 2 motors, no Share. pid.codes IDs: `xpad` binds any `0x1209`
@@ -67,6 +47,8 @@ tags:
        and SDL/Steam cache drivers and mappings per VID:PID). Apply for our
        own once the repo is public, bootloaders too (now `0x0005` dongle,
        `0x0006` controller).
+- [ ] Test `build.sh <xbx-controller|xbx-dongle>-bootloader -f swd --hex`
+      with a release `.hex` on both boards.
 - [ ] Boot reason: Guide / Pair (→ pairing) / USB.
 - [ ] Pair shouldn't power the controller on (SW2 → R46 → Q14 does in
       hardware). On AAs, with Pair held at boot and Guide not, release the
@@ -143,3 +125,23 @@ metadata needs Microsoft's compiler, and on Linux `xpad` drops trigger rumble.
       buzz → GIP isn't worth it on Linux.
 - [ ] Get the "gipdocs" download (metadata compiler, gamepad JSON template).
 - [ ] Decide VID/PID (Microsoft's for `xpad` auto-binding, or bind manually).
+
+## References
+
+- Schematics: [[references/third-party/XB1 1914 TOP BOARD.pdf]],
+  [[references/third-party/XB1_1914_BOTTOM_BOARD_SOME_VALUES.pdf]],
+  [[references/third-party/XB1_1914_SOC_SOME_VALUES.pdf]]
+- Pinouts: [[references/third-party/controller-pinouts.txt]],
+  [[references/third-party/soc-pinout.txt]]
+- Notes: [[docs/hardware|Hardware]], [[docs/pcal6416|PCAL6416]],
+  [[docs/a3910|A3910]], [[docs/protocol|Protocols]], [[docs/gip|GIP]],
+  [[docs/building|Building]], [[docs/flashing|Flashing]]
+- Datasheets: [[references/third-party/A1304-Datasheet.pdf]] (trigger sensor,
+  7.7 mA,
+  t_PO 50–70 µs), [[references/third-party/A3910-datasheet.pdf]],
+  [[references/third-party/PCAL6416A-datasheet.pdf]]
+- Outline (stock bottom board, FreeCAD; DXF for KiCad `Edge.Cuts`):
+  [[mech/controller-bottom-board/controller-bottom-board.FCStd]],
+  [[mech/controller-bottom-board/controller-bottom-board-outline.dxf]];
+  KiCad: `pcb/xbx-nrf/`
+

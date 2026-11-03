@@ -2,10 +2,24 @@
 
 A replacement bottom board for the **Xbox Series X|S controller (model 1914)**
 built on a Nordic **nRF52840**, with a **2.4 GHz USB dongle** instead of Xbox
-Wireless / Bluetooth: a low-latency proprietary link, like 8BitDo or Logitech
-Lightspeed. The stock top board and shell stay.
+Wireless / Bluetooth. The stock top board and shell stay.
 
 > **Status:** early design and prototyping. Open tasks: [todo.md](todo.md).
+
+
+## Who is this for
+
+This is for those of us who love the Xbox controller's shape but hate how bad 
+the bluetooth connectivity is. This started as a labor of love for my partner 
+who can't find a controller she likes besides the Xbox controller but also can't 
+stand the disconnects.
+
+That being said, there are some real concessions. The most obvious is that the 
+controller won't work with an Xbox anymore. Another concession is that I skipped 
+the wiring for the rechargeable battery backs, as well as the expansion port and 
+headphone jack.
+
+> **[Getting started](docs/getting_started.md)**
 
 ## Architecture
 
@@ -20,31 +34,32 @@ Lightspeed. The stock top board and shell stay.
 └──────────────────────────────────┘          └────────────────┘
 ```
 
-## Design decisions (locked)
+## Design decisions 
 
 | Area | Decision |
 |---|---|
-| Target | Xbox Series X\|S (1914); Elite Series 2 (1797) maybe later |
-| Scope | New **bottom board only**; stock top board, shell, triggers, motors reused |
-| MCU | **nRF52840** modules on the controller and the dongle |
-| Audio | **None in v1** |
-| Wireless | **ESB** 2.4 GHz with our own pairing and time slots; rumble/LED in ACK payloads |
-| Multiplayer | One dongle: up to **7 paired**, **4 connected**; 1 kHz with 1–2, 500 Hz with 3–4 (time slots) |
-| Dongle USB | **HID gamepad** (1 player; first) and **XInput** as an Xbox 360 Wireless Receiver (1–4 players, hot-plug), switchable. No Xbox console support |
-| Battery | **Rechargeable AAs only** (NiMH or regulated 1.5 V Li-ion AAs) |
-| Power | Stock top board latch and boost converters, via J3 |
-| Rumble | 2× **Allegro A3910**, stock wiring, 8 GPIOs |
-| Buttons | Mostly via the top board's **PCAL6416** I2C expander |
+| Target | Xbox Series X\|S (1914)|
+| Scope | New bottom board, stock top board, shell, triggers, motors reused |
+| MCU | nRF52840 for the controller and dongle |
+| Wireless | NRF ESB 2.4 GHz |
+| Multiplayer | Up to 7 paired, 4 connected |
+| Polling rate| 1 kHz with 1–2 controllers, 500 Hz with 3–4 |
+| Dongle USB | HID gamepad (1 player) and XInput |
+| Battery | **AAs only** - basic rechargeables OK, but no Plug N Play |
+| Rumble | reuses all the stock motors including triggers |
+| Buttons | reuses stock with options for AUX trigger switches and 4 paddles |
+| Audio | None in v1 |
+| Expansion port | None in v1 |
 
 > [!WARNING]
-> **Never put a bare Li-ion cell on the AA contacts**: the stock boost
-> converters pass it straight to the 3.3 V rail
+> **Never put a bare Li-ion cell on the AA contacts**: The boost converter
+> appears to pass that straight through and the nrf can only handle 3v6
 > ([docs/hardware.md](docs/hardware.md)).
 
 ## Hardware
 
-Our board plugs into the stock top board's 14-pin **J3**: power rails, USB, I2C
-to the button expander, and Guide / Pair / power-hold signals.
+The custom board plugs into the stock top board's 14-pin **J3**: power rails, 
+USB, I2C to the button expander, and Guide / Pair / power-hold signals.
 
 | Doc | Covers |
 |---|---|
@@ -55,16 +70,12 @@ to the button expander, and Guide / Pair / power-hold signals.
 
 ## Firmware
 
-Two Zephyr apps, `firmware/xbx-nrf` (controller) and `firmware/dongle`, on the
-**nRF Connect SDK v3.4.1** (pinned), for the custom boards; also a Pro Micro
-nRF52840 controller (test build) and the nRF52840 Dongle. Pairing, up to 4
-controllers, HID and XInput.
+Built using the nRF Connect SDK. Version is pinned at v3.4.1 to ensure future 
+buildability (hopefully). The controller firmware has a target for the custom 
+board and the dongle firmware has a target for my custom board as well as the 
+PCA10059 dongle. There is a nice nano/pro micro target for the controller, but I 
+just use this for testing.
 
-```sh
-cd firmware
-./build.sh xbx-nrf [-f <device>]  # development build (+ flash)
-./build.sh xbx-dongle -r           # release build
-```
 
 | Doc | Covers |
 |---|---|
@@ -74,10 +85,12 @@ cd firmware
 | [docs/protocol.md](docs/protocol.md) | Radio (pairing, time slots) and USB (HID, XInput) protocols |
 | [docs/gip.md](docs/gip.md) | Xbox GIP protocol notes (optional mode) |
 
+
 ## Configurator
 
 Desktop app for settings, calibration, input and rumble tests and firmware
-updates of both devices over USB (Python + Tkinter; Linux tested).
+updates of both devices over USB using Python + Tkinter. So far only tested on 
+Linux, but in theory should be buildable on Mac and Windows.
 
 ```sh
 python3 tools/configurator/xbx-config.py  # run from source
@@ -89,7 +102,7 @@ Details: [docs/configurator.md](docs/configurator.md).
 ## Repository layout
 
 ```
-docs/                project notes (Obsidian)
+docs/                project notes (Obsidian format)
 firmware/
   boards/            our board definitions (xbx_controller, xbx_dongle)
   bootloader/        UF2 bootloader build (upstream + our boards)
@@ -107,6 +120,12 @@ references/          schematics, scans, datasheets, pinouts
 tools/               configurator/, test tools (test-rumble.sh)
 todo.md              task list (Obsidian)
 ```
+
+## Disclosures
+
+This was built with the help of Claude Code. PCB designs are completely hand 
+designed by myself, and all code was either written or reviewed by myself. There 
+may however be some things that I missed as is the nature when using AI.
 
 ## References
 

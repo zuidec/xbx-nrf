@@ -1,7 +1,7 @@
 ---
 title: Building the firmware
 created: 2026-09-29
-updated: 2026-10-31
+updated: 2026-11-02
 tags:
   - xbx-nrf
   - firmware
@@ -13,8 +13,6 @@ aliases:
 ---
 
 # Building the firmware
-
-Related: [[docs/flashing|Flashing & debugging]], [[todo#5. Firmware]].
 
 ## Apps
 
@@ -45,20 +43,89 @@ doesn't search the app folder), so plain `west build` needs
 
 ## Setup
 
-1. Install `nrfutil`, then the SDK and toolchain (into `~/ncs/`):
+Pre-built files without building: [[docs/getting_started]]. The SDK and
+its toolchain come through `nrfutil`; the apps need no other compiler.
+Links:
+
+Prerequisites:
+- OpenOCD
+- 
+nrfutil:[nRFUtil](https://www.nordicsemi.com/Products/Development-tools/nRF-Util)
+- Git for Windows (with Git Bash): <https://git-scm.com/downloads/win>
+- Python for Windows: <https://www.python.org/downloads/>
+
+### Linux
+
+| Prerequisite | For | Package (names vary by distro) |
+|---|---|---|
+| Git | the code | `git` |
+| nrfutil | SDK and toolchain | download; `chmod +x`, put on the `PATH` |
+| Python 3 with tkinter and venv | configurator | `python3`, `python3-tk`, `python3-venv` |
+| `objdump` | configurator build | `binutils` |
+| podman or docker | configurator `--release` build | `podman` |
+| OpenOCD | SWD programming | `openocd` |
+
+
+1. Code, SDK and toolchain (a few GB, into `~/ncs/`):
    ```sh
+   git clone https://github.com/zuidec/xbx-nrf.git
    nrfutil install sdk-manager
    nrfutil sdk-manager install --ncs-version v3.4.1
    ```
-2. Create `~/bin/ncs-shell` (not in the repo):
+2. Optional, for plain `west`: `~/bin/ncs-shell` (not in the repo):
    ```bash
    #!/bin/bash
    export ZEPHYR_BASE="$HOME/ncs/v3.4.1/zephyr"
    nrfutil sdk-manager toolchain launch --ncs-version v3.4.1 --shell
    ```
-   `ZEPHYR_BASE` lets `west build` work from our app folders; without it west
-   reports "unknown command build".
-3. USB permissions: see [[docs/flashing]].
+   `ZEPHYR_BASE` lets `west build` work from our app folders; without it
+   west reports "unknown command build". `build.sh` needs neither.
+3. USB permissions: the udev rule ([[docs/getting_started#Linux]], step 2,
+   or `xbx-config.py install-udev`); SWD probes: [[docs/flashing]].
+
+### Windows
+
+Not tested yet. Every command runs in **Git Bash**.
+
+| Needs | For | Where |
+|---|---|---|
+| Git for Windows | the code, Git Bash | link above |
+| nrfutil | SDK and toolchain | download `nrfutil.exe`, put on the `PATH` |
+| Python 3 | configurator | python.org installer: tick "Add python.exe to PATH" (tkinter included) |
+
+1. Code, SDK and toolchain (into `C:\ncs\`):
+   ```sh
+   git clone https://github.com/zuidec/xbx-nrf.git
+   nrfutil install sdk-manager
+   nrfutil sdk-manager install --ncs-version v3.4.1
+   ```
+2. The build script looks in `~/ncs/`: point it at `C:\ncs\` (add to
+   `~/.bashrc` to keep it):
+   ```sh
+   export ZEPHYR_BASE=/c/ncs/v3.4.1/zephyr
+   ```
+3. Configurator from source: `python tools/configurator/xbx-config.py`;
+   build: `tools/configurator/build.sh` ([[docs/configurator#Building]]).
+   No driver needed.
+
+### macOS
+
+Not tested yet. If you'd like to try it, open an issue on
+[GitHub](https://github.com/zuidec/xbx-nrf/issues).
+
+### Build commands
+
+From the repo root, on any OS:
+
+```sh
+firmware/build.sh xbx-nrf -r             # controller, release
+firmware/build.sh xbx-dongle -r          # dongle, release
+tools/configurator/build.sh              # configurator, this PC
+tools/configurator/build.sh --release    # configurator, Linux release
+```
+
+Output: [[#Output files]]; configurator: `tools/configurator/output/`.
+Every option: [[#Building]].
 
 ## Building
 
