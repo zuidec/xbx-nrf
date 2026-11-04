@@ -33,6 +33,17 @@ SPDX-FileCopyrightText = [
 ]
 SPDX-License-Identifier = "CC-BY-SA-4.0"
 
+# Remix of Tryhard Customs' rear button guides (overrides the hardware rule;
+# see mech/aux-button-guide/ATTRIBUTION.md)
+[[annotations]]
+path = ["mech/aux-button-guide/**"]
+precedence = "override"
+SPDX-FileCopyrightText = [
+  "Tryhard Customs",
+  "2026 zuidec (modifications, see ATTRIBUTION.md)",
+]
+SPDX-License-Identifier = "CC-BY-NC-SA-4.0"
+
 # Footprints copied from KiCad's libraries into the project libraries
 [[annotations]]
 path = [

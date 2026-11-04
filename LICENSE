@@ -19,6 +19,10 @@ Exceptions (third-party CAD parts; see ATTRIBUTION.md in each folder):
   pcb/xbx-nrf-dongle/lib/USB_C_*/,     1.0.
   pcb/xbx-nrf-dongle/lib/JS102011SAQN/
 
+  mech/aux-button-guide/               Remix of Tryhard Customs' rear button
+                                       guides: CC-BY-NC-SA-4.0 (no commercial
+                                       use; remixes under the same license).
+
   pcb/xbx-nrf/lib/xbx-nrf-lib.pretty/, Footprints copied from KiCad's
   pcb/xbx-nrf-dongle/lib/              libraries: CC-BY-SA-4.0 WITH
     xbx-nrf-lib.pretty/                KiCad-libraries-exception. The USB-C
