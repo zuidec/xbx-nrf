@@ -75,7 +75,7 @@ These come off the stock bottom board and fit our footprints:
 
 | Part | Stock board | Ours | Notes |
 |---|---|---|---|
-| Sticks (Alps RKJXV type) | | S1, S2 | Or TMR drop-in sticks |
+| Sticks (Alps RKJXV type) | | S1, S2 | Or any Series X\|S replacement stick |
 | Trigger Hall sensors (A1304) | U10, U11 | U2, U3 | SOT-23W |
 | Rumble drivers (A3910) | U4, U5 | U5, U6 | DFN-8, 2 × 2 mm |
 | Top-board connector | J5 | J2 | See [The J2 connector](#the-j2-connector) |
