@@ -16,4 +16,4 @@ aliases:
 **Not used.** Signed images (MCUboot, ECDSA P-256) were considered and
 rejected: this is a hobby project, and unsigned images make it easier for
 others to build their own boards and run their own firmware. Both boards use
-the unsigned Adafruit nRF52 UF2 bootloader ([[todo#Bootloader]]).
+the unsigned Adafruit nRF52 UF2 bootloader ([todo](../todo.md)).

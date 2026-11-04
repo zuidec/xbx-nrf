@@ -59,10 +59,10 @@ tags:
       only know listed IDs.
 - [ ] USB-powered "off" state: System OFF for now (Guide wakes it, as a
       reset); the stick supply stays on.
-- [ ] Steam / SDL map Share and the paddles only with our mapping
-      ([[docs/protocol#Input report (dongle → PC)]]): the configurator
-      installs it per user (Linux, HID mode; tested in Steam). Built in
-      needs our own USB IDs and an SDL_GameControllerDB entry (one per
+- [ ] Steam / SDL map Share and the paddles only with our mapping ([Input report
+      (dongle → PC)](docs/protocol.md#input-report-dongle--pc)): the
+      configurator installs it per user (Linux, HID mode; tested in Steam).
+      Built in needs our own USB IDs and an SDL_GameControllerDB entry (one per
       device: dongle, wired).
 - [ ] Steam / SDL don't show it: SDL's Linux joystick backend never reads
       `power_supply` (SDL2 reports "unknown"). Look into an upstream SDL
@@ -113,13 +113,14 @@ tags:
   (lowest level that still spins, perceived steps), response to short
   pulses (impulse effects are brief clicks and ticks), and how the mixing
   and local effects above feel. Test with SDL trigger rumble and, later,
-  [[#GIP dongle mode]] games.
+  [GIP dongle mode](#gip-dongle-mode) games.
 
 ### GIP dongle mode
-Optional third USB mode speaking Microsoft's protocol ([[docs/gip]]). Gains:
-impulse triggers in Windows games that use them, native Share, 10-bit triggers.
-Feasible (no auth on PC via the opt-out GUID; GP2040-CE as reference), but
-metadata needs Microsoft's compiler, and on Linux `xpad` drops trigger rumble.
+Optional third USB mode speaking Microsoft's protocol ([gip](docs/gip.md)).
+Gains: impulse triggers in Windows games that use them, native Share, 10-bit
+triggers. Feasible (no auth on PC via the opt-out GUID; GP2040-CE as reference),
+but metadata needs Microsoft's compiler, and on Linux `xpad` drops trigger
+rumble.
 - [ ] **Test first:** genuine Series controller over USB, SDL trigger rumble
       (`SDL_JoystickRumbleTriggers`), with and without Steam, on Linux. No
       buzz → GIP isn't worth it on Linux.
@@ -128,20 +129,22 @@ metadata needs Microsoft's compiler, and on Linux `xpad` drops trigger rumble.
 
 ## References
 
-- Schematics: [[references/third-party/XB1 1914 TOP BOARD.pdf]],
-  [[references/third-party/XB1_1914_BOTTOM_BOARD_SOME_VALUES.pdf]],
-  [[references/third-party/XB1_1914_SOC_SOME_VALUES.pdf]]
-- Pinouts: [[references/third-party/controller-pinouts.txt]],
-  [[references/third-party/soc-pinout.txt]]
-- Notes: [[docs/hardware|Hardware]], [[docs/pcal6416|PCAL6416]],
-  [[docs/a3910|A3910]], [[docs/protocol|Protocols]], [[docs/gip|GIP]],
-  [[docs/building|Building]], [[docs/flashing|Flashing]]
-- Datasheets: [[references/third-party/A1304-Datasheet.pdf]] (trigger sensor,
-  7.7 mA,
-  t_PO 50–70 µs), [[references/third-party/A3910-datasheet.pdf]],
-  [[references/third-party/PCAL6416A-datasheet.pdf]]
+- Schematics:
+  [XB1 1914 TOP BOARD.pdf](references/third-party/XB1%201914%20TOP%20BOARD.pdf),
+  [XB1_1914_BOTTOM_BOARD_SOME_VALUES.pdf](references/third-party/XB1_1914_BOTTOM_BOARD_SOME_VALUES.pdf),
+  [XB1_1914_SOC_SOME_VALUES.pdf](references/third-party/XB1_1914_SOC_SOME_VALUES.pdf)
+- Pinouts:
+  [controller-pinouts.txt](references/third-party/controller-pinouts.txt),
+  [soc-pinout.txt](references/third-party/soc-pinout.txt)
+- Notes: [Hardware](docs/hardware.md), [PCAL6416](docs/pcal6416.md),
+  [A3910](docs/a3910.md), [Protocols](docs/protocol.md), [GIP](docs/gip.md),
+  [Building](docs/building.md), [Flashing](docs/flashing.md)
+- Datasheets: [A1304-Datasheet.pdf](references/third-party/A1304-Datasheet.pdf)
+  (trigger sensor, 7.7 mA, t_PO 50–70 µs),
+  [A3910-datasheet.pdf](references/third-party/A3910-datasheet.pdf),
+  [PCAL6416A-datasheet.pdf](references/third-party/PCAL6416A-datasheet.pdf)
 - Outline (stock bottom board, FreeCAD; DXF for KiCad `Edge.Cuts`):
-  [[mech/controller-bottom-board/controller-bottom-board.FCStd]],
-  [[mech/controller-bottom-board/controller-bottom-board-outline.dxf]];
+  [controller-bottom-board.FCStd](mech/controller-bottom-board/controller-bottom-board.FCStd),
+  [controller-bottom-board-pcboutline.dxf](mech/controller-bottom-board/controller-bottom-board-pcboutline.dxf);
   KiCad: `pcb/xbx-nrf/`
 

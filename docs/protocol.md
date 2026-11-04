@@ -17,9 +17,9 @@ aliases:
 
 Two links: **radio** (controller ↔ dongle) and **USB** (dongle ↔ PC: HID and
 XInput modes, implemented). Both USB modes reuse the radio data, as would the
-planned GIP mode ([[docs/gip]]). The controller can also be a USB gamepad
-itself ([[#Controller wired USB mode]]). Tasks: [[todo#Link]],
-[[todo#Dongle]], [[todo#Controller]].
+planned GIP mode ([gip](gip.md)). The controller can also be a USB gamepad
+itself ([Controller wired USB mode](#controller-wired-usb-mode)). Tasks:
+[todo](../todo.md#firmware).
 
 ## Radio (controller ↔ dongle)
 
@@ -32,11 +32,11 @@ Source of truth: `firmware/common/include/protocol.h`. **Version 3**
 |---|---|
 | Protocol | Nordic ESB, dynamic payload length, selective auto-ACK |
 | Bit rate | 2 Mbps, fast ramp-up |
-| Channel | Per dongle: the quietest of 24, 49, 74, 76, 78 (2400 + n MHz) at first use (`XBX_RF_CHANNELS`, [[#Addresses and channels]]) |
-| Address | Pipe 0: pairing address (base 0 "XBXP", prefix `E7`), open only while pairing. Pipes 1–7: one per paired controller, on the dongle's random base address 1 and prefixes ([[#Addresses and channels]]) |
+| Channel | Per dongle: the quietest of 24, 49, 74, 76, 78 (2400 + n MHz) at first use (`XBX_RF_CHANNELS`, [Addresses and channels](#addresses-and-channels)) |
+| Address | Pipe 0: pairing address (base 0 "XBXP", prefix `E7`), open only while pairing. Pipes 1–7: one per paired controller, on the dongle's random base address 1 and prefixes ([Addresses and channels](#addresses-and-channels)) |
 | TX power | +8 dBm, both ends (`XBX_TX_POWER_DBM`) |
 | Roles | Controller = PTX, dongle = PRX |
-| Report rate | 1000 Hz (500 Hz with 3–4 controllers), from hardware TIMER3, following the dongle's frame ([[#Time slots (TDMA)]]) |
+| Report rate | 1000 Hz (500 Hz with 3–4 controllers), from hardware TIMER3, following the dongle's frame ([Time slots (TDMA)](#time-slots-tdma)) |
 | Retries | None: a retry (ESB minimum 435 µs later) would land in the next controller's slot. Stale reports are flushed, never resent late |
 | Max payload | 32 bytes (`CONFIG_ESB_MAX_PAYLOAD_LENGTH`) |
 
@@ -45,10 +45,10 @@ ACK carries the **output report** queued for that controller (one is always kept
 queued per pipe), so rumble/LED data costs no extra transmissions. All fields
 are little-endian.
 
-Each controller keeps to its own time slot, steered by the timing error in
-the output report ([[#Time slots (TDMA)]]). Unsynchronised controllers don't
-share a channel: their 1 ms periods don't drift apart, so one that starts
-overlapping another stays starved (measured: ~40 of 1000 reports/s).
+Each controller keeps to its own time slot, steered by the timing error in the
+output report ([Time slots (TDMA)](#time-slots-tdma)). Unsynchronised
+controllers don't share a channel: their 1 ms periods don't drift apart, so one
+that starts overlapping another stays starved (measured: ~40 of 1000 reports/s).
 
 ### Input report (controller → dongle), 23 bytes
 
@@ -110,7 +110,9 @@ through:
 
 ## Pairing & multiple controllers
 
-> [!note] Status
+> [!NOTE]
+> **Status**
+>
 > Designed 2026-09-29, implemented: addresses, channel choice, pairing mode,
 > the exchange and its checks, stored data, factory reset, time slots,
 > join/full/drop. Later: adaptive channel switching, encryption. Numbers
@@ -150,7 +152,7 @@ through:
   the one with the fewest samples above −85 dBm (then the weakest average);
   stored as `pair/chan`, chosen again after a factory reset. A dongle paired
   before channel choice existed keeps 76. Later: an adaptive switch to
-  another candidate when the channel degrades ([[todo#Link]]).
+  another candidate when the channel degrades ([todo](../todo.md#firmware)).
 - **Pairing scan:** a pairing controller tries each candidate in turn (one
   request per attempt, sparse as when joining); an ACK means a dongle in
   pairing mode listens there, so it stays (moving on after 3 misses). Two
@@ -163,9 +165,8 @@ The receiver ACKs ~150 µs after a packet arrives, before firmware has read it,
 so an ACK can only carry what was queued **before** the packet came in. Every
 request is therefore repeated: the first copy gets a plain ACK ("heard you"),
 the dongle then queues its answer, and a later copy gets the answer in its ACK.
-The controller simply repeats each message (every 5–15 periods, see
-([Connecting and disconnecting](#Connecting-and-disconnecting)) until the answer 
-arrives.
+The controller simply repeats each message (every 5–15 periods, see ([Connecting
+and disconnecting](#connecting-and-disconnecting)) until the answer arrives.
 
 ### Pairing mode
 | Side | Enter | While active | Timeout |
@@ -174,7 +175,7 @@ arrives.
 | Controller | Hold **Pair** ~3 s, power on with Pair held, or boot unpaired | Drops its current link, scans; indicator fast blink (on-board LED on the Pro Micro; Guide LED on the real board) | 30 s *(tune)* |
 
 Holding Pair (either side) for 10 s is a factory reset 
-[Stored data](#Stored-data-(Zephyr-settings,-flash)).
+[Stored data](#stored-data-zephyr-settings-flash).
 
 Both windows just need to overlap; press order doesn't matter.
 
@@ -325,10 +326,10 @@ repeating **frame** and gives each connected controller its own **slot**:
 |---|---|---|
 | `0x01` | Input report | controller → dongle |
 | `0x02` | Output report, with the time slot fields | dongle → controller |
-| `0x10`–`0x13` | [Pairing](#Pairing-messages) | both |
+| `0x10`–`0x13` | [Pairing](#pairing-messages) | both |
 
 Later in the output report: link quality (RSSI, for
-([Todo:dynamic TX](../todo.md#Dynamic-TX-power)).
+([Todo:dynamic TX](../todo.md#dynamic-tx-power)).
 
 ### Later
 - **Encryption / authentication:** ESB has none; a key from pairing (ECDH) +
@@ -349,7 +350,7 @@ whole device, hence single-player HID.
 `usb.c`), then sampled every 250 ms; set to the other mode for 1 s, it
 restarts the dongle into that mode. `mode-gpios` in each board overlay:
 PCA10059 switch to GND on the P0.29 pad = XInput; custom board SW3 (P1.09,
-low = XInput; ([Custom board](hardware.md#Custom-board)). Each mode has its 
+low = XInput; ([Custom board](hardware.md#custom-board)). Each mode has its 
 own PID, so hosts never mix up the two descriptor sets.
 
 ## USB HID mode
@@ -362,7 +363,7 @@ application collection. Tested with `evtest`, SDL and Steam on Linux.
 |---|---|
 | VID / PID | `0x1209` (pid.codes) / **`0x0001`** test PID during development |
 | Interfaces | 1 HID gamepad; + CDC ACM console in development builds (composite) |
-| Reports | Input ID 1, 17 bytes (= `in-report-size` in `usb.overlay`); output ID 2, 6 bytes; PID `0x11`–`0x23` ([Force feedback PID](#Force-feedback-(PID))) |
+| Reports | Input ID 1, 17 bytes (= `in-report-size` in `usb.overlay`); output ID 2, 6 bytes; PID `0x11`–`0x23` ([Force feedback PID](#force-feedback-pid)) |
 | HID endpoints | Interrupt IN 1 ms; interrupt OUT 1 ms (PID uploads send several reports in a row), max packet 64 (must exceed every output report, or reports merge) |
 | Serial number | From the nRF52840 `DEVICEID` |
 | Console | `CONFIG_XBX_USB_CONSOLE`: on in development builds, off in release builds (`release.conf`) |
@@ -413,7 +414,7 @@ for Microsoft's vendor ID. The mapping in
 `tools/configurator/files/gamecontrollerdb.txt` adds them, for the dongle
 and the wired controller (HID mode), each with and without the name CRC in
 the GUID. The configurator installs it (File → Install files; see
-([Configurator Platforms](configurator.md#Platforms)); for a one-off test, 
+([Configurator Platforms](configurator.md#platforms)); for a one-off test, 
 quit Steam and start it
 with `SDL_GAMECONTROLLERCONFIG_FILE=<that file> steam`. Tested in Steam:
 Share and the paddles show up on the correct sides. XInput mode can't
@@ -440,7 +441,7 @@ reset to 0 when the USB interface goes down or the link is lost.
 This vendor report is for testing and our own tools; games and Steam don't
 use it (no evdev force feedback). Test: `tools/test-rumble.sh <hr|lr|all>
 <0-255>` (1 s pulse via `/dev/hidrawN`). Game rumble uses
-([Force feedback PID](#Force-feedback-(PID))).
+([Force feedback PID](#force-feedback-pid)).
 
 ### Force feedback (PID)
 
@@ -489,7 +490,7 @@ actuators are disabled or paused.
 **Mixing:** heavy and weak each take the larger of the PID strength and the
 vendor report; LT, RT and the LED are vendor-only. Trigger rumble mixing is
 controller-side 
-[Todo:trigger rumble](../todo.md#Trigger-rumble-(controller-side)).
+[Todo:trigger rumble](../todo.md#trigger-rumble-controller-side).
 
 **Resets:**
 - Device Control Reset frees all effects but keeps the device gain:
@@ -516,7 +517,7 @@ The dongle poses as an Xbox 360 Wireless Receiver as Linux's `xpad` driver
 knows it: `xpad` binds any `0x1209` interface of the receiver type, so no
 Microsoft IDs are needed. Tested on Linux (Steam included); whether Windows'
 driver binds the receiver type with our IDs is untested 
-[Todo:firmware](../todo.md#Firmware).
+[Todo:firmware](../todo.md#firmware).
 Code: `xinput.c` (USB class, packets), `bridge.c` (player slots, output).
 
 ### Device
@@ -528,7 +529,7 @@ Code: `xinput.c` (USB class, packets), `bridge.c` (player slots, output).
 | Gamepad | Created by `xpad` when a slot reports a controller: "Generic X-Box pad", product ID `0x02a1` |
 
 Each connected controller takes the first free slot
-([Connecting and disconnecting](#Connecting-and-disconnecting)); free slots 
+([Connecting and disconnecting](#connecting-and-disconnecting)); free slots 
 report none.
 
 ### Input packets (dongle → PC)
@@ -598,13 +599,13 @@ its USB-C port), no dongle. Code: `firmware/xbx-nrf/src/usb.c` (device, mode),
 | Held at boot | Mode | VID / PID | Rumble |
 |---|---|---|---|
 | X | Wired XInput (Xbox 360 pad) | `0x1209` / `0x0004` | Heavy / weak via `xpad` |
-| B | HID gamepad + PID | `0x1209` / `0x0003` | Blended strength ([[#Force feedback (PID)]]) |
+| B | HID gamepad + PID | `0x1209` / `0x0003` | Blended strength ([Force feedback (PID)](#force-feedback-pid)) |
 | Neither | Stored mode (settings key `usb/mode`), default HID | | |
 
 The button must be held through ~20 ms of samples right after the buttons are
 set up; flash is written only when the mode changes. Read at boot only for now
 
-**HID mode** is the dongle's [HID mode](#USB-HID-mode): same shared code
+**HID mode** is the dongle's [HID mode](#usb-hid-mode): same shared code
 and reports, device name "XBX-NRF Gamepad". Heavy and weak each take the
 larger of the vendor report and the PID strength.
 
@@ -626,7 +627,7 @@ Input report, 20 bytes: `00 14`, buttons (XInput `wButtons`, = radio
 | `01 03 <n>` | LED pattern | Logged |
 | Vendor IN request `0x01` (to the interface) | `xpad`'s start-up request | Answered with 20 zero bytes |
 
-[Windows untested](../todo.md#Firmware).
+[Windows untested](../todo.md#firmware).
 
 Tests: `lsusb` (PID), `evtest`, `fftest` and SDL rumble as in the dongle's
 modes; the controller's stats line shows `wired` / `radio` and the motor

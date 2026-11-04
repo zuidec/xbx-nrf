@@ -14,11 +14,13 @@ aliases:
 
 Microsoft's protocol for Xbox One/Series controllers. Only needed for an
 optional future **GIP dongle mode** (impulse triggers on Windows; see
-[[todo#Future / v2]]). Our own protocols: [[docs/protocol]].
+[Future / v2](../todo.md#future--v2)). Our own protocols:
+[protocol](protocol.md).
 
-Source: [[references/third-party/windows_protocols-ms-gipusb.pdf]] (MS-GIPUSB,
-2024; §
-numbers below). Reference implementation: GP2040-CE's Xbox One mode (MIT).
+Source:
+[windows_protocols-ms-gipusb.pdf](../references/third-party/windows_protocols-ms-gipusb.pdf)
+(MS-GIPUSB, 2024; § numbers below). Reference implementation: GP2040-CE's Xbox
+One mode (MIT).
 
 ## Feasibility summary
 
@@ -32,7 +34,7 @@ numbers below). Reference implementation: GP2040-CE's Xbox One mode (MIT).
 - **Linux:** `xpad` supports GIP but sends trigger motor levels as 0, and Linux
   force feedback has only 2 rumble values. Trigger rumble would need SDL/Steam
   talking to the device directly. **Test with a genuine controller first**
-  ([[todo#GIP dongle mode]]).
+  ([GIP dongle mode](../todo.md#gip-dongle-mode)).
 - **IDs:** the spec requires the maker's own VID; `xpad` only auto-binds known
   vendors (Microsoft's VID for a personal build, or bind manually).
 

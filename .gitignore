@@ -46,9 +46,10 @@ _autosave-*
 fp-info-cache
 *.kicad_prl
 *.bak
-# fabrication outputs
+# fabrication outputs (shipped in the PCB release zips)
 gerbers/
 production/
+bom/
 *.gbr
 *.drl
 *-drl_map.*

@@ -17,14 +17,17 @@ aliases:
 # Hardware: stock top board, J3, controller and dongle boards
 
 The stock **top board** and the **J3** connector our bottom board plugs into.
-Related: [[docs/pcal6416|PCAL6416 (buttons)]], [[docs/a3910|A3910 (rumble)]],
-[[todo#1. Verify / reverse-engineer (stock hardware)]].
+Related: [PCAL6416 (buttons)](pcal6416.md), [A3910 (rumble)](a3910.md),
+[Verify / reverse-engineer (stock hardware)](../todo.md#verify--reverse-engineer-stock-hardware).
 
-Sources: [[references/third-party/XB1 1914 TOP BOARD.pdf]],
-[[references/third-party/controller-pinouts.txt]],
-[[references/third-party/soc-pinout.txt]].
+Sources:
+[XB1 1914 TOP BOARD.pdf](../references/third-party/XB1%201914%20TOP%20BOARD.pdf),
+[controller-pinouts.txt](../references/third-party/controller-pinouts.txt),
+[soc-pinout.txt](../references/third-party/soc-pinout.txt).
 
-> [!warning] No bare Li-ion cells
+> [!WARNING]
+> **No bare Li-ion cells**
+>
 > U5/U6 are boost-only: a 4.2 V cell on the AA contacts passes through to the
 > 3.3 V rail, above the nRF52840's 3.6 V max. Use rechargeable AAs (NiMH, or
 > regulated 1.5 V Li-ion AAs).
@@ -44,7 +47,7 @@ as it is held, and drops shortly after release (one early reading showed
 ~3 s; not repeated). Pulling J3 pin 9 high holds power until it is released,
 so firmware must raise pin 9 while the button is still pressed: in the
 bootloader, or early in boot
-([[todo#Power latch (top board)]]). Top board alone, AAs side: < 0.1 µA off,
+([todo](../todo.md)). Top board alone, AAs side: < 0.1 µA off,
 0.35 mA held on.
 
 With USB plugged in, all rails (`3v/B+`, 3.3 V, 3.6 V) are up without a
@@ -104,7 +107,8 @@ Rails on pins 1, 3, 4 measured as expected with the controller on.
 0 Ω), 3 SDA2, 4 VBUS. No GND pin: the pack's ground is the AA− contact. Not
 on our v1 board: no Play & Charge support, charge the AAs externally.
 
-*Verify* / *Unknown*: [[todo#J3/J5 connector (top ↔ bottom)]].
+*Verify* / *Unknown*:
+[todo](../todo.md#verify--reverse-engineer-stock-hardware).
 
 ## Antennas (the stock ones)
 
@@ -116,19 +120,21 @@ links at ~0 % loss.
 
 ## Controller board
 
-KiCad: `pcb/xbx-nrf/`. Rev1.1 built and working; outline and part positions
-from `mech/controller-bottom-board/` (measured, fit-checked in the shell). No
-Play & Charge in v1. Open items: [[todo#3. Hardware design — controller board]].
+KiCad: `pcb/xbx-nrf/`. Rev1.1 built and working; outline and part positions from
+`mech/controller-bottom-board/` (measured, fit-checked in the shell). No Play &
+Charge in v1. Open items:
+[todo](../todo.md#verify--reverse-engineer-stock-hardware).
 
 Board target `xbx_controller/nrf52840/uf2`, with our UF2 bootloader
 (`firmware/boards/xbx/xbx_controller/`, the default in `build.sh`); flashing:
-[[docs/flashing#Custom boards (SWD)]].
+[Custom boards (SWD)](flashing.md#custom-boards-swd).
 
 ### Sticks (RKJXV122400R footprint)
 
 TMR drop-in sticks on the Alps RKJXV footprint. Pinout from the stock bottom
-board ([[references/third-party/XB1_1914_BOTTOM_BOARD_SOME_VALUES.pdf]]) and
-board scans; same for both sticks. Checked on the test controller: wipers
+board
+([XB1_1914_BOTTOM_BOARD_SOME_VALUES.pdf](../references/third-party/XB1_1914_BOTTOM_BOARD_SOME_VALUES.pdf))
+and board scans; same for both sticks. Checked on the test controller: wipers
 (TP64/63/112/65) and click (TP42/43) by continuity.
 
 | Pin | Function | Net (left / right) |
@@ -143,7 +149,9 @@ board scans; same for both sticks. Checked on the test controller: wipers
 | B, D | Click, other side | GND |
 | SH1–SH4 | Shield | GND |
 
-> [!warning] Never swap 1.8 V and GND on a TMR stick
+> [!WARNING]
+> **Never swap 1.8 V and GND on a TMR stick**
+>
 > A pot only inverts its axis; a TMR stick's sensor can be damaged. Axis
 > direction is fixed by this pinout and corrected in firmware.
 
@@ -151,7 +159,7 @@ board scans; same for both sticks. Checked on the test controller: wipers
   X reads higher to the right (matches the report); Y reads higher
   downwards, so Y is inverted in firmware.
 - **Supply:** stock U8 TLV70718 (1.8 V LDO from 3.3 V, EN from the SoC with
-  a 100 kΩ pull-down); ours 1V8_STICK ([[#Supplies]]), on while the
+  a 100 kΩ pull-down); ours 1V8_STICK ([Supplies](#supplies)), on while the
   controller is on. 100 nF from 1.8 V to GND at each stick. The stock SoC
   uses this rail as its ADC reference (ratiometric); the nRF52840 can't, so
   AIN0 measures it.
@@ -228,9 +236,9 @@ through reset.
 
 ### Pins
 
-From the Rev1.1 schematic; analog pins in [[#Analog inputs]]. All buttons
-are active low on the nRF's internal pull-up (none on the board): B, LS, RS
-and the AUX pads switch to GND through 1 kΩ; Guide and Pair come from the top
+From the Rev1.1 schematic; analog pins in [Analog inputs](#analog-inputs). All
+buttons are active low on the nRF's internal pull-up (none on the board): B, LS,
+RS and the AUX pads switch to GND through 1 kΩ; Guide and Pair come from the top
 board through its diodes (D27, D30).
 
 | Signal | Pin | Notes |
@@ -260,7 +268,7 @@ board through its diodes (D27, D30).
 
 Two hardware options, chosen by the build's board target (each has its own
 overlay in `firmware/dongle/boards/`): the custom board below, or the
-off-the-shelf [[#nRF52840 Dongle (PCA10059)]].
+off-the-shelf [nRF52840 Dongle (PCA10059)](#nrf52840-dongle-pca10059).
 
 ### Custom board
 
@@ -288,7 +296,9 @@ flashing over J1 (SWD). Pins from the Rev1.1 schematic:
 | Spare | P0.04, P0.06, P0.26, P0.27, P0.30 (AIN6), P0.31 (AIN7) | TP14–TP17, TP12, TP13 |
 | Power | — | +3V3: TP2, TP8–TP10; VBUS: TP11; GND: TP5–TP7 |
 
-> [!warning] JP1: bridge one side only
+> [!WARNING]
+> **JP1: bridge one side only**
+>
 > Bridge 2–3 (LED on P0.22) **or** 1–2 (LED always on), never both: that
 > shorts P0.22 to GND, and the GPIO driving high into it can be damaged. The
 > board definition drives the LED pins open-drain (never high, also on PWM)
@@ -297,8 +307,9 @@ flashing over J1 (SWD). Pins from the Rev1.1 schematic:
 ### nRF52840 Dongle (PCA10059)
 
 Nordic's USB dongle, for anyone not building the custom board. Board target
-`nrf52840dongle/nrf52840` (`xbx-dongle-pca10059` target); flashing over its
-USB bootloader: [[docs/flashing#nRF52840 Dongle (PCA10059) — USB DFU (no probe) ✅]].
+`nrf52840dongle/nrf52840` (`xbx-dongle-pca10059` target); flashing over its USB
+bootloader:
+[nRF52840 Dongle (PCA10059) — USB DFU (no probe)](flashing.md#nrf52840-dongle-pca10059--usb-dfu-no-probe).
 Runs from VDDH (USB), GPIOs at 3.0 V (set by Zephyr's board code).
 
 | Signal | Pin | Notes |

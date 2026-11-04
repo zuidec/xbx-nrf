@@ -15,8 +15,8 @@ aliases:
 
 Desktop app for settings, calibration, testing and firmware updates of the
 controller and the dongle. Controller and dongle tabs and the CLI work, from
-source or as one Linux file ([Building](#Building)). Steps: 
-[Todo](../todo.md#Configurator).
+source or as one Linux file ([Building](#building)). Steps: 
+[Todo](../todo.md#configurator).
 
 ## Decisions
 
@@ -30,7 +30,7 @@ source or as one Linux file ([Building](#Building)). Steps:
   port, not through the dongle. Relaying over the radio can come later
   without changing the commands.
 - **Vendor HID interface** on both devices, in every USB mode: no driver on
-  any OS [USB Channel](#USB-channel).
+  any OS [USB Channel](#usb-channel).
 - Same code as a **CLI** (`info`, `bootloader`, …) for development and
   tests.
 
@@ -85,7 +85,7 @@ The user always picks the `.uf2` file; the app ships no firmware.
 1. `BOOTLOADER` command; the device restarts into the UF2 bootloader.
 2. The app waits for the drive (`XBXCTRL` / `XBXDONGLE`) and checks that
    the file is for that device, so a dongle image can't go on a controller
-   ([[#Image marker]]).
+   ([Image marker](#image-marker)).
 3. Copies the `.uf2` and syncs it; the bootloader restarts into the app,
    which the app finds again by serial and checks that it runs the file's
    version.
@@ -101,7 +101,7 @@ app asks the user to mount it.
   (`power/wakeup`). The app detects missing access and offers to install it
   into `/etc/udev/rules.d/` (`pkexec`, or `sudo` from the CLI).
 - **Linux, SDL / Steam:** the SDL mapping with Share and the paddles
-  [Protocol Input Report](protocol.md#Input-report-(dongle-→-PC)) goes to
+  [Protocol Input Report](protocol.md#input-report-dongle--pc) goes to
   `~/.config/xbx-nrf/gamecontrollerdb.txt`, and
   `~/.config/environment.d/50-xbx-nrf.conf` sets
   `SDL_GAMECONTROLLERCONFIG_FILE` to it from the next login (no root).
@@ -185,11 +185,11 @@ is dropped. Input-test data comes unrequested as `STREAM` reports (command
 
 | Code | Command | Device | Arguments → result |
 |---|---|---|---|
-| `0x01` | `INFO` | Both | → [[#INFO result]] |
-| `0x02` | `SETTING_GET` | Both | id → id, value ([[#Settings]]); id 0 → count, the ids this firmware has |
+| `0x01` | `INFO` | Both | → [INFO result](#info-result) |
+| `0x02` | `SETTING_GET` | Both | id → id, value ([Settings](#settings)); id 0 → count, the ids this firmware has |
 | `0x03` | `SETTING_SET` | Both | id, value → applied at once, saved to flash 1 s after the last change (sliders don't wear flash) |
-| `0x04` | `STREAM` | Controller | rate in Hz (0 = off, ≤ 100); stops when the interface goes down ([[#STREAM report]]) |
-| `0x05` | `CALIBRATE` | Controller | step, targets → [[#CALIBRATE result]] |
+| `0x04` | `STREAM` | Controller | rate in Hz (0 = off, ≤ 100); stops when the interface goes down ([STREAM report](#stream-report)) |
+| `0x05` | `CALIBRATE` | Controller | step, targets → [CALIBRATE result](#calibrate-result) |
 | `0x06` | `RUMBLE` | Controller | levels heavy, weak, LT, RT (u8), duration ms (u16 LE, ≤ 2000, 0 stops); overrides the host while it runs |
 | `0x07` | `FACTORY_RESET` | Both | scope bits: `0x01` settings (with the stored USB mode), `0x02` calibration, `0x04` pairing; then restart. Dongle: settings and pairing |
 | `0x08` | `BOOTLOADER` | Both | → ok, then `GPREGRET = 0x57` and reset |
@@ -231,8 +231,9 @@ coverage while calibrating comes from the raw counts.
 
 ### CALIBRATE
 
-The on-device routine ([[todo#Stick and trigger calibration]]), driven by
-the app; the button combos still work.
+The on-device routine ([Stick and trigger
+calibration](../todo.md#stick-and-trigger-calibration)), driven by the app; the
+button combos still work.
 
 | Step | Does | Allowed in |
 |---|---|---|

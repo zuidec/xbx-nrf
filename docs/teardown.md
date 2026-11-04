@@ -12,9 +12,9 @@ aliases:
 
 # Test controller teardown notes
 
-Observations from the test controller (1914), for taking it apart and putting
-it back together. Related: [[docs/hardware]], [[docs/a3910]],
-[[todo#1. Verify / reverse-engineer (stock hardware)]].
+Observations from the test controller (1914), for taking it apart and putting it
+back together. Related: [hardware](hardware.md), [a3910](a3910.md),
+[Verify / reverse-engineer (stock hardware)](../todo.md#verify--reverse-engineer-stock-hardware).
 
 ## Motor wires (bottom board)
 
@@ -90,4 +90,4 @@ the outline and part-placement DXFs used by the KiCad board. A 1.6 mm
       expansion port opening.
 - [x] J7 (Play & Charge): not on our v1 board.
 - [ ] Antenna pigtail length: once the antenna is chosen
-      ([[todo#MCU / radio]]).
+      ([todo](../todo.md)).

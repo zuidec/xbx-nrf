@@ -1,25 +1,29 @@
-# xbx-nrf
+# XBX-NRF
 
 A replacement bottom board for the **Xbox Series X|S controller (model 1914)**
-built on a Nordic **nRF52840**, with a **2.4 GHz USB dongle** instead of Xbox
-Wireless / Bluetooth. The stock top board and shell stay.
+built on a Nordic **nRF52840**. Uses a custom **2.4 GHz USB dongle** instead of 
+Xbox Wireless / Bluetooth for improved connectivity. 
 
-> **Status:** early design and prototyping. Open tasks: [todo.md](todo.md).
+> **Status:** Hardware Rev 1.1 up and running. Still in active development.
+> Open tasks: [todo.md](todo.md).
 
 
 ## Who is this for
 
 This is for those of us who love the Xbox controller's shape but hate how bad 
-the bluetooth connectivity is. This started as a labor of love for my partner 
+the Bluetooth connectivity is. This started as a labor of love for my partner 
 who can't find a controller she likes besides the Xbox controller but also can't 
 stand the disconnects.
 
 That being said, there are some real concessions. The most obvious is that the 
-controller won't work with an Xbox anymore. Another concession is that I skipped 
-the wiring for the rechargeable battery backs, as well as the expansion port and 
-headphone jack.
+controller won't work with an Xbox anymore. Another concession is that support 
+for the rechargeable battery packs, as well as the expansion and headphone ports 
+was dropped.
 
-> **[Getting started](docs/getting_started.md)**
+- How to build the hardware:
+    [Building the hardware](docs/hardware_assembly.md)
+- Once you have hardware in hand:
+    **[Getting started](docs/getting_started.md)**
 
 ## Architecture
 
@@ -34,31 +38,35 @@ headphone jack.
 └──────────────────────────────────┘          └────────────────┘
 ```
 
-## Design decisions 
+## Features
 
-| Area | Decision |
+
+| Area | Feature |
 |---|---|
-| Target | Xbox Series X\|S (1914)|
+| Target | Xbox Series X\|S Controller (model 1914)|
 | Scope | New bottom board, stock top board, shell, triggers, motors reused |
-| MCU | nRF52840 for the controller and dongle |
-| Wireless | NRF ESB 2.4 GHz |
-| Multiplayer | Up to 7 paired, 4 connected |
+| MCU | nRF52840 |
+| Wireless | Nordic ESB 2.4 GHz. The project does **NOT** use Bluetooth! |
+| Multiplayer | Up to 7 paired, 4 connected per dongle |
 | Polling rate| 1 kHz with 1–2 controllers, 500 Hz with 3–4 |
-| Dongle USB | HID gamepad (1 player) and XInput |
-| Battery | **AAs only** - basic rechargeables OK, but no Plug N Play |
-| Rumble | reuses all the stock motors including triggers |
-| Buttons | reuses stock with options for AUX trigger switches and 4 paddles |
+| Dongle USB mode| HID gamepad (**1 player**) and XInput (**4 players**) |
+| Battery | **AAs only** - basic rechargeables are OK, but no Play & Charge |
+| Rumble | reuses all the stock motors, including triggers |
+| Buttons | reuses stock with additional options for 2 AUX trigger switches and 4 paddles |
+| Waking PC | Works in wireless AND wired mode! |
 | Audio | None in v1 |
 | Expansion port | None in v1 |
 
 > [!WARNING]
 > **Never put a bare Li-ion cell on the AA contacts**: The boost converter
-> appears to pass that straight through and the nrf can only handle 3v6
+> appears to pass that straight through and the nRF52840 is only rated to 
+> **3.6v** in this configuration!
 > ([docs/hardware.md](docs/hardware.md)).
 
 ## Hardware
 
-The custom board plugs into the stock top board's 14-pin **J3**: power rails, 
+The custom board replaces the stock bottom board in the controller. It plugs 
+into the stock top board's 14-pin **J3** connector. This provides power rails, 
 USB, I2C to the button expander, and Guide / Pair / power-hold signals.
 
 | Doc | Covers |
@@ -68,13 +76,14 @@ USB, I2C to the button expander, and Guide / Pair / power-hold signals.
 | [docs/a3910.md](docs/a3910.md) | Rumble drivers: wiring, logic table |
 | [docs/teardown.md](docs/teardown.md) | Test controller teardown: motor wires |
 
+
 ## Firmware
 
 Built using the nRF Connect SDK. Version is pinned at v3.4.1 to ensure future 
 buildability (hopefully). The controller firmware has a target for the custom 
-board and the dongle firmware has a target for my custom board as well as the 
-PCA10059 dongle. There is a nice nano/pro micro target for the controller, but I 
-just use this for testing.
+board and the dongle firmware has a target for the custom dongle as well as the 
+PCA10059 dongle. You may notice there is a nice!nano/pro-micro target for the 
+controller, but this is just for testing.
 
 
 | Doc | Covers |
@@ -92,12 +101,10 @@ Desktop app for settings, calibration, input and rumble tests and firmware
 updates of both devices over USB using Python + Tkinter. So far only tested on 
 Linux, but in theory should be buildable on Mac and Windows.
 
-```sh
-python3 tools/configurator/xbx-config.py  # run from source
-tools/configurator/build.sh --release     # one file, in output/
-```
-
-Details: [docs/configurator.md](docs/configurator.md).
+Getting started: 
+    [docs/getting_started.md](docs/getting_started.md#setting-up-the-configurator)
+Details: 
+    [docs/configurator.md](docs/configurator.md).
 
 ## Repository layout
 
@@ -118,14 +125,17 @@ pcb/xbx-nrf-dongle/  KiCad project, dongle board
 mech/                FreeCAD parts (controller-bottom-board/: board outline)
 references/          schematics, scans, datasheets, pinouts
 tools/               configurator/, test tools (test-rumble.sh)
-todo.md              task list (Obsidian)
+todo.md              task list (Obsidian format)
 ```
 
 ## Disclosures
 
 This was built with the help of Claude Code. PCB designs are completely hand 
-designed by myself, and all code was either written or reviewed by myself. There 
-may however be some things that I missed as is the nature when using AI.
+designed by myself, and all code was either written or reviewed by 
+myself. However, there are likely still bugs present as this is a hobbyist 
+project in early development. PCB designs may also have flaws for the same 
+reasons. If you find and bugs or issues with the hardware, please [open an 
+issue](https://github.com/zuidec/xbx-nrf/issues) to let me know.
 
 ## References
 

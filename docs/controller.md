@@ -1,12 +1,25 @@
+---
+title: Using the controller
+created: 2026-11-01
+updated: 2026-11-03
+tags:
+  - xbx-nrf
+  - howto
+aliases:
+  - controller
+  - pairing
+  - calibration
+---
+
 # Using the controller
 
 How to pair, power, connect and calibrate the controller and the dongle.
-Settings beyond these: the configurator ([[configurator]]).
+Settings beyond these: the configurator ([configurator](configurator.md)).
 
 ## Batteries
 
 AAs only: alkaline, NiMH, or regulated 1.5 V Li-ion AAs. **Never a bare
-Li-ion cell** ([[hardware]]). On USB the AAs are disconnected; the
+Li-ion cell** ([hardware](hardware.md)). On USB the AAs are disconnected; the
 controller doesn't charge them.
 
 Low battery: no rumble below 25 %; the controller turns itself off when the
@@ -84,7 +97,7 @@ Made on the controller, so they work in every game, wired or wireless:
 - **Trigger rumble:** while a trigger is pulled, part of the game's rumble
   in that trigger.
 
-Strength, length and shares: configurator, Rumble panel.
+Strength, length and thresholds: configurator, Rumble panel.
 
 ## Waking the PC
 

@@ -43,8 +43,8 @@ doesn't search the app folder), so plain `west build` needs
 
 ## Setup
 
-Pre-built files without building: [[docs/getting_started]]. The SDK and
-its toolchain come through `nrfutil`; the apps need no other compiler.
+Pre-built files without building: [getting_started](getting_started.md). The SDK
+and its toolchain come through `nrfutil`; the apps need no other compiler.
 Links:
 
 Prerequisites:
@@ -80,8 +80,8 @@ nrfutil:[nRFUtil](https://www.nordicsemi.com/Products/Development-tools/nRF-Util
    ```
    `ZEPHYR_BASE` lets `west build` work from our app folders; without it
    west reports "unknown command build". `build.sh` needs neither.
-3. USB permissions: the udev rule ([[docs/getting_started#Linux]], step 2,
-   or `xbx-config.py install-udev`); SWD probes: [[docs/flashing]].
+3. USB permissions: the udev rule ([Linux](getting_started.md#linux), step 2,
+   or `xbx-config.py install-udev`); SWD probes: [flashing](flashing.md).
 
 ### Windows
 
@@ -105,7 +105,7 @@ Not tested yet. Every command runs in **Git Bash**.
    export ZEPHYR_BASE=/c/ncs/v3.4.1/zephyr
    ```
 3. Configurator from source: `python tools/configurator/xbx-config.py`;
-   build: `tools/configurator/build.sh` ([[docs/configurator#Building]]).
+   build: `tools/configurator/build.sh` ([Building](configurator.md#building)).
    No driver needed.
 
 ### macOS
@@ -124,8 +124,8 @@ tools/configurator/build.sh              # configurator, this PC
 tools/configurator/build.sh --release    # configurator, Linux release
 ```
 
-Output: [[#Output files]]; configurator: `tools/configurator/output/`.
-Every option: [[#Building]].
+Output: [Output files](#output-files); configurator:
+`tools/configurator/output/`. Every option: [Building](#building).
 
 ## Building
 
@@ -146,7 +146,7 @@ cd ~/Projects/xbx-nrf/firmware
 ./build.sh xbx-dongle -f /dev/sdX   # build, then flash (UF2 drive)
 ./build.sh xbx-dongle -r            # release build
 ./build.sh xbx-dongle-pca10059 -f /dev/ttyACM0
-./build.sh xbx-nrf-bootloader       # controller bootloader ([[#Bootloader]])
+./build.sh xbx-nrf-bootloader       # controller bootloader (see Bootloader)
 ./build.sh xbx-dongle-bootloader    # dongle bootloader
 ```
 
@@ -157,7 +157,7 @@ cd ~/Projects/xbx-nrf/firmware
 - `-r` / `--release` adds the app's `release.conf` (no USB console, no logs)
   and builds into the target's folder with `-release` added.
 - `-f` / `--flash <device>` flashes after a successful build
-  ([[docs/flashing]]):
+  ([flashing](flashing.md)):
 
   | Board | Device |
   |---|---|
@@ -178,7 +178,7 @@ cd ~/Projects/xbx-nrf/firmware
 ### Output files
 
 Sysbuild puts each image in a subfolder named after the app, inside the
-target's folder (`<dir>`, [[#Building]]):
+target's folder (`<dir>`, [Building](#building)):
 
 | File | Use |
 |---|---|
@@ -214,7 +214,7 @@ app's `CMakeLists.txt` has no effect.
 tag (`UPSTREAM` in `bootloader/VERSION`) into `src/` (gitignored), plus our
 board folders in `boards/`. `./build.sh xbx-nrf-bootloader` /
 `xbx-dongle-bootloader` build into `bootloader/build/<board>/`; `-f swd`
-installs it ([[docs/flashing]]).
+installs it ([flashing](flashing.md)).
 
 | File | Use |
 |---|---|
@@ -244,7 +244,7 @@ matching numbers.
 | Compatibility | Where | Bump when |
 |---|---|---|
 | **Radio protocol** | `XBX_PROTOCOL_VERSION` in `protocol.h` | Packet format changes; reflash **both** boards |
-| **Configurator channel** | `CFG_USB_VERSION_*` in `config_usb.h` | Major: incompatible; minor: additions ([[docs/configurator#Versioning]]) |
+| **Configurator channel** | `CFG_USB_VERSION_*` in `config_usb.h` | Major: incompatible; minor: additions ([Versioning](configurator.md#versioning)) |
 
 - **Release:** bump the version in its own commit (e.g.
   `Controller: version 0.6.0`), then an annotated tag on that commit:

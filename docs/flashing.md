@@ -28,12 +28,12 @@ aliases:
 | Generic CMSIS-DAP Probe | Should work fine, not tested but worth trying if you have one |
 | Raspberry Pi Debug Probe | ~$12 CMSIS-DAP and connects directly to the custom boards  |
 
-> [!note]
+> [!NOTE]
 > The Raspberry Pi Debug Probe doesn't work with Nordic's J-Link-only tools 
 > (`nrfutil device`, nRF Connect Programmer over SWD, the nRF Connect VS Code 
 > debugger).
 
-Board overlay naming: see [[docs/building#Board overlays]].
+Board overlay naming: see [Board overlays](building.md#board-overlays).
 
 ## Generic SWD wiring
 
@@ -62,42 +62,8 @@ Board overlay naming: see [[docs/building#Board overlays]].
 | **U** (UART) | TX, GND, RX | Target UART (TX ↔ RX crossed); custom dongle: the probe's cable plugs straight into J3 |
 
 
-# Flashing quick start
 
-## Flashing the bootloader
-
-> [!important]
-> The nRF modules do not ship with a bootloader.
-> You will need a debugger to program the bootloader
-> the first time over SWD.
-
-1. Download the latest bootloader: [bootloader 
-   releases](https://github.com/zuidec/xbx-nrf/releases?q=bootloader&expanded=true)
-2. Make sure `openocd` is installed
-3. Connect the debugger to the SWD port. Any CMSIS-DAP probe should work, but 
-   the Raspberry Pi Debug Probe connects directly with its included cable
-4. Ensure the board is powered over USB
-5. Run the commands below, where the file is the full path to the downloaded 
-   bootloader:
-
-    > [!warning] SWD flashing erases the entire chip
-    > This includes firmware, pairing, and calibration settings
-
-    **Controller:**
-    ```sh
-    openocd -f interface/cmsis-dap.cfg -c 'transport select swd' \
-      -f target/nrf52.cfg -c init -c 'reset halt' -c 'nrf5 mass_erase' \
-      -c 'program /path/to/xbx_controller_bootloader-0.11.0-xbx.1_s140_6.1.1.hex verify reset exit'
-    ```
-    **Dongle:**
-    ```sh
-    openocd -f interface/cmsis-dap.cfg -c 'transport select swd' \
-      -f target/nrf52.cfg -c init -c 'reset halt' -c 'nrf5 mass_erase' \
-      -c 'program /path/to/xbx_dongle_bootloader-0.11.0-xbx.1_s140_6.1.1.hex verify reset exit'
-    ```
-
-
-### Custom boards — UF2 bootloader **(Preferred)**
+### Custom boards (Preferred UF2 bootloader)
 
 Custom boards use a modified Adafruit UF2 bootloader. After initial bootloader 
 flash, a drive should automatically appear.
@@ -108,7 +74,9 @@ If the bootloader has been previously programmed, enter it as follows:
 - **Dongle:** Hold **PAIR** at power on
 - **Both:** double-tap the reset button (only on USB for the controller)
 
-> [!warning] Config changes
+> [!WARNING]
+> **Config changes**
+>
 > Settings can be lost if the stored format has changed.
 > Commonly affected settings are the stick calibration and pairing
 
@@ -132,7 +100,8 @@ firmware.
 Both custom boards (`xbx_controller`, `xbx_dongle`) flash over SWD with a 
 CMSIS-DAP Probe; `west flash` runs OpenOCD with CMSIS-DAP.
 
-The script builds first, so the nRF Connect SDK is needed: [[docs/building]]
+The script builds first, so the nRF Connect SDK is needed:
+[building](building.md)
 
 From `firmware/`:
 ```sh
@@ -175,7 +144,9 @@ app after the SoftDevice area it expects.
    drive by hand.
 3. The app reboots; logs appear on `/dev/ttyACM*` (USB CDC console).
 
-> [!note] P0.13 = external VCC switch
+> [!NOTE]
+> **P0.13 = external VCC switch**
+>
 > On nice!nano-style boards P0.13 switches the `VCC` pin (low = on). Drive it
 > low when powering sticks or sensors from `VCC`, or use `3.3V` instead.
 
@@ -207,7 +178,7 @@ the options in your SDK.
 
 
 The target leaves room for the Nordic bootloader. If SWD erased it, restore it
-first ([[#Restoring bootloaders]]).
+first ([Restoring bootloaders](#restoring-bootloaders)).
 
 ## Restoring bootloaders
 
@@ -229,11 +200,11 @@ first ([[#Restoring bootloaders]]).
 | Symptom | Likely cause |
 |---|---|
 | ST-Link won't connect ("target voltage 0 V") | Target 3.3 V not on the sense pin |
-| Connects, can't halt or read memory | Chip locked → [[#Locked chip (APPROTECT)]] |
+| Connects, can't halt or read memory | Chip locked → [Locked chip (APPROTECT)](#locked-chip-approtect) |
 | Dongle app doesn't run after SWD flashing | Bootloader gone → build for the `bare` variant |
-| Custom board app doesn't run after `-f swd` | No UF2 bootloader (the app starts at `0x26000`) → install it ([[#Custom boards — UF2 bootloader ✅]]) |
+| Custom board app doesn't run after `-f swd` | No UF2 bootloader (the app starts at `0x26000`) → install it ([Custom boards — UF2 bootloader (Preferred)](#custom-boards--uf2-bootloader-preferred)) |
 | No UF2 drive | Double tap too slow; charge-only USB cable |
 | `west flash`: no matching UF2 partition | Drive not mounted |
 | No `/dev/ttyACM*` after flashing | App crashed early; user not in `dialout` |
-| Board overlay has no effect | Wrong filename ([[docs/building#Board overlays]]) |
+| Board overlay has no effect | Wrong filename ([Board overlays](building.md#board-overlays)) |
 | Controller stops after an OpenOCD command | CPU left halted: add `resume`, or power-cycle |
