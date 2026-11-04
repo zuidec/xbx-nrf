@@ -11639,6 +11639,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "399-C0603C472J5RACTUCT-ND"
+			(at 69.85 40.64 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "2"
 			(uuid "68b4c5d2-6a7d-4b3c-8b61-6816fd6730ea")
 		)
@@ -12187,6 +12198,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 276.86 110.49 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "79b35cb5-c5a9-4488-bed4-75af0c47293a")
 		)
@@ -12344,6 +12366,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 52.07 184.15 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(instances
 			(project "xbx-nrf"
 				(path "/80da5dd1-c318-49cd-9b75-a008ecafd4bc"
@@ -12407,6 +12440,17 @@
 			)
 		)
 		(property "Description" "Resistor, small symbol"
+			(at 171.45 127 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "311-2.20KHRCT-ND"
 			(at 171.45 127 0)
 			(hide yes)
 			(show_name no)
@@ -12643,6 +12687,17 @@
 				(justify bottom)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 50.8 107.95 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "VR2_3"
 			(uuid "287da411-b512-44c4-b385-d9ea6714fe7d")
 		)
@@ -12836,6 +12891,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "541-100KHCT-ND"
+			(at 180.34 26.67 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "2"
 			(uuid "4151ec91-8876-48ca-a9bf-954a769b776f")
 		)
@@ -12905,6 +12971,17 @@
 			)
 		)
 		(property "Description" ""
+			(at 238.76 106.68 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "620-1495-1-ND"
 			(at 238.76 106.68 0)
 			(hide yes)
 			(show_name no)
@@ -13319,6 +13396,17 @@
 				(justify bottom)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 29.21 156.21 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "VR1_2"
 			(uuid "6d6e67c2-39df-458a-90b1-e23ffdd55c11")
 		)
@@ -13427,6 +13515,17 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor, small symbol"
+			(at 39.37 120.65 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "399-C0603C104K5RACTUCT-ND"
 			(at 39.37 120.65 0)
 			(hide yes)
 			(show_name no)
@@ -13673,6 +13772,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 251.46 134.62 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "2"
 			(uuid "75fab2da-f510-4f5b-9e3a-5f0467c7f547")
 		)
@@ -13742,6 +13852,17 @@
 			)
 		)
 		(property "Description" "Resistor, small symbol"
+			(at 24.13 133.35 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "P1.00KHCT-ND"
 			(at 24.13 133.35 0)
 			(hide yes)
 			(show_name no)
@@ -13834,6 +13955,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 276.86 71.12 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "25ed42e9-2de0-4006-ba16-2a8882764339")
 		)
@@ -13903,6 +14035,17 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor, small symbol"
+			(at 74.93 190.5 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "399-8728-1-ND"
 			(at 74.93 190.5 0)
 			(hide yes)
 			(show_name no)
@@ -13984,6 +14127,17 @@
 			)
 		)
 		(property "Description" "200mA Low Dropout Voltage Regulator, Fixed Output 1.8V, SOT-23-5"
+			(at 39.37 67.31 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "296-32410-1-ND"
 			(at 39.37 67.31 0)
 			(hide yes)
 			(show_name no)
@@ -14166,6 +14320,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "785-1001-1-ND"
+			(at 184.15 20.32 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "2"
 			(uuid "cc40bf89-5982-4e7a-a656-914689015300")
 		)
@@ -14238,6 +14403,17 @@
 			)
 		)
 		(property "Description" "Resistor, small symbol"
+			(at 261.62 134.62 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "P1.00KHCT-ND"
 			(at 261.62 134.62 0)
 			(hide yes)
 			(show_name no)
@@ -14486,6 +14662,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 52.07 191.77 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(instances
 			(project "xbx-nrf"
 				(path "/80da5dd1-c318-49cd-9b75-a008ecafd4bc"
@@ -14552,6 +14739,17 @@
 			)
 		)
 		(property "Description" "test point"
+			(at 264.16 39.37 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "N/A"
 			(at 264.16 39.37 0)
 			(hide yes)
 			(show_name no)
@@ -14631,6 +14829,17 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 161.29 177.8 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "N/A"
 			(at 161.29 177.8 0)
 			(hide yes)
 			(show_name no)
@@ -14789,6 +14998,17 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 276.86 115.57 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "N/A"
 			(at 276.86 115.57 0)
 			(hide yes)
 			(show_name no)
@@ -15179,6 +15399,17 @@
 				(justify bottom)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 50.8 156.21 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "VR1_2"
 			(uuid "6d6e67c2-39df-458a-90b1-e23ffdd55c12")
 		)
@@ -15366,6 +15597,17 @@
 			)
 		)
 		(property "Description" "Resistor, small symbol"
+			(at 26.67 71.12 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "541-100KHCT-ND"
 			(at 26.67 71.12 0)
 			(hide yes)
 			(show_name no)
@@ -15603,6 +15845,17 @@
 			)
 		)
 		(property "Description" "Resistor, small symbol"
+			(at 161.29 186.69 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "P1.00KHCT-ND"
 			(at 161.29 186.69 0)
 			(hide yes)
 			(show_name no)
@@ -16009,6 +16262,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "497-5235-1-ND"
+			(at 130.81 35.56 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "49daa616-4379-4749-aa43-7100a21bf469")
 		)
@@ -16336,6 +16600,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "114-FC-13532.7680KA-AG0CT-ND"
+			(at 78.74 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "2"
 			(uuid "fd66a882-77ea-43e5-a9af-9d0b78830d34")
 		)
@@ -16405,6 +16680,17 @@
 			)
 		)
 		(property "Description" "Resistor, small symbol"
+			(at 171.45 124.46 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "311-2.20KHRCT-ND"
 			(at 171.45 124.46 0)
 			(hide yes)
 			(show_name no)
@@ -16639,6 +16925,17 @@
 					(size 1.27 1.27)
 				)
 				(justify bottom)
+			)
+		)
+		(property "DigiKey" "N/A"
+			(at 29.21 107.95 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "VR2_3"
@@ -16989,6 +17286,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "P1.00KHCT-ND"
+			(at 237.49 160.02 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "2"
 			(uuid "51cea127-9ffa-44f8-953e-6440b15c68b6")
 		)
@@ -17060,6 +17368,17 @@
 			)
 		)
 		(property "Description" "20V, 1A low Vf MEGA Schottky barrier rectifier, SOD-123W"
+			(at 260.35 110.49 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "1727-PMEG2010ER-QXCT-ND"
 			(at 260.35 110.49 0)
 			(hide yes)
 			(show_name no)
@@ -17142,6 +17461,17 @@
 			)
 		)
 		(property "Description" "test point"
+			(at 254 39.37 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "N/A"
 			(at 254 39.37 0)
 			(hide yes)
 			(show_name no)
@@ -17298,6 +17628,17 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 276.86 105.41 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "N/A"
 			(at 276.86 105.41 0)
 			(hide yes)
 			(show_name no)
@@ -17620,6 +17961,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "1727-PMEG2010ER-QXCT-ND"
+			(at 247.65 78.74 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "2"
 			(uuid "4a6518b2-c565-447f-ba78-aa47c2a25500")
 		)
@@ -17692,6 +18044,17 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor, small symbol"
+			(at 252.73 99.06 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "399-C0603C104K5RACTUCT-ND"
 			(at 252.73 99.06 0)
 			(hide yes)
 			(show_name no)
@@ -17928,6 +18291,17 @@
 				(justify bottom)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 39.37 92.71 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "VR2_3"
 			(uuid "287da411-b512-44c4-b385-d9ea6714fe7f")
 		)
@@ -18043,6 +18417,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "P1.00KHCT-ND"
+			(at 156.21 182.88 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "2"
 			(uuid "90f172c5-038c-430f-a646-683e994ddf4b")
 		)
@@ -18115,6 +18500,17 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 156.21 172.72 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "N/A"
 			(at 156.21 172.72 0)
 			(hide yes)
 			(show_name no)
@@ -18204,6 +18600,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 276.86 86.36 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "cc0950db-d9e7-4a18-a335-594e8882c01d")
 		)
@@ -18273,6 +18680,17 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 77.47 64.77 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "N/A"
 			(at 77.47 64.77 0)
 			(hide yes)
 			(show_name no)
@@ -18426,6 +18844,17 @@
 			)
 		)
 		(property "Description" "Resistor, small symbol"
+			(at 233.68 157.48 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "P1.00KHCT-ND"
 			(at 233.68 157.48 0)
 			(hide yes)
 			(show_name no)
@@ -18676,6 +19105,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 276.86 76.2 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "e1bcb04f-18f6-4464-a127-12ff005d77c7")
 		)
@@ -18755,6 +19195,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 273.05 39.37 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "69c4e4a2-92c8-418e-a795-ffa7e15b6f55")
 		)
@@ -18824,6 +19275,17 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor, small symbol"
+			(at 19.05 71.12 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "399-C0603C105K4RACTUCT-ND"
 			(at 19.05 71.12 0)
 			(hide yes)
 			(show_name no)
@@ -18916,6 +19378,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 245.11 144.78 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "83bc9b35-1daa-48c4-91dd-b0b8f57b0bbf")
 		)
@@ -18984,6 +19457,17 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor, small symbol"
+			(at 104.14 36.83 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "399-C0603C104K5RACTUCT-ND"
 			(at 104.14 36.83 0)
 			(hide yes)
 			(show_name no)
@@ -19066,6 +19550,17 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor, small symbol"
+			(at 39.37 168.91 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "399-C0603C104K5RACTUCT-ND"
 			(at 39.37 168.91 0)
 			(hide yes)
 			(show_name no)
@@ -19235,6 +19730,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "1276-2402-1-ND"
+			(at 223.52 88.9 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "3eb6af90-d123-4d1c-8f64-7c0252dc6bf5")
 		)
@@ -19393,6 +19899,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "399-C0603C104K5RACTUCT-ND"
+			(at 95.25 29.21 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "70223958-cf3d-4636-a94e-c3b20d2fe419")
 		)
@@ -19463,6 +19980,17 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor, small symbol"
+			(at 124.46 62.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "1276-2402-1-ND"
 			(at 124.46 62.23 0)
 			(hide yes)
 			(show_name no)
@@ -19632,6 +20160,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "399-8728-1-ND"
+			(at 74.93 180.34 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "54a9edf9-a949-4355-b91f-cb8d6661e124")
 		)
@@ -19780,6 +20319,17 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor, small symbol"
+			(at 142.24 62.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "1276-CL21A475KAQNNNECT-ND"
 			(at 142.24 62.23 0)
 			(hide yes)
 			(show_name no)
@@ -19949,6 +20499,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 275.59 144.78 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "2abbbce2-f93c-47e7-8b9a-126af932098f")
 		)
@@ -20026,6 +20587,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 256.54 21.59 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "eab601bf-d771-43e6-9ad7-3625f35bae18")
 		)
@@ -20093,6 +20665,17 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor, small symbol"
+			(at 138.43 25.4 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "399-C0603C104K5RACTUCT-ND"
 			(at 138.43 25.4 0)
 			(hide yes)
 			(show_name no)
@@ -20263,6 +20846,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "399-C0603C472J5RACTUCT-ND"
+			(at 82.55 40.64 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "2"
 			(uuid "ab0a57c1-cb76-4f1f-a72b-ee446c1d8a07")
 		)
@@ -20345,6 +20939,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "399-C0603C105K4RACTUCT-ND"
+			(at 262.89 64.77 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "a8ff0844-d963-4419-a274-e56e15ee0829")
 		)
@@ -20414,6 +21019,17 @@
 			)
 		)
 		(property "Description" "Generic connectable mounting pin connector, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 227.33 27.94 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "455-SM03B-SRSS-TBCT-ND"
 			(at 227.33 27.94 0)
 			(hide yes)
 			(show_name no)
@@ -20512,6 +21128,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 41.91 184.15 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(instances
 			(project "xbx-nrf"
 				(path "/80da5dd1-c318-49cd-9b75-a008ecafd4bc"
@@ -20576,6 +21203,17 @@
 			)
 		)
 		(property "Description" "Resistor, small symbol"
+			(at 95.25 144.78 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "541-100KHCT-ND"
 			(at 95.25 144.78 0)
 			(hide yes)
 			(show_name no)
@@ -20668,6 +21306,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "399-C0603C105K4RACTUCT-ND"
+			(at 48.26 72.39 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "2"
 			(uuid "424c57f1-5fee-44f1-80cc-ecb460b5fd8f")
 		)
@@ -20739,6 +21388,17 @@
 			)
 		)
 		(property "Description" "20V, 1A low Vf MEGA Schottky barrier rectifier, SOD-123W"
+			(at 260.35 76.2 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "1727-PMEG2010ER-QXCT-ND"
 			(at 260.35 76.2 0)
 			(hide yes)
 			(show_name no)
@@ -20831,6 +21491,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 255.27 144.78 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "773fc897-6531-45f5-a226-d81c836f3f76")
 		)
@@ -20897,6 +21568,17 @@
 			)
 		)
 		(property "Description" "Generic connectable mounting pin connector, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 227.33 45.72 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "455-SM03B-SRSS-TBCT-ND"
 			(at 227.33 45.72 0)
 			(hide yes)
 			(show_name no)
@@ -20985,6 +21667,17 @@
 			)
 		)
 		(property "Description" "Multiprotocol BLE/ANT/2.4 GHz/802.15.4 Cortex-M4F SoC, nRF52840 module"
+			(at 132.08 111.76 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "3271-MDBT50Q-U1MV2-ND"
 			(at 132.08 111.76 0)
 			(hide yes)
 			(show_name no)
@@ -21268,6 +21961,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 276.86 81.28 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "cce3f4cc-5d28-4e54-8e31-f0160812c3a3")
 		)
@@ -21347,6 +22051,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 264.16 160.02 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "7f07bf2b-810d-4098-b7e5-0aba1e125d26")
 		)
@@ -21415,6 +22130,17 @@
 			)
 		)
 		(property "Description" "20V, 1A low Vf MEGA Schottky barrier rectifier, SOD-123W"
+			(at 247.65 113.03 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "1727-PMEG2010ER-QXCT-ND"
 			(at 247.65 113.03 0)
 			(hide yes)
 			(show_name no)
@@ -21663,6 +22389,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 252.73 157.48 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "cb67b9be-ff26-41f8-a462-e8d7c16cbeb7")
 		)
@@ -21732,6 +22469,17 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 241.3 154.94 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "N/A"
 			(at 241.3 154.94 0)
 			(hide yes)
 			(show_name no)
@@ -21898,6 +22646,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "2073-SWT0010-015016SSACT-ND"
+			(at 265.43 25.4 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "e890158e-ad8d-4ad2-9f3d-52166fe5df08")
 		)
@@ -21970,6 +22729,17 @@
 			)
 		)
 		(property "Description" "Mounting Hole without connection"
+			(at 41.91 191.77 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "N/A"
 			(at 41.91 191.77 0)
 			(hide yes)
 			(show_name no)
@@ -22056,6 +22826,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "399-C0603C105K4RACTUCT-ND"
+			(at 262.89 99.06 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "cc0ce169-59ae-4a30-bc61-af85b665e08f")
 		)
@@ -22128,6 +22909,17 @@
 		)
 		(property "Description" "Linear Hall Effect Sensor, 2.5 mV/G, 4.5-6.0V supply, SOT-23W"
 			(at 147.574 41.91 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "620-1548-1-ND"
+			(at 162.56 41.91 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -22222,6 +23014,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 167.64 194.31 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "e1f8231e-c4d5-4352-9dc4-aa23eb1406ce")
 		)
@@ -22288,6 +23091,17 @@
 			)
 		)
 		(property "Description" "Resistor, small symbol"
+			(at 241.3 162.56 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "P1.00KHCT-ND"
 			(at 241.3 162.56 0)
 			(hide yes)
 			(show_name no)
@@ -22457,6 +23271,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "399-C0603C104K5RACTUCT-ND"
+			(at 179.07 39.37 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "9a79e42c-d8be-484a-a787-c49ebfd75b2d")
 		)
@@ -22604,6 +23429,17 @@
 			)
 		)
 		(property "Description" ""
+			(at 238.76 72.39 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "620-1495-1-ND"
 			(at 238.76 72.39 0)
 			(hide yes)
 			(show_name no)
@@ -23028,6 +23864,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "399-C0603C104K5RACTUCT-ND"
+			(at 74.93 29.21 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "ac3a9d71-4165-4c0d-95c2-4c6690cf90ca")
 		)
@@ -23097,6 +23944,17 @@
 			)
 		)
 		(property "Description" "Resistor, small symbol"
+			(at 17.78 36.83 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "541-100KHCT-ND"
 			(at 17.78 36.83 0)
 			(hide yes)
 			(show_name no)
@@ -23258,6 +24116,17 @@
 		)
 		(property "Description" "Linear Hall Effect Sensor, 2.5 mV/G, 4.5-6.0V supply, SOT-23W"
 			(at 185.674 41.91 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "620-1548-1-ND"
+			(at 200.66 41.91 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -23430,6 +24299,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 17.78 187.96 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(instances
 			(project "xbx-nrf"
 				(path "/80da5dd1-c318-49cd-9b75-a008ecafd4bc"
@@ -23573,6 +24453,17 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 173.99 172.72 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "N/A"
 			(at 173.99 172.72 0)
 			(hide yes)
 			(show_name no)
@@ -24051,6 +24942,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "399-C0603C104K5RACTUCT-ND"
+			(at 217.17 39.37 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "ab2e1bcc-da72-47b2-b43c-46de472768ed")
 		)
@@ -24508,6 +25410,17 @@
 				(justify bottom)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 39.37 140.97 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "VR1_2"
 			(uuid "6d6e67c2-39df-458a-90b1-e23ffdd55c13")
 		)
@@ -24626,6 +25539,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 275.59 162.56 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "2f64f35f-8fe1-4a4f-84eb-4e6ec3df0135")
 		)
@@ -24694,6 +25618,17 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor, small symbol"
+			(at 64.77 29.21 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "399-C0603C104K5RACTUCT-ND"
 			(at 64.77 29.21 0)
 			(hide yes)
 			(show_name no)
@@ -24940,6 +25875,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "399-C0603C104K5RACTUCT-ND"
+			(at 85.09 29.21 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "bf129ae2-e479-4d51-b99a-3fdac3ab3f96")
 		)
@@ -25022,6 +25968,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 27.94 187.96 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(instances
 			(project "xbx-nrf"
 				(path "/80da5dd1-c318-49cd-9b75-a008ecafd4bc"
@@ -25087,6 +26044,17 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor, small symbol"
+			(at 105.41 29.21 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "399-C0603C104K5RACTUCT-ND"
 			(at 105.41 29.21 0)
 			(hide yes)
 			(show_name no)
@@ -25257,6 +26225,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "399-C0603C104K5RACTUCT-ND"
+			(at 252.73 64.77 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "2f8a88b4-29bd-4260-8ee7-568fe3695608")
 		)
@@ -25417,6 +26396,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 265.43 144.78 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "78007f1e-4bf6-4577-82d2-841b7ad1199d")
 		)
@@ -25484,6 +26474,17 @@
 			)
 		)
 		(property "Description" "Harwin M50 Connector"
+			(at 35.56 36.83 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "M50-3120745-ND"
 			(at 35.56 36.83 0)
 			(hide yes)
 			(show_name no)
@@ -25612,6 +26613,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 276.86 120.65 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "a80b2ef6-0c1f-428a-bda2-d48a83b46eb4")
 		)
@@ -25679,6 +26691,17 @@
 			)
 		)
 		(property "Description" "Resistor, small symbol"
+			(at 172.72 20.32 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "311-10.0KHRCT-ND"
 			(at 172.72 20.32 0)
 			(hide yes)
 			(show_name no)
@@ -25925,6 +26948,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "P1.00KHCT-ND"
+			(at 24.13 85.09 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "2"
 			(uuid "cb09234d-1e1b-401a-b478-1146302dbd57")
 		)
@@ -25994,6 +27028,17 @@
 			)
 		)
 		(property "Description" "Resistor, small symbol"
+			(at 229.87 154.94 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "P1.00KHCT-ND"
 			(at 229.87 154.94 0)
 			(hide yes)
 			(show_name no)

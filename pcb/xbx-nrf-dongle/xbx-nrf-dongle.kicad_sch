@@ -7552,6 +7552,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 17.78 73.66 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "7edf9d04-f3f2-4ffe-b804-af2295243d0a")
 		)
@@ -7698,6 +7709,17 @@
 			)
 		)
 		(property "Description" "Resistor, small symbol"
+			(at 250.19 68.58 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "P1.00KHCT-ND"
 			(at 250.19 68.58 0)
 			(hide yes)
 			(show_name no)
@@ -7868,6 +7890,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "P1.00KHCT-ND"
+			(at 207.01 25.4 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "2"
 			(uuid "00e24a86-d357-4de6-b324-7feb5f2561b6")
 		)
@@ -7938,6 +7971,17 @@
 			)
 		)
 		(property "Description" "Push button switch, generic, two pins"
+			(at 265.43 25.4 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "2073-SWT0010-015016SSACT-ND"
 			(at 265.43 25.4 0)
 			(hide yes)
 			(show_name no)
@@ -8020,6 +8064,17 @@
 			)
 		)
 		(property "Description" "test point"
+			(at 39.37 115.57 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "N/A"
 			(at 39.37 115.57 0)
 			(hide yes)
 			(show_name no)
@@ -8205,6 +8260,17 @@
 				(justify bottom)
 			)
 		)
+		(property "DigiKey" "401-1999-1-ND"
+			(at 199.39 31.75 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "9f105227-1bb2-4a94-bd84-257ce8f3a31b")
 		)
@@ -8288,6 +8354,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "1276-2402-1-ND"
+			(at 151.13 24.13 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "2"
 			(uuid "26b0f4f1-7aa5-41d1-8ee0-2cfaecb2a179")
 		)
@@ -8360,6 +8437,17 @@
 			)
 		)
 		(property "Description" "Two pin crystal, small symbol"
+			(at 154.94 101.6 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "114-FC-13532.7680KA-AG0CT-ND"
 			(at 154.94 101.6 0)
 			(hide yes)
 			(show_name no)
@@ -8453,6 +8541,17 @@
 			)
 		)
 		(property "Sim.Pins" "1=K 2=A"
+			(at 236.22 74.93 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "754-1948-1-ND"
 			(at 236.22 74.93 0)
 			(hide yes)
 			(show_name no)
@@ -8612,6 +8711,17 @@
 			)
 		)
 		(property "Description" "Mounting Hole without connection"
+			(at 15.24 133.35 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "N/A"
 			(at 15.24 133.35 0)
 			(hide yes)
 			(show_name no)
@@ -8865,6 +8975,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "1080-1582-1-ND"
+			(at 250.19 74.93 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "2"
 			(uuid "3d648057-3a9a-4fa3-9583-ea7e6aab52cd")
 		)
@@ -9023,6 +9144,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "2073-SWT0010-015016SSACT-ND"
+			(at 172.72 30.48 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "2"
 			(uuid "09b59c2c-101b-48f2-b2f0-ac531167650b")
 		)
@@ -9095,6 +9227,17 @@
 			)
 		)
 		(property "Description" "test point"
+			(at 35.56 82.55 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "N/A"
 			(at 35.56 82.55 0)
 			(hide yes)
 			(show_name no)
@@ -9184,6 +9327,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 26.67 82.55 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "5316b1de-19fc-481f-b9fb-d98425a2daba")
 		)
@@ -9253,6 +9407,17 @@
 			)
 		)
 		(property "Description" "Resistor, small symbol"
+			(at 67.31 48.26 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "P5.10KHCT-ND"
 			(at 67.31 48.26 0)
 			(hide yes)
 			(show_name no)
@@ -9335,6 +9500,17 @@
 			)
 		)
 		(property "Description" "test point"
+			(at 17.78 82.55 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "N/A"
 			(at 17.78 82.55 0)
 			(hide yes)
 			(show_name no)
@@ -9502,6 +9678,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 252.73 111.76 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "2"
 			(uuid "ec964587-6ff9-49ee-bdca-61da3b6426a3")
 		)
@@ -9575,6 +9762,17 @@
 			)
 		)
 		(property "Description" "Resistor, small symbol"
+			(at 95.25 43.18 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "311-27.0HRCT-ND"
 			(at 95.25 43.18 0)
 			(hide yes)
 			(show_name no)
@@ -9744,6 +9942,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "399-8728-1-ND"
+			(at 151.13 96.52 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "55d0a292-717b-43d0-adf1-b896304c7c3d")
 		)
@@ -9816,6 +10025,17 @@
 			)
 		)
 		(property "Description" "test point"
+			(at 27.94 115.57 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "N/A"
 			(at 27.94 115.57 0)
 			(hide yes)
 			(show_name no)
@@ -9904,6 +10124,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "P5.10KHCT-ND"
+			(at 20.32 31.75 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "52b02d75-5841-4980-b98b-86fce5193fbc")
 		)
@@ -9976,6 +10207,17 @@
 			)
 		)
 		(property "Description" "test point"
+			(at 273.05 39.37 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "N/A"
 			(at 273.05 39.37 0)
 			(hide yes)
 			(show_name no)
@@ -10143,6 +10385,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 27.94 104.14 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "dab4d505-20a2-4c44-b7df-b770c9cbfb7b")
 		)
@@ -10300,6 +10553,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 39.37 104.14 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "63ecfdd9-7569-4a7b-acc7-54c0de8c252b")
 		)
@@ -10380,6 +10644,17 @@
 			)
 		)
 		(property "Sim.Pins" "1=K 2=A"
+			(at 265.43 92.71 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "1080-1582-1-ND"
 			(at 265.43 92.71 0)
 			(hide yes)
 			(show_name no)
@@ -10628,6 +10903,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "A129679CT-ND"
+			(at 236.22 68.58 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "5b6a69cc-b9d5-47a4-9a21-eab20fc5430c")
 		)
@@ -10700,6 +10986,17 @@
 			)
 		)
 		(property "Description" "test point"
+			(at 26.67 73.66 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "N/A"
 			(at 26.67 73.66 0)
 			(hide yes)
 			(show_name no)
@@ -10789,6 +11086,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 254 39.37 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "bb940244-a2db-41fe-b5d7-173e01036b26")
 		)
@@ -10855,6 +11163,17 @@
 			)
 		)
 		(property "Description" "Generic connectable mounting pin connector, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 227.33 27.94 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "455-SM03B-SRSS-TBCT-ND"
 			(at 227.33 27.94 0)
 			(hide yes)
 			(show_name no)
@@ -10943,6 +11262,17 @@
 			)
 		)
 		(property "Description" "test point"
+			(at 17.78 90.17 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "N/A"
 			(at 17.78 90.17 0)
 			(hide yes)
 			(show_name no)
@@ -11230,6 +11560,17 @@
 				(justify bottom)
 			)
 		)
+		(property "DigiKey" "609-10155435-00011LFCT-ND"
+			(at 41.91 43.18 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "A1_B12"
 			(uuid "dc8a6fd8-c807-4ab0-9667-36d82cb487c9")
 		)
@@ -11509,6 +11850,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "P1.00KHCT-ND"
+			(at 265.43 68.58 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "f83deca7-2935-40f3-9208-4ec3bb72afe2")
 		)
@@ -11669,6 +12021,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "P1.00KHCT-ND"
+			(at 265.43 86.36 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "49cb333c-769a-46f1-8a96-de0b7558bff9")
 		)
@@ -11741,6 +12104,17 @@
 			)
 		)
 		(property "Description" "Mounting Hole without connection"
+			(at 33.02 133.35 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "N/A"
 			(at 33.02 133.35 0)
 			(hide yes)
 			(show_name no)
@@ -11838,6 +12212,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "1080-1582-1-ND"
+			(at 250.19 92.71 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "2"
 			(uuid "e5d9dcd7-62e3-4c92-9068-6e0d6dad8e78")
 		)
@@ -11910,6 +12295,17 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor, small symbol"
+			(at 86.36 27.94 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "399-C0603C104K5RACTUCT-ND"
 			(at 86.36 27.94 0)
 			(hide yes)
 			(show_name no)
@@ -12000,6 +12396,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "1276-CL21A475KAQNNNECT-ND"
+			(at 119.38 81.28 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "9537ad43-bda1-4db5-bacf-dd340433f681")
 		)
@@ -12069,6 +12476,17 @@
 			)
 		)
 		(property "Description" "Generic connectable mounting pin connector, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 227.33 45.72 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "455-SM03B-SRSS-TBCT-ND"
 			(at 227.33 45.72 0)
 			(hide yes)
 			(show_name no)
@@ -12167,6 +12585,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "399-C0603C103K5RACTUCT-ND"
+			(at 139.7 29.21 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "2"
 			(uuid "ddb3c2f9-aa6a-419b-b10a-c198a3158af3")
 		)
@@ -12239,6 +12668,17 @@
 			)
 		)
 		(property "Description" "test point"
+			(at 264.16 39.37 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "N/A"
 			(at 264.16 39.37 0)
 			(hide yes)
 			(show_name no)
@@ -12716,6 +13156,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "P1.00KHCT-ND"
+			(at 274.32 111.76 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "2"
 			(uuid "ec4c6d4f-45c2-4d26-b713-05cf271ebf9d")
 		)
@@ -12798,6 +13249,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "P1.00KHCT-ND"
+			(at 250.19 86.36 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "011066bc-8362-44a6-b032-a5e5f1ee0471")
 		)
@@ -12870,6 +13332,17 @@
 			)
 		)
 		(property "Description" "test point"
+			(at 35.56 73.66 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "N/A"
 			(at 35.56 73.66 0)
 			(hide yes)
 			(show_name no)
@@ -13036,6 +13509,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 16.51 104.14 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "670408d6-ab16-444a-9900-c6a334e59943")
 		)
@@ -13181,6 +13665,17 @@
 			)
 		)
 		(property "Description" "test point"
+			(at 256.54 21.59 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "N/A"
 			(at 256.54 21.59 0)
 			(hide yes)
 			(show_name no)
@@ -13348,6 +13843,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "N/A"
+			(at 16.51 115.57 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "d9bad80e-6e20-4db0-b623-bea439ff8f63")
 		)
@@ -13436,6 +13942,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "160-1909-1-ND"
+			(at 266.7 111.76 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "1bd0a1c3-1563-411b-99ac-a6fff7195ac7")
 		)
@@ -13510,6 +14027,17 @@
 			)
 		)
 		(property "Description" "Very low capacitance ESD protection diode, 2 data-line, SOT-23-6"
+			(at 86.36 43.18 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "497-5235-1-ND"
 			(at 86.36 43.18 0)
 			(hide yes)
 			(show_name no)
@@ -13682,6 +14210,17 @@
 			)
 		)
 		(property "Description" "Multiprotocol BLE/ANT/2.4 GHz/802.15.4 Cortex-M4F SoC, nRF52840 module"
+			(at 111.76 135.89 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "3271-MDBT50Q-U1MV2-ND"
 			(at 111.76 135.89 0)
 			(hide yes)
 			(show_name no)
@@ -13968,6 +14507,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "1080-1582-1-ND"
+			(at 265.43 74.93 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "2"
 			(uuid "6a7f264c-13e9-4818-8190-8275c320ee3a")
 		)
@@ -14037,6 +14587,17 @@
 			)
 		)
 		(property "Description" "Resistor, small symbol"
+			(at 95.25 45.72 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "311-27.0HRCT-ND"
 			(at 95.25 45.72 0)
 			(hide yes)
 			(show_name no)
@@ -14208,6 +14769,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "399-8728-1-ND"
+			(at 151.13 106.68 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "39b61c4e-9d83-446e-b26d-bd1242b20289")
 		)
@@ -14367,6 +14939,17 @@
 				)
 			)
 		)
+		(property "DigiKey" "497-4257-1-ND"
+			(at 127 26.67 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "2"
 			(uuid "722994cb-b0c5-4ef1-992e-3e878b20c7b4")
 		)
@@ -14446,6 +15029,17 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor, small symbol"
+			(at 104.14 81.28 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "DigiKey" "1276-2402-1-ND"
 			(at 104.14 81.28 0)
 			(hide yes)
 			(show_name no)
