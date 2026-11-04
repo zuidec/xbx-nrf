@@ -3,21 +3,23 @@
 #
 # Usage (from anywhere; starts the pinned SDK toolchain itself if needed):
 #   ./build.sh <target> [-r] [-f <device>] [extra west build args]
-#   ./build.sh <xbx-nrf|xbx-dongle>-bootloader [-f swd]
+#   ./build.sh <xbx-controller|xbx-dongle>-bootloader [-f swd [--hex <file>]]
 #
 # Targets: board, folder in the app (xbx-nrf/ or dongle/)
-#   xbx-nrf               xbx_controller/nrf52840/uf2      build/
-#   xbx-nrf-promicro      promicro_nrf52840/nrf52840/uf2   build-promicro/ (test)
-#   xbx-dongle            xbx_dongle/nrf52840/uf2          build/
-#   xbx-dongle-pca10059   nrf52840dongle/nrf52840          build-pca10059/
-#   *-bootloader          bootloader/build.sh (UF2 bootloader, own options)
+#   xbx-controller            xbx_controller/nrf52840/uf2      build/
+#   xbx-controller-promicro   promicro_nrf52840/nrf52840/uf2   build-promicro/ (test)
+#   xbx-dongle                xbx_dongle/nrf52840/uf2          build/
+#   xbx-dongle-pca10059       nrf52840dongle/nrf52840          build-pca10059/
+#   *-bootloader              bootloader/build.sh (UF2 bootloader, own options)
+#   Old names still work: xbx-nrf, xbx-nrf-promicro, xbx-nrf-bootloader.
 #
-#   e.g. ./build.sh xbx-nrf -p                       # pristine rebuild
-#        ./build.sh xbx-nrf -f swd                   # build + flash app over SWD
+#   e.g. ./build.sh xbx-controller -p                # pristine rebuild
+#        ./build.sh xbx-controller -f swd            # build + flash app over SWD
 #        ./build.sh xbx-dongle -f /dev/sdX           # build + flash, UF2 drive
 #        ./build.sh xbx-dongle-pca10059 -f /dev/ttyACM0
 #        ./build.sh xbx-dongle -r                    # release build
 #        ./build.sh xbx-dongle-bootloader -f swd     # its bootloader (erases all)
+#        ./build.sh xbx-controller-bootloader -f swd --hex <file>  # downloaded
 #
 # -r / --release adds the app's release.conf (no USB console, no logs) and
 # builds into the target's folder with -release added.
@@ -34,13 +36,20 @@ set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# bootloader targets: before the toolchain start, which --hex doesn't need
+case "${1:-}" in
+xbx-controller-bootloader | xbx-nrf-bootloader)
+	shift; exec "$script_dir/bootloader/build.sh" xbx_controller "$@" ;;
+xbx-dongle-bootloader) shift; exec "$script_dir/bootloader/build.sh" xbx_dongle "$@" ;;
+esac
+
 # shellcheck source=check-sdk.sh
 source "$script_dir/check-sdk.sh"
 xbx_relaunch_in_toolchain "$script_dir" "$script_dir/$(basename "${BASH_SOURCE[0]}")" "$@"
 
 usage() {
-	echo "usage: $0 <xbx-nrf|xbx-nrf-promicro|xbx-dongle|xbx-dongle-pca10059> [-r] [-f <device>] [extra west build args]" >&2
-	echo "       $0 <xbx-nrf|xbx-dongle>-bootloader [-f swd]" >&2
+	echo "usage: $0 <xbx-controller|xbx-controller-promicro|xbx-dongle|xbx-dongle-pca10059> [-r] [-f <device>] [extra west build args]" >&2
+	echo "       $0 <xbx-controller|xbx-dongle>-bootloader [-f swd [--hex <file>]]" >&2
 	exit 2
 }
 
@@ -49,12 +58,14 @@ target="$1"
 shift
 
 case "$target" in
-xbx-nrf-bootloader)    exec "$script_dir/bootloader/build.sh" xbx_controller "$@" ;;
-xbx-dongle-bootloader) exec "$script_dir/bootloader/build.sh" xbx_dongle "$@" ;;
-xbx-nrf)             app=xbx-nrf; board="xbx_controller/nrf52840/uf2"; build_name=build ;;
-xbx-nrf-promicro)    app=xbx-nrf; board="promicro_nrf52840/nrf52840/uf2"; build_name=build-promicro ;;
-xbx-dongle)          app=dongle; board="xbx_dongle/nrf52840/uf2"; build_name=build ;;
-xbx-dongle-pca10059) app=dongle; board="nrf52840dongle/nrf52840"; build_name=build-pca10059 ;;
+xbx-controller | xbx-nrf)
+	app=xbx-nrf; board="xbx_controller/nrf52840/uf2"; build_name=build ;;
+xbx-controller-promicro | xbx-nrf-promicro)
+	app=xbx-nrf; board="promicro_nrf52840/nrf52840/uf2"; build_name=build-promicro ;;
+xbx-dongle)
+	app=dongle; board="xbx_dongle/nrf52840/uf2"; build_name=build ;;
+xbx-dongle-pca10059)
+	app=dongle; board="nrf52840dongle/nrf52840"; build_name=build-pca10059 ;;
 *) usage ;;
 esac
 
