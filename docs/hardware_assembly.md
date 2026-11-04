@@ -23,15 +23,16 @@ notes: [hardware](hardware.md). Once built:
 
 Each board has its own release, from the
 [PCB releases](https://github.com/zuidec/xbx-nrf/releases?q=pcb&expanded=true):
-`xbx-controller-pcb-<rev>.zip` and `xbx-dongle-pcb-<rev>.zip`. Each holds:
+`xbx-controller-pcb-<rev>.zip` and `xbx-dongle-pcb-<rev>.zip`. Each file in
+them starts with the board and revision, e.g. `XBX-NRF_Gamepad_Rev1.1_`:
 
 | File | For |
 |---|---|
-| `gerbers.zip` | Upload to the PCB fab |
-| `bom.csv` | Parts, with DigiKey part numbers |
-| `positions.csv` | Part positions (pick and place) |
-| `netlist.ipc` | Optional: the fab's electrical test |
-| `ibom.html` | Interactive BOM for placing parts (see below) |
+| `…_gerbers.zip` | Upload to the PCB fab |
+| `…_bom-digikey.csv` | Parts, with DigiKey part numbers |
+| `…_positions.csv` | Part positions (pick and place) |
+| `…_netlist.ipc` | Optional: the fab's electrical test |
+| `…_ibom.html` | Interactive BOM for placing parts (see below) |
 
 Building from the KiCad projects instead: export them with KiCad's
 fabrication outputs and the InteractiveHtmlBom plugin.
@@ -43,7 +44,7 @@ fabrication outputs and the InteractiveHtmlBom plugin.
 | Controller | `pcb/xbx-nrf/` | 4 | 1.6 mm | ENIG |
 | Dongle | `pcb/xbx-nrf-dongle/` | 2 | 1.6 mm | Any (HASL is fine) |
 
-1. Upload `gerbers.zip` to any PCB fab (JLCPCB, PCBWay, OSH Park, ...) with
+1. Upload `…_gerbers.zip` to any PCB fab (JLCPCB, PCBWay, OSH Park, ...) with
    the settings above; everything else at the fab's defaults. For the
    controller, **ENIG is highly recommended**: flat pads make the module and
    its other fine-pitch parts much easier to solder.
@@ -85,7 +86,7 @@ SQ1–SQ8 ([Motor wires](teardown.md#motor-wires-bottom-board)).
 
 ## Part placement
 
-Open the release's `ibom.html` in a browser; it works offline. Click a BOM
+Open the release's `…_ibom.html` in a browser; it works offline. Click a BOM
 line to highlight its parts on the board, and tick parts off as you place
 them.
 

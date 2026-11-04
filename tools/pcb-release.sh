@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # PCB release zip for one board, into <out dir>:
 #   xbx-<board>-pcb-rev<REV>.zip  Gerbers, BOM, positions, netlist, iBOM
+# Every file in it is named after the Gerber zip (<title>_Rev<REV>_*), so
+# files from different boards or revisions can't get mixed up.
 #
 # Usage: tools/pcb-release.sh <controller|dongle> <out dir>
 # Needs, exported from the committed board (both untracked; their dates are
@@ -83,24 +85,32 @@ stage="$out/.$name"
 rm -rf "$stage"
 mkdir -p "$stage/$name"
 trap 'rm -rf "$stage"' EXIT
-cp "$gerbers" "$stage/$name/gerbers.zip"
-cp "$bom" "$stage/$name/bom.csv"
-cp "$positions" "$stage/$name/positions.csv"
-cp "$netlist" "$stage/$name/netlist.ipc"
-cp "$ibom" "$stage/$name/ibom.html"
-cp "$repo/LICENSES/CERN-OHL-S-2.0.txt" "$stage/$name/LICENSE.txt"
-cat >"$stage/$name/README.txt" <<EOF
+# every file named for its board and revision, e.g. XBX-NRF_Gamepad_Rev1.1_*
+p="$stage/$name/$(basename "$gerbers" .zip)"
+cp "$gerbers" "${p}_gerbers.zip"
+cp "$bom" "${p}_bom-digikey.csv"
+cp "$positions" "${p}_positions.csv"
+cp "$netlist" "${p}_netlist.ipc"
+cp "$ibom" "${p}_ibom.html"
+cp "$repo/LICENSES/CERN-OHL-S-2.0.txt" "${p}_LICENSE.txt"
+p=$(basename "$p")
+cat >"$stage/$name/${p}_README.txt" <<EOF
 xbx-nrf $board PCB, Rev$rev (from commit $commit)
 
-gerbers.zip    Upload to the PCB fab
-bom.csv        Parts, with DigiKey part numbers
-positions.csv  Part positions (pick and place)
-netlist.ipc    Optional: the fab's electrical test
-ibom.html      Interactive BOM: open in a browser to place parts
+${p}_gerbers.zip
+    Upload to the PCB fab
+${p}_bom-digikey.csv
+    Parts, with DigiKey part numbers
+${p}_positions.csv
+    Part positions (pick and place)
+${p}_netlist.ipc
+    Optional: the fab's electrical test
+${p}_ibom.html
+    Interactive BOM: open in a browser to place parts
 
 Assembly guide: https://github.com/zuidec/xbx-nrf/blob/main/docs/hardware_assembly.md
 
-Copyright (c) 2026 zuidec. Licensed under CERN-OHL-S-2.0 (LICENSE.txt).
+Copyright (c) 2026 zuidec. Licensed under CERN-OHL-S-2.0 (${p}_LICENSE.txt).
 Source location: https://github.com/zuidec/xbx-nrf (pcb/$project/)
 EOF
 
