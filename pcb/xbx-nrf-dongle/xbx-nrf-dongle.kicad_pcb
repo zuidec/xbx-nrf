@@ -8,7 +8,7 @@
 	)
 	(paper "A5")
 	(title_block
-		(title "XBX-NRF Gamepad Dongle PCB Layout")
+		(title "XBX-NRF Gamepad Dongle")
 		(date "2026-10-02")
 		(rev "${REV}")
 	)
@@ -98,6 +98,7 @@
 		)
 		(capping no)
 		(filling no)
+		(zone_defaults)
 		(pcbplotparams
 			(layerselection 0x00000000_00000000_55555555_57555571)
 			(plot_on_all_layers_selection 0x00000000_00000000_00000000_00000000)
