@@ -3,9 +3,7 @@
 name: Configurator (Windows)
 
 on:
-  workflow_dispatch: # "Run workflow" button, once this file is on main
-  push:
-    branches: [ci-windows] # test branch: every push builds
+  workflow_dispatch: # manual only: "Run workflow" (Actions tab) or gh workflow run
 
 jobs:
   build:
