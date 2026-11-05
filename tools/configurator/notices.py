@@ -21,11 +21,12 @@ WINDOWS_TEXTS = os.path.join(HERE, "licenses", "windows")
 
 # Windows DLLs PyInstaller may bundle from python.org's Python, all covered by
 # the texts below; any other DLL stops the build until it has a notice
-WINDOWS_DLLS = re.compile(r"(python3\d*|vcruntime140(_1)?|libcrypto-3(-x64)?|libssl-3(-x64)?"
-                          r"|libffi-\d+|tcl86t|tk86t)\.dll", re.IGNORECASE)
+WINDOWS_DLLS = re.compile(r"(python3\d*|vcruntime140(_1)?|ucrtbase|api-ms-win-[a-z0-9-]+"
+                          r"|libcrypto-3(-x64)?|libssl-3(-x64)?|libffi-\d+|tcl86t|tk86t)\.dll",
+                          re.IGNORECASE)
 WINDOWS_TEXT_ORDER = [  # (section title, file in licenses/windows/)
     ("Python: incorporated software", "python-incorporated.txt"),
-    ("Microsoft C runtime (VCRUNTIME140.dll)", "msvc-runtime.txt"),
+    ("Microsoft C runtime (VCRUNTIME140, UCRT)", "msvc-runtime.txt"),
     ("OpenSSL", "openssl.txt"),
     ("libffi", "libffi.txt"),
     ("Tcl", "tcl.txt"),
@@ -113,7 +114,7 @@ def windows(binaries):
     hidapi = metadata.version("hidapi")
     rows = [
         (f"Python {ver}, incorporated code", "PSF-2.0 and others, below"),
-        ("Microsoft C runtime", "Microsoft Distributable Code terms"),
+        ("Microsoft C runtime (VCRUNTIME140, UCRT)", "Microsoft Distributable Code terms"),
         ("OpenSSL 3", "Apache-2.0"),
         ("libffi", "MIT"),
         ("Tcl/Tk 8.6", "TCL"),
@@ -121,9 +122,10 @@ def windows(binaries):
         (f"hidapi {hidapi}", "its license files, below"),
         ("PyInstaller bootloader", "GPL-2.0-or-later WITH Bootloader-exception"),
     ]
+    width = max(len(c) for c, _lic in rows) + 3
     out = [(f"Third-party software in the xbx-nrf configurator (Windows binary)\n"
             f"Built with PyInstaller and python.org's Python {ver} for Windows.\n\n" +
-            "".join(f"  {c:<37}{lic}\n" for c, lic in rows)).encode()]
+            "".join(f"  {c:<{width}}{lic}\n" for c, lic in rows)).encode()]
     out += [section(f"Python {ver}"), read(os.path.join(base, "LICENSE.txt"))]
     for title, name in WINDOWS_TEXT_ORDER:
         out += [section(title), read(os.path.join(WINDOWS_TEXTS, name))]
