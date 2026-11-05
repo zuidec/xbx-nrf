@@ -1,5 +1,5 @@
-# Windows configurator build: tools/configurator/build.sh in Git Bash; the
-# .exe is attached to the run as an artifact.
+# Windows configurator build: tools/configurator/build.sh in Git Bash. The
+# .exe and its third-party notices are attached to the run as an artifact.
 name: Configurator (Windows)
 
 on:
@@ -20,8 +20,12 @@ jobs:
         run: tools/configurator/build.sh
         env:
           PYTHON: python # no python3 on Windows
+      - name: Third-party notices
+        run: tools/release-notices.sh tools/configurator/output configurator
       - uses: actions/upload-artifact@v4
         with:
           name: xbx-config-windows
-          path: tools/configurator/output/*.exe
+          path: |
+            tools/configurator/output/*.exe
+            tools/configurator/output/THIRD-PARTY-NOTICES-configurator-windows.txt
           if-no-files-found: error

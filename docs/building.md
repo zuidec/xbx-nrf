@@ -257,12 +257,15 @@ matching numbers.
 - **Release:** bump the version in its own commit (e.g.
   `Controller: version 0.6.0`), then an annotated tag on that commit:
   `git tag -a controller-v0.6.0 -m "<what's new>"`.
-- **Release binaries:** attach the `-r` firmware build or the `--release`
-  configurator, and the notices for the third-party code inside them:
-  `tools/release-notices.sh <out dir>` writes
-  `THIRD-PARTY-NOTICES-firmware.txt` and
-  `THIRD-PARTY-NOTICES-configurator.txt`. The notes link the tag as the
-  source (MPL-2.0).
+- **Release binaries:** attach the `-r` firmware build or the configurator
+  (Linux `--release`, Windows `.exe`), and the notices for the third-party
+  code inside them. After the builds,
+  `tools/release-notices.sh <out dir> [firmware] [configurator]` writes
+  `THIRD-PARTY-NOTICES-firmware.txt` and, for this OS's configurator build,
+  `THIRD-PARTY-NOTICES-configurator.txt` (Linux) or
+  `THIRD-PARTY-NOTICES-configurator-windows.txt` (Windows). The
+  Configurator (Windows) workflow builds the `.exe` and runs it (Actions →
+  Run workflow). The notes link the tag as the source (MPL-2.0).
 - **Bootloader revision:** bump `REVISION` for any change to our board files
   or a fix; a new upstream tag sets `UPSTREAM` and `REVISION = 1`. It shows
   in the drive's `INFO_UF2.TXT` (`UF2 Bootloader 0.11.0-xbx.1`).
