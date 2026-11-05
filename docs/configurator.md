@@ -118,6 +118,8 @@ app asks the user to mount it.
   Windows and macOS have nothing. Then delete the app file. Firmware
   updates write only to the device's drive, and the one-file build unpacks
   into a temporary folder that it deletes on exit.
+- **About:** Help → About shows the version, the license and source, and
+  the third-party notices bundled in the build ([Building](#building)).
 
 ### Building
 
@@ -140,6 +142,13 @@ ending in `.1` reads as a man page to file managers, which then won't run it.
   The bundle's contents: `xbx-config.spec`; the container: `Containerfile`.
 - Linux: fontconfig and freetype aren't bundled; the system's are used (a
   bundled older fontconfig warns about newer config files).
+- Third-party notices: `notices.py`, run by the spec, makes them from what
+  PyInstaller bundles. Linux `--release`: the Debian packages' copyright
+  files. Windows: Python's `LICENSE.txt` and the texts in
+  `licenses/windows/` (what python.org's installer ships; their sources are
+  on each file's first line). They go into the binary (Help → About) and
+  next to it in `output/`. A Windows DLL without a notice stops the build;
+  `-local` builds carry only a pointer to the releases.
 - PyInstaller doesn't cross-build: each OS and CPU builds its own. Linux
   tested. Windows: the GitHub Actions workflow
   (`.github/workflows/configurator-windows.yml`) runs `build.sh` in Git Bash

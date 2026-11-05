@@ -3,7 +3,7 @@ on USB and follows plugging and unplugging."""
 
 import threading
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import messagebox, scrolledtext, ttk
 
 from .. import __version__, files, transport
 from .. import device as dev
@@ -99,6 +99,9 @@ class App(tk.Tk):
         file_menu.add_separator()
         file_menu.add_command(label="Quit", command=self.quit_app)
         menubar.add_cascade(label="File", menu=file_menu)
+        help_menu = tk.Menu(menubar, tearoff=False)
+        help_menu.add_command(label="About...", command=self.about)
+        menubar.add_cascade(label="Help", menu=help_menu)
         self.configure(menu=menubar)
         self.book = ttk.Notebook(self)
         self.book.pack(fill="both", expand=True, padx=8, pady=8)
@@ -236,6 +239,25 @@ class App(tk.Tk):
                     "xbx-config", f"Removed.\n\n{rest}", parent=self))
 
         threading.Thread(target=run, daemon=True).start()
+
+    def about(self):
+        dlg = tk.Toplevel(self)
+        dlg.title("About xbx-config")
+        dlg.transient(self)
+        frame = ttk.Frame(dlg, padding=12)
+        frame.pack(fill="both", expand=True)
+        ttk.Label(frame, justify="left", text=(
+            f"xbx-nrf configurator {__version__}\n"
+            "Copyright (c) 2026 zuidec. Licensed under MPL-2.0.\n"
+            "Source: https://github.com/zuidec/xbx-nrf\n\n"
+            "Third-party software in this program and its licenses:")).pack(anchor="w")
+        text = scrolledtext.ScrolledText(frame, width=90, height=28, wrap="none",
+                                         font="TkFixedFont")
+        text.insert("1.0", files.notices() or "Running from source: the third-party "
+                    "notices come with the built program (build.sh).")
+        text.configure(state="disabled")
+        text.pack(fill="both", expand=True, pady=(8, 0))
+        ttk.Button(frame, text="Close", command=dlg.destroy).pack(anchor="e", pady=(12, 0))
 
     def tick(self):
         for tab in self.tabs.values():

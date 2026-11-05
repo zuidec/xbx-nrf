@@ -8,6 +8,7 @@ import sys
 import tempfile
 
 UDEV_RULE = "70-xbx-nrf.rules"
+NOTICES = "THIRD-PARTY-NOTICES.txt"  # made by the build (notices.py)
 UDEV_DIR = "/etc/udev/rules.d"
 
 # SDL mapping with Share and the paddles (HID mode; docs/protocol.md), for the
@@ -24,6 +25,15 @@ def path(name):
     """A bundled file: next to the package, or in PyInstaller's unpack dir."""
     base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     return os.path.join(base, "files", name)
+
+
+def notices():
+    """The build's third-party notices; None when run from source."""
+    try:
+        with open(path(NOTICES), encoding="utf-8", errors="replace") as f:
+            return f.read()
+    except OSError:
+        return None
 
 
 def udev_rule_installed():
