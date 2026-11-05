@@ -119,9 +119,9 @@ EOF
 }
 
 # --- configurator, Windows --------------------------------------------------
-# python.org's Python (its LICENSE.txt covers the libraries its Windows build
-# ships: OpenSSL, libffi, zlib, ...), its Tcl/Tk, hidapi, the PyInstaller
-# bootloader and the MSVC runtime.
+# python.org's Python: its LICENSE.txt covers the libraries its Windows build
+# ships (OpenSSL, libffi, zlib, ...), Tcl/Tk (no separate license.terms) and
+# usually the MSVC runtime. Plus hidapi and the PyInstaller bootloader.
 configurator_windows() {
 	local venv="$cfg/build/release/venv"
 	local site="$venv/Lib/site-packages"
@@ -139,12 +139,22 @@ configurator_windows() {
 	local pyinst=("$site"/pyinstaller-*.dist-info/licenses/COPYING.txt)
 	local hidlic=("$site"/hidapi-*.dist-info/licenses/* "$site"/hidapi-*.dist-info/LICENSE*)
 	shopt -u nullglob
-	need "$base/LICENSE.txt" "${tcl[0]:-$base/tcl/tcl8*/license.terms}" \
-		"${tk[0]:-$base/tcl/tk8*/license.terms}" \
+	need "$base/LICENSE.txt" \
 		"${pyinst[0]:-$site/pyinstaller-*.dist-info/licenses/COPYING.txt}" \
 		"${hidlic[0]:-$site/hidapi-*.dist-info/LICENSE*}"
 	grep -qi openssl "$base/LICENSE.txt" ||
 		{ echo "error: no OpenSSL in $base/LICENSE.txt" >&2; exit 1; }
+	# Tcl/Tk: their own license.terms if this Python has them, else in LICENSE.txt
+	local tcltk="its own license.terms, below"
+	if [ ${#tcl[@]} -eq 0 ] || [ ${#tk[@]} -eq 0 ]; then
+		grep -q "Sun Microsystems, Inc., Scriptics Corporation" "$base/LICENSE.txt" ||
+			{ echo "error: no Tcl/Tk license in $base/LICENSE.txt or tcl/*/license.terms" >&2; exit 1; }
+		tcltk="in Python's section"
+		tcl=() tk=()
+	fi
+	local crt="redistributed under the Microsoft Visual C++ Redistributable license"
+	grep -q "Microsoft Distributable Code" "$base/LICENSE.txt" &&
+		crt="Python's section includes its terms"
 	{
 		cat <<EOF
 Third-party software in the xbx-nrf configurator (Windows binary)
@@ -153,19 +163,20 @@ Built with PyInstaller and python.org's Python $pyver for Windows.
 - Python $pyver: PSF-2.0. Its Windows build bundles libraries (OpenSSL,
   libffi, zlib, bzip2, xz, expat, ...) whose licenses follow Python's in
   the same section below.
-- Tcl/Tk 8.6: Tcl/Tk license, below.
+- Tcl/Tk 8.6: Tcl/Tk license, $tcltk.
 - hidapi $hidver (Python module and HIDAPI library): its license files,
   below.
 - PyInstaller bootloader: GPL-2.0-or-later WITH Bootloader-exception, below.
-- Microsoft Visual C++ runtime (VCRUNTIME140.dll): redistributed under the
-  Microsoft Visual C++ Redistributable license.
+- Microsoft Visual C++ runtime (VCRUNTIME140.dll): $crt.
 EOF
 		section "Python $pyver and its bundled libraries"
 		cat "$base/LICENSE.txt"
-		section "Tcl"
-		cat "${tcl[0]}"
-		section "Tk"
-		cat "${tk[0]}"
+		if [ ${#tcl[@]} -gt 0 ]; then
+			section "Tcl"
+			cat "${tcl[0]}"
+			section "Tk"
+			cat "${tk[0]}"
+		fi
 		section "hidapi $hidver"
 		local f
 		for f in "${hidlic[@]}"; do
