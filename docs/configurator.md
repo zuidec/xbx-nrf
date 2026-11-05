@@ -1,7 +1,7 @@
 ---
 title: Configurator
 created: 2026-10-31
-updated: 2026-11-03
+updated: 2026-11-04
 tags:
   - xbx-nrf
   - firmware
@@ -111,7 +111,8 @@ app asks the user to mount it.
 - **Install:** File → Install files offers what's missing, one checkbox
   each (CLI `install-udev`, `install-sdl-mapping`).
 - **macOS:** unsigned: right-click → Open the first time.
-- **Windows:** no driver needed.
+- **Windows:** no driver needed. The `.exe` from CI (below) runs under Wine
+  and connects to both devices; not yet tested on Windows itself.
 - **Uninstall:** File → Remove installed files (CLI `uninstall`) removes what
   the app put on the system: the Linux udev rule and SDL mapping files;
   Windows and macOS have nothing. Then delete the app file. Firmware
@@ -140,7 +141,9 @@ ending in `.1` reads as a man page to file managers, which then won't run it.
 - Linux: fontconfig and freetype aren't bundled; the system's are used (a
   bundled older fontconfig warns about newer config files).
 - PyInstaller doesn't cross-build: each OS and CPU builds its own. Linux
-  tested; Windows (Git Bash) and macOS later.
+  tested. Windows: the GitHub Actions workflow
+  (`.github/workflows/configurator-windows.yml`) runs `build.sh` in Git Bash
+  and attaches the `.exe` to the run. macOS later.
 
 ## USB channel
 

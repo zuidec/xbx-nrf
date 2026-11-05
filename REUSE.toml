@@ -2,9 +2,9 @@
 # Full license texts: LICENSES/. Summary: LICENSE.
 version = 1
 
-# Firmware, tools and repo config
+# Firmware, tools, CI and repo config
 [[annotations]]
-path = ["firmware/**", "tools/**", ".gitignore", "REUSE.toml"]
+path = ["firmware/**", "tools/**", ".github/**", ".gitignore", "REUSE.toml"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 zuidec"
 SPDX-License-Identifier = "MPL-2.0"
