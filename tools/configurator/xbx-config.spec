@@ -23,7 +23,8 @@ SYSTEM_LIBS = ("libfontconfig.so", "libfreetype.so", "libpng16.so", "libbrotlico
 a = Analysis(
     [os.path.join(here, "xbx-config.py")],
     pathex=[here],
-    datas=[(os.path.join(here, "files"), "files")],  # installed as is (udev rule, SDL mapping)
+    datas=[(os.path.join(here, "files"), "files"),  # installed as is (udev rule, SDL mapping)
+           (os.path.join(here, "themes"), "themes")],  # color themes (gui/theme.py)
     hiddenimports=collect_submodules("xbxconfig"),  # imported lazily (cli / gui)
 )
 if sys.platform == "linux":

@@ -50,7 +50,7 @@ so fixing one means editing that file.
 | `device.py` | Requests; a reader thread splits responses from `STREAM` reports |
 | `uf2.py` | File check (marker), bootloader drive, the update |
 | `files.py` | Bundled files: udev rule and SDL mapping, install and uninstall |
-| `cli.py`, `gui/` | CLI; window (`app.py`, `panels.py`, `widgets.py`) |
+| `cli.py`, `gui/` | CLI; window (`app.py`, `panels.py`, `widgets.py`, `theme.py`) |
 
 Finds devices by VID `0x1209`, the app PIDs (`0x0001`–`0x0004`) and the
 channel's usage page; lists every one found.
@@ -114,12 +114,27 @@ app asks the user to mount it.
 - **Windows:** no driver needed. The `.exe` from CI (below) runs under Wine
   and connects to both devices; not yet tested on Windows itself.
 - **Uninstall:** File → Remove installed files (CLI `uninstall`) removes what
-  the app put on the system: the Linux udev rule and SDL mapping files;
-  Windows and macOS have nothing. Then delete the app file. Firmware
-  updates write only to the device's drive, and the one-file build unpacks
-  into a temporary folder that it deletes on exit.
+  the app put on the system: `settings.toml` if there is one, and on Linux
+  the udev rule and SDL mapping files; your own themes stay. Then delete the
+  app file. Firmware updates write only to the device's drive, and the
+  one-file build unpacks into a temporary folder that it deletes on exit.
 - **About:** Help → About shows the version, the license and source, and
   the third-party notices bundled in the build ([Building](#building)).
+- **Theme:** View → Theme picks a theme, from the next start; the choice is
+  kept in `settings.toml` in the app's folder (Linux `~/.config/xbx-nrf/`,
+  Windows `%APPDATA%\xbx-nrf\`, macOS
+  `~/Library/Application Support/xbx-nrf/`). Built in: light, dark and
+  gruvbox (`tools/configurator/themes/`). Your own go in that folder's
+  `themes/`, one `.toml` per theme, listed by file name; one named like a
+  built-in theme replaces it. Start from another theme and change a few
+  colors:
+  ```toml
+  base = "dark"
+  accent = "#ff8800"
+  ```
+  The keys and what they color: `themes/light.toml`. Unknown keys and bad
+  colors are skipped with a warning. Title bars, and on Windows the menu bar
+  and message boxes, keep the system's colors.
 
 ### Building
 

@@ -3,12 +3,12 @@ on USB and follows plugging and unplugging."""
 
 import threading
 import tkinter as tk
-from tkinter import messagebox, scrolledtext, ttk
+from tkinter import messagebox, ttk
 
 from .. import __version__, files, transport
 from .. import device as dev
 from .. import protocol as p
-from . import panels
+from . import panels, theme
 
 WATCH_MS = 1000
 TICK_MS = 33
@@ -82,11 +82,9 @@ class DeviceTab(ttk.Frame):
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
+        self.theme = tk.StringVar(value=theme.apply(self))  # before any widget
         self.title(f"xbx-nrf configurator {__version__}")
         self.minsize(720, 560)
-        style = ttk.Style(self)
-        if "clam" in style.theme_names():
-            style.theme_use("clam")
         self.updating = set()  # kinds in a firmware update: not reconnected meanwhile
         self.banner = ttk.Frame(self, padding=8)
         self.banner_text = ttk.Label(self.banner, text="", wraplength=520)
@@ -99,6 +97,14 @@ class App(tk.Tk):
         file_menu.add_separator()
         file_menu.add_command(label="Quit", command=self.quit_app)
         menubar.add_cascade(label="File", menu=file_menu)
+        view_menu = tk.Menu(menubar, tearoff=False)
+        theme_menu = tk.Menu(view_menu, tearoff=False)
+        for name in sorted(theme.available(), key=lambda n: (n not in ("light", "dark"),
+                                                             n != "light", n)):
+            theme_menu.add_radiobutton(label=name.capitalize(), value=name,
+                                       variable=self.theme, command=self.set_theme)
+        view_menu.add_cascade(label="Theme", menu=theme_menu)
+        menubar.add_cascade(label="View", menu=view_menu)
         help_menu = tk.Menu(menubar, tearoff=False)
         help_menu.add_command(label="About...", command=self.about)
         menubar.add_cascade(label="Help", menu=help_menu)
@@ -240,6 +246,16 @@ class App(tk.Tk):
 
         threading.Thread(target=run, daemon=True).start()
 
+    def set_theme(self):
+        try:
+            theme.select(self.theme.get())
+        except OSError as e:
+            messagebox.showerror("xbx-config", str(e), parent=self)
+            return
+        messagebox.showinfo("xbx-config", f"{self.theme.get().capitalize()} theme from the "
+                            f"next start. Your own themes go in {files.USER_THEMES}.",
+                            parent=self)
+
     def about(self):
         dlg = tk.Toplevel(self)
         dlg.title("About xbx-config")
@@ -251,12 +267,16 @@ class App(tk.Tk):
             "Copyright (c) 2026 zuidec. Licensed under MPL-2.0.\n"
             "Source: https://github.com/zuidec/xbx-nrf\n\n"
             "Third-party software in this program and its licenses:")).pack(anchor="w")
-        text = scrolledtext.ScrolledText(frame, width=90, height=28, wrap="none",
-                                         font="TkFixedFont")
+        box = ttk.Frame(frame)
+        box.pack(fill="both", expand=True, pady=(8, 0))
+        text = tk.Text(box, width=90, height=28, wrap="none", font="TkFixedFont")
+        bar = ttk.Scrollbar(box, command=text.yview)  # follows the theme; tk's doesn't
+        text.configure(yscrollcommand=bar.set)
+        bar.pack(side="right", fill="y")
+        text.pack(side="left", fill="both", expand=True)
         text.insert("1.0", files.notices() or "Running from source: the third-party "
                     "notices come with the built program (build.sh).")
         text.configure(state="disabled")
-        text.pack(fill="both", expand=True, pady=(8, 0))
         ttk.Button(frame, text="Close", command=dlg.destroy).pack(anchor="e", pady=(12, 0))
 
     def tick(self):

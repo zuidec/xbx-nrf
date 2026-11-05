@@ -12,6 +12,10 @@ ACCENT = "#1f6fd1"
 OK = "#2e9d4b"
 BAD = "#d13b2e"
 RAW = "#888888"
+ON_OK = "#ffffff"
+RANGE = "#cfe0f6"
+RANGE_BAD = "#f6d2cf"
+# the defaults; theme.py sets them from the chosen theme before the window
 
 ADC_MAX = 4095
 
@@ -82,7 +86,7 @@ class ButtonGrid(ttk.Frame):
         for name, lbl in self.labels.items():
             bit = p.BUTTONS.get(name)
             on = (buttons & bit) if bit else (ext & p.BUTTONS_EXT[name])
-            lbl.configure(bg=OK if on else BG, fg="white" if on else DIM)
+            lbl.configure(bg=OK if on else BG, fg=ON_OK if on else DIM)
 
 
 class CalStickView(tk.Canvas):
@@ -148,7 +152,7 @@ class CalTriggerView(tk.Canvas):
         self.m = 6
         self.create_text(width / 2, 48, text=title, fill=FG)
         self.create_rectangle(self.m, 10, width - self.m, 30, outline=DIM)
-        self.range = self.create_rectangle(0, 11, 0, 29, fill="#cfe0f6", outline="")
+        self.range = self.create_rectangle(0, 11, 0, 29, fill=RANGE, outline="")
         self.full = self.create_line(0, 6, 0, 34, fill=OK, width=2, dash=(3, 2))
         self.pos = self.create_line(0, 8, 0, 32, fill=ACCENT, width=3)
 
@@ -162,7 +166,7 @@ class CalTriggerView(tk.Canvas):
             return self.m + max(0, min(1, offset / span)) * (self.w - 2 * self.m)
 
         self.coords(self.range, x(0), 11, x(travel), 29)
-        self.itemconfigure(self.range, fill="#f6d2cf" if refused else "#cfe0f6")
+        self.itemconfigure(self.range, fill=RANGE_BAD if refused else RANGE)
         full = x(travel * full_pct / 100)
         self.coords(self.full, full, 6, full, 34)
         self.itemconfigure(self.full, state="normal" if travel > 0 else "hidden")

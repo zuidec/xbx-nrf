@@ -21,10 +21,30 @@ SDL_DB_PATH = os.path.join(_CONFIG, "xbx-nrf", SDL_DB)
 SDL_ENV_PATH = os.path.join(_CONFIG, "environment.d", "50-xbx-nrf.conf")
 
 
-def path(name):
-    """A bundled file: next to the package, or in PyInstaller's unpack dir."""
+def _app_dir():
+    """The app's settings folder."""
+    if sys.platform == "win32":
+        return os.path.join(os.environ.get("APPDATA") or os.path.expanduser("~"), "xbx-nrf")
+    if sys.platform == "darwin":
+        return os.path.expanduser("~/Library/Application Support/xbx-nrf")
+    return os.path.join(_CONFIG, "xbx-nrf")
+
+
+APP_DIR = _app_dir()
+SETTINGS_PATH = os.path.join(APP_DIR, "settings.toml")  # the chosen theme (gui/theme.py)
+USER_THEMES = os.path.join(APP_DIR, "themes")  # the user's own themes
+
+
+def bundled(name):
+    """A bundled file or folder: next to the package, or in PyInstaller's
+    unpack dir."""
     base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    return os.path.join(base, "files", name)
+    return os.path.join(base, name)
+
+
+def path(name):
+    """A bundled file to install (files/)."""
+    return os.path.join(bundled("files"), name)
 
 
 def notices():
@@ -123,12 +143,12 @@ def missing():
 
 
 def installed():
-    """What the app put on this system (paths): on Linux the udev rule and the
-    SDL mapping files. Windows and macOS: nothing (no driver, no settings
-    files)."""
-    if not sys.platform.startswith("linux"):
-        return []
-    paths = [os.path.join(UDEV_DIR, UDEV_RULE), SDL_DB_PATH, SDL_ENV_PATH]
+    """What the app put on this system (paths): settings.toml, if there is
+    one, and on Linux the udev rule and the SDL mapping files. No driver. The
+    user's own themes stay."""
+    paths = [SETTINGS_PATH]
+    if sys.platform.startswith("linux"):
+        paths += [os.path.join(UDEV_DIR, UDEV_RULE), SDL_DB_PATH, SDL_ENV_PATH]
     return [p for p in paths if os.path.exists(p)]
 
 
@@ -153,7 +173,7 @@ def uninstall():
         quoted = " ".join(f"'{p}'" for p in root)
         _as_root(f"rm -f {quoted} && {RELOAD}", f"removing {', '.join(root)}")
     try:
-        os.rmdir(os.path.dirname(SDL_DB_PATH))  # ours, if empty now
+        os.rmdir(APP_DIR)  # ours, if empty now
     except OSError:
         pass
     return paths

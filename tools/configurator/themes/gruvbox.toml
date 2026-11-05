@@ -1,0 +1,24 @@
+# Gruvbox: the colors of zuidec's Konsole Gruvbox scheme (named per key); the
+# UI shades (fields, buttons, tabs, borders) derived from its background.
+
+background  = "#21201c"  # Background
+foreground  = "#c7b59c"  # Foreground
+secondary   = "#7f8c8d"  # Color0Intense
+disabled    = "#6b665c"
+canvas      = "#191814"
+dim         = "#63686d"  # Color7Faint
+accent      = "#f67400"  # Color3
+ok          = "#17a262"  # Color2Faint
+bad         = "#c0392b"  # Color1Intense
+on_ok       = "#f4e4ce"  # ForegroundFaint
+range       = "#6b3b1a"  # Color3Faint, half on the background
+range_bad   = "#783228"  # Color1Faint
+field       = "#191814"
+control     = "#34322c"
+tab         = "#151410"
+active      = "#403d36"
+shade       = "#1c1b18"
+border      = "#4a463d"
+trough      = "#191814"
+select      = "#b65619"  # Color3Faint
+select_text = "#f4e4ce"  # ForegroundFaint

@@ -187,7 +187,8 @@ class CalibrationPanel(Panel):
         for name in ("LT", "RT"):
             row = ttk.Frame(self)
             row.pack(anchor="w", pady=(8, 0))
-            view = w.CalTriggerView(row, f"{name}: range (blue), position, full from (green)")
+            view = w.CalTriggerView(
+                row, f"{name}: range (shaded), position (line), full from (dashed)")
             view.pack(side="left")
             box = ttk.Frame(row)
             box.pack(side="left", padx=12)

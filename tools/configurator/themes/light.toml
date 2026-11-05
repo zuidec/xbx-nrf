@@ -1,0 +1,27 @@
+# Light: ttk's clam theme and the drawings' original colors.
+# Template for your own theme: copy it into the app's themes/ folder (see
+# docs/configurator.md), rename it, and change what you like. A theme may
+# start from another with base = "<name>" and set only the keys it changes;
+# keys it leaves out come from light. Colors: any Tk color ("#rrggbb", names).
+
+background  = "#dcdad5"  # windows, panels
+foreground  = "#202020"  # text
+secondary   = "#888888"  # labels beside values
+disabled    = "#999999"  # disabled text
+canvas      = "#f4f4f4"  # behind sticks, triggers, buttons
+dim         = "#b0b0b0"  # outlines, unlit buttons
+accent      = "#1f6fd1"  # stick dots, bars, calibration ranges
+ok          = "#2e9d4b"  # pressed, stored
+bad         = "#d13b2e"  # errors, refused calibration
+on_ok       = "#ffffff"  # text on a lit button
+range       = "#cfe0f6"  # trigger calibration range
+range_bad   = "#f6d2cf"  # the same, refused
+field       = "#ffffff"  # entry fields, check boxes, text boxes
+control     = "#dcdad5"  # buttons, scrollbars
+tab         = "#bab5ab"  # unselected tabs, pressed buttons
+active      = "#eeebe7"  # under the mouse
+shade       = "#cfcdc8"  # bevel shadow
+border      = "#9e9a91"
+trough      = "#bab5ab"  # slider and scrollbar tracks
+select      = "#4a6984"  # selection, menu highlight
+select_text = "#ffffff"
