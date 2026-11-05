@@ -231,8 +231,9 @@ tools/configurator/build.sh --release   # Linux release (in a container)
 ```
 
 Output, in `tools/configurator/output/`: `xbx-config-<version>-<os>-<cpu>`
-(`.exe` on Windows; `-local` added on Linux without `--release`). Details:
-[Building](configurator.md#building).
+(`.exe` on Windows; `-local` added on Linux without `--release`). Release
+builds also write `<file>-THIRD-PARTY-NOTICES.txt`, the same text the app
+shows in Help → About. Details: [Building](configurator.md#building).
 
 ## Versions
 
@@ -259,13 +260,12 @@ matching numbers.
   `git tag -a controller-v0.6.0 -m "<what's new>"`.
 - **Release binaries:** attach the `-r` firmware build or the configurator
   (Linux `--release`, Windows `.exe`), and the notices for the third-party
-  code inside them. After the builds,
-  `tools/release-notices.sh <out dir> [firmware] [configurator]` writes
-  `THIRD-PARTY-NOTICES-firmware.txt` and, for this OS's configurator build,
-  `THIRD-PARTY-NOTICES-configurator.txt` (Linux) or
-  `THIRD-PARTY-NOTICES-configurator-windows.txt` (Windows). The
-  Configurator (Windows) workflow builds the `.exe` and runs it (Actions →
-  Run workflow). The notes link the tag as the source (MPL-2.0).
+  code inside them. Firmware: `tools/release-notices.sh <out dir>` writes
+  `THIRD-PARTY-NOTICES-firmware.txt`. Configurator: its build writes
+  `<file>-THIRD-PARTY-NOTICES.txt` next to the binary (the same text is in
+  Help → About). The Windows `.exe` comes from the Configurator (Windows)
+  workflow (Actions → Run workflow). The notes link the tag as the source
+  (MPL-2.0).
 - **Bootloader revision:** bump `REVISION` for any change to our board files
   or a fix; a new upstream tag sets `UPSTREAM` and `REVISION = 1`. It shows
   in the drive's `INFO_UF2.TXT` (`UF2 Bootloader 0.11.0-xbx.1`).

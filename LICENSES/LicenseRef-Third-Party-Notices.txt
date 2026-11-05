@@ -1,0 +1,4 @@
+The files under tools/configurator/licenses/ are the license texts and
+notices of third-party software bundled in the configurator's Windows build,
+reproduced as those licenses require. Each file is under the license it
+states; its first line names where it was copied from.

@@ -9,6 +9,14 @@ precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 zuidec"
 SPDX-License-Identifier = "MPL-2.0"
 
+# License texts of third-party code bundled in the Windows configurator build,
+# kept as published (each file's first line names its source)
+[[annotations]]
+path = ["tools/configurator/licenses/**"]
+precedence = "override"
+SPDX-FileCopyrightText = "The authors named in each file"
+SPDX-License-Identifier = "LicenseRef-Third-Party-Notices"
+
 # Hardware design
 [[annotations]]
 path = ["pcb/**", "mech/**"]

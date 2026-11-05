@@ -36,7 +36,9 @@ Exceptions (third-party CAD parts; see ATTRIBUTION.md in each folder):
                                        SnapMagic and our own (CC-BY-SA-4.0).
 
 Release binaries (.uf2 firmware, the configurator) also contain third-party
-code; its notices come with each release (THIRD-PARTY-NOTICES).
+code; its notices come with each release (THIRD-PARTY-NOTICES), and the
+configurator shows them in Help -> About. tools/configurator/licenses/ holds
+third-party license texts for its Windows build, each under its own license.
 
 Not included: references/third-party/ (git-ignored) holds third-party documents
 that are not part of this project and not covered by its licenses; see

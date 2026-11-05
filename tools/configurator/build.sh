@@ -2,6 +2,9 @@
 # One-file configurator build with PyInstaller, into output/:
 #   xbx-config-<version>-<os>-<cpu>[.exe]   Windows, macOS; Linux --release
 #   xbx-config-<version>-linux-<cpu>-local  Linux without --release
+# and, for the release builds (Windows, macOS, Linux --release), its
+# third-party notices next to it: <file>-THIRD-PARTY-NOTICES.txt. The same
+# text is inside the binary (Help → About); notices.py makes it.
 # The version comes first: a name ending in ".1" reads as a man page to
 # file managers, which then won't run it.
 # Work files (venv, PyInstaller's) stay in build/local/ and build/release/.
@@ -106,7 +109,8 @@ name="xbx-config-$version-$target"
 if $pristine; then
 	rm -rf "$venv" "$work"
 	# earlier versions of this file only: same OS, CPU and kind
-	for f in "$out"/xbx-config-*-"$target" "$out"/xbx-config-*-"$target".exe; do
+	for f in "$out"/xbx-config-*-"$target" "$out"/xbx-config-*-"$target".exe \
+		"$out"/xbx-config-*-"$target"-THIRD-PARTY-NOTICES.txt; do
 		[ -e "$f" ] || continue
 		echo "removed: $f"
 		rm -f "$f"
@@ -127,9 +131,13 @@ fi
 
 echo "configurator $version -> $out/$name"
 
-XBX_BUILD_NAME="$name" "$vpy" -m PyInstaller --noconfirm --clean --log-level WARN \
+XBX_BUILD_NAME="$name" XBX_BUILD_KIND="$kind" "$vpy" -m PyInstaller --noconfirm --clean --log-level WARN \
 	--distpath "$out" --workpath "$work" "$here/xbx-config.spec"
 
 ext=""
 [ "$os" = windows ] && ext=".exe" # PyInstaller adds it
 echo "built: $out/$name$ext"
+if [ "$kind" = release ]; then
+	cp "$here/build/$kind/THIRD-PARTY-NOTICES.txt" "$out/$name-THIRD-PARTY-NOTICES.txt"
+	echo "notices: $out/$name-THIRD-PARTY-NOTICES.txt"
+fi
