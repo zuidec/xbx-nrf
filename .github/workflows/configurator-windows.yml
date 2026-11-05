@@ -1,0 +1,29 @@
+# Windows configurator build: tools/configurator/build.sh in Git Bash; the
+# .exe is attached to the run as an artifact.
+name: Configurator (Windows)
+
+on:
+  workflow_dispatch: # "Run workflow" button, once this file is on main
+  push:
+    branches: [ci-windows] # test branch: every push builds
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash # Git Bash, as in docs/building.md
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11" # same as the Linux release container; tkinter included
+      - name: Build
+        run: tools/configurator/build.sh
+        env:
+          PYTHON: python # no python3 on Windows
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xbx-config-windows
+          path: tools/configurator/output/*.exe
+          if-no-files-found: error
