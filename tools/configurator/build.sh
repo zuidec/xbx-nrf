@@ -99,7 +99,8 @@ venv="$here/build/$kind/venv"
 work="$here/build/$kind/pyinstaller"
 
 target="$os-$(uname -m)$suffix" # e.g. linux-x86_64-local
-version="$("$python" -c "import sys; sys.path.insert(0, '$here'); import xbxconfig; print(xbxconfig.__version__)")"
+# from $here: Git Bash doesn't convert a path inside the -c code for Windows Python
+version="$(cd "$here" && "$python" -c "import xbxconfig; print(xbxconfig.__version__)")"
 name="xbx-config-$version-$target"
 
 if $pristine; then
