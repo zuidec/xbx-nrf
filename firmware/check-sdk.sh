@@ -3,7 +3,7 @@
 # Sets ZEPHYR_BASE if it isn't set yet.
 
 # Re-run the calling script inside the pinned toolchain if west isn't from it
-# (e.g. started from a plain shell instead of ncs-shell).
+# (e.g. started from a plain shell).
 # Usage: xbx_relaunch_in_toolchain <firmware dir> <script path> "$@"
 xbx_relaunch_in_toolchain() {
 	local fw_dir="$1" script="$2"
@@ -40,7 +40,7 @@ xbx_check_sdk() {
 
 	local fix="install/launch it with:
   nrfutil sdk-manager install --ncs-version $NCS_VERSION
-  nrfutil sdk-manager toolchain launch --ncs-version $NCS_VERSION --shell   (or ncs-shell)"
+  nrfutil sdk-manager toolchain launch --ncs-version $NCS_VERSION --shell"
 
 	export ZEPHYR_BASE="${ZEPHYR_BASE:-$HOME/ncs/$NCS_VERSION/zephyr}"
 

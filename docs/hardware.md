@@ -1,7 +1,7 @@
 ---
 title: Hardware (stock top board, J3, controller and dongle boards)
 created: 2026-09-29
-updated: 2026-10-31
+updated: 2026-11-03
 tags:
   - xbx-nrf
   - reference

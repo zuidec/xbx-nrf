@@ -1,6 +1,7 @@
 ---
 title: GIP (Xbox One/Series USB protocol) notes
 created: 2026-09-29
+updated: 2026-11-03
 tags:
   - xbx-nrf
   - reference

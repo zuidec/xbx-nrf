@@ -1,7 +1,7 @@
 ---
-title: Building the firmware
+title: Building
 created: 2026-09-29
-updated: 2026-11-02
+updated: 2026-11-04
 tags:
   - xbx-nrf
   - firmware
@@ -12,20 +12,11 @@ aliases:
   - versions
 ---
 
-# Building the firmware
+# Building
 
-## Apps
-
-| App | Folder | Board | Also |
-|---|---|---|---|
-| Controller | `firmware/xbx-nrf` | `xbx_controller/nrf52840/uf2` (custom board) | `promicro_nrf52840/nrf52840/uf2` (test build) |
-| Dongle | `firmware/dongle` | `xbx_dongle/nrf52840/uf2` (custom board) | `nrf52840dongle/nrf52840` (PCA10059, off the shelf) |
-
-Standalone Zephyr apps, outside the SDK folder. Shared code:
-`firmware/common/include/` (e.g. `protocol.h`). Our own board definitions:
-`firmware/boards/`; the build script passes it as `BOARD_ROOT` (sysbuild
-doesn't search the app folder), so plain `west build` needs
-`BOARD_ROOT=firmware/boards` for them.
+The firmware, bootloader and configurator build separately; each has its own
+section with commands and output files. Pre-built files available here:
+[Getting started](getting_started.md).
 
 ## Pinned versions
 
@@ -43,28 +34,26 @@ doesn't search the app folder), so plain `west build` needs
 
 ## Setup
 
-Pre-built files without building: [getting_started](getting_started.md). The SDK
-and its toolchain come through `nrfutil`; the apps need no other compiler.
-Links:
+The SDK and its toolchain come through `nrfutil`; the apps need no other
+compiler. The bootloader also needs the Arm GNU Toolchain and `make`.
 
-Prerequisites:
-- OpenOCD
-- 
-nrfutil:[nRFUtil](https://www.nordicsemi.com/Products/Development-tools/nRF-Util)
-- Git for Windows (with Git Bash): <https://git-scm.com/downloads/win>
-- Python for Windows: <https://www.python.org/downloads/>
+### All platforms
+
+| Needs | For | Where |
+|---|---|---|
+| nrfutil | SDK and toolchain | [nRF Util](https://www.nordicsemi.com/Products/Development-tools/nRF-Util): download, put on the `PATH` (Linux: `chmod +x`) |
+| Arm GNU Toolchain | bootloader | [Arm](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads): `arm-none-eabi` ([Bootloader](#bootloader)) |
+| OpenOCD | SWD programming | [Getting started](getting_started.md#preparing-to-flash-the-bootloader) |
 
 ### Linux
 
-| Prerequisite | For | Package (names vary by distro) |
+| Needs | For | Package (names vary by distro) |
 |---|---|---|
 | Git | the code | `git` |
-| nrfutil | SDK and toolchain | download; `chmod +x`, put on the `PATH` |
+| `make` | bootloader | `make` |
 | Python 3 with tkinter and venv | configurator | `python3`, `python3-tk`, `python3-venv` |
 | `objdump` | configurator build | `binutils` |
 | podman or docker | configurator `--release` build | `podman` |
-| OpenOCD | SWD programming | `openocd` |
-
 
 1. Code, SDK and toolchain (a few GB, into `~/ncs/`):
    ```sh
@@ -72,26 +61,19 @@ nrfutil:[nRFUtil](https://www.nordicsemi.com/Products/Development-tools/nRF-Util
    nrfutil install sdk-manager
    nrfutil sdk-manager install --ncs-version v3.4.1
    ```
-2. Optional, for plain `west`: `~/bin/ncs-shell` (not in the repo):
-   ```bash
-   #!/bin/bash
-   export ZEPHYR_BASE="$HOME/ncs/v3.4.1/zephyr"
-   nrfutil sdk-manager toolchain launch --ncs-version v3.4.1 --shell
-   ```
-   `ZEPHYR_BASE` lets `west build` work from our app folders; without it
-   west reports "unknown command build". `build.sh` needs neither.
-3. USB permissions: the udev rule ([Linux](getting_started.md#linux), step 2,
+2. USB permissions: the udev rule ([Linux](getting_started.md#linux), step 2,
    or `xbx-config.py install-udev`); SWD probes: [flashing](flashing.md).
 
 ### Windows
 
-Not tested yet. Every command runs in **Git Bash**.
+Not tested yet. Every command runs in **Git Bash**. Git Bash has no `make`,
+so flash a released bootloader `.hex` instead of building it
+([Bootloader](#bootloader)).
 
 | Needs | For | Where |
 |---|---|---|
-| Git for Windows | the code, Git Bash | link above |
-| nrfutil | SDK and toolchain | download `nrfutil.exe`, put on the `PATH` |
-| Python 3 | configurator | python.org installer: tick "Add python.exe to PATH" (tkinter included) |
+| Git for Windows | the code, Git Bash | <https://git-scm.com/downloads/win> |
+| Python 3 | configurator | <https://www.python.org/downloads/>: tick "Add python.exe to PATH" in the installer (tkinter included) |
 
 1. Code, SDK and toolchain (into `C:\ncs\`):
    ```sh
@@ -104,89 +86,90 @@ Not tested yet. Every command runs in **Git Bash**.
    ```sh
    export ZEPHYR_BASE=/c/ncs/v3.4.1/zephyr
    ```
-3. Configurator from source: `python tools/configurator/xbx-config.py`;
-   build: `tools/configurator/build.sh` ([Building](configurator.md#building)).
-   No driver needed.
 
 ### macOS
 
 Not tested yet. If you'd like to try it, open an issue on
 [GitHub](https://github.com/zuidec/xbx-nrf/issues).
 
-### Build commands
+## Firmware
 
-From the repo root, on any OS:
+- Two standalone Zephyr apps:
+    1. Controller (`firmware/xbx-nrf/`)
+    2. Dongle (`firmware/dongle/`).
+- Shared code: `firmware/common/include/` (e.g. `protocol.h`).
+- Our board definitions: `firmware/boards/`; `build.sh` passes it as 
+  `BOARD_ROOT` (sysbuild doesn't search the app folder).
 
-```sh
-firmware/build.sh xbx-nrf -r             # controller, release
-firmware/build.sh xbx-dongle -r          # dongle, release
-tools/configurator/build.sh              # configurator, this PC
-tools/configurator/build.sh --release    # configurator, Linux release
-```
+Build the targets for your hardware: `xbx-controller` and `xbx-dongle` for
+the custom boards. Each target has its own build folder (paths from the repo
+root).
 
-Output: [Output files](#output-files); configurator:
-`tools/configurator/output/`. Every option: [Building](#building).
-
-## Building
-
-Two targets per app, each with its own board and build folder; board
-bootloaders stay.
-
-| Target | Board | Folder |
+| Target | Board | Build folder |
 |---|---|---|
-| `xbx-nrf` | `xbx_controller/nrf52840/uf2` | `xbx-nrf/build/` |
-| `xbx-nrf-promicro` | `promicro_nrf52840/nrf52840/uf2` (test build) | `xbx-nrf/build-promicro/` |
-| `xbx-dongle` | `xbx_dongle/nrf52840/uf2` | `dongle/build/` |
-| `xbx-dongle-pca10059` | `nrf52840dongle/nrf52840` | `dongle/build-pca10059/` |
+| `xbx-controller` | `xbx_controller/nrf52840/uf2` | `firmware/xbx-nrf/build/` |
+| `xbx-controller-promicro` | `promicro_nrf52840/nrf52840/uf2` (test build) | `firmware/xbx-nrf/build-promicro/` |
+| `xbx-dongle` | `xbx_dongle/nrf52840/uf2` | `firmware/dongle/build/` |
+| `xbx-dongle-pca10059` | `nrf52840dongle/nrf52840` (PCA10059, off the shelf) | `firmware/dongle/build-pca10059/` |
+
+### Commands
+
+From the repo root, in a Bash shell (Linux, macOS, or Git Bash on Windows;
+not PowerShell or cmd):
 
 ```sh
-cd ~/Projects/xbx-nrf/firmware
-./build.sh xbx-nrf                  # incremental
-./build.sh xbx-dongle -p            # pristine
-./build.sh xbx-dongle -f /dev/sdX   # build, then flash (UF2 drive)
-./build.sh xbx-dongle -r            # release build
-./build.sh xbx-dongle-pca10059 -f /dev/ttyACM0
-./build.sh xbx-nrf-bootloader       # controller bootloader (see Bootloader)
-./build.sh xbx-dongle-bootloader    # dongle bootloader
+firmware/build.sh xbx-controller                      # incremental
+firmware/build.sh xbx-controller -r                   # release build
+firmware/build.sh xbx-dongle -p                       # pristine
+firmware/build.sh xbx-dongle -f /dev/<sdX|ttyACMX>    # build, then flash
 ```
 
-- Runs from any folder and shell: outside `ncs-shell` it restarts itself in
-  the pinned toolchain (`nrfutil sdk-manager toolchain launch`).
+- Runs from any folder and shell: if needed it restarts itself in the
+  pinned toolchain (`nrfutil sdk-manager toolchain launch`).
 - Extra arguments go to `west build`; the target sets the board (`-b` is
   refused, so a folder never changes board).
 - `-r` / `--release` adds the app's `release.conf` (no USB console, no logs)
   and builds into the target's folder with `-release` added.
-- `-f` / `--flash <device>` flashes after a successful build
-  ([flashing](flashing.md)):
-
-  | Board | Device |
-  |---|---|
-  | PCA10059 | DFU bootloader's serial port (press RESET first) |
-  | `*/uf2` (ours, Pro Micro) | UF2 drive: mount point, or block device (`/dev/sdX`, mounted for you); `swd`: the app over SWD |
+- `-f` / `--flash <device>` flashes after a successful build; the device
+  for each board is in [flashing](flashing.md).
 - `-- -DCONFIG_…` options stay in that build folder's cache until a pristine
   build (`-p`).
 - `BUILD_DIR=<dir>` builds into `<app>/<dir>/` instead, for a second
   configuration next to the main one. E.g. the fake-input controller:
   ```sh
-  BUILD_DIR=build-p2 ./build.sh xbx-nrf -p -- -DCONFIG_XBX_FAKE_INPUT=y
+  BUILD_DIR=build-p2 firmware/build.sh xbx-controller -p -- \
+      -DCONFIG_XBX_FAKE_INPUT=y
   ```
 - The custom boards' plain form (`xbx_controller/nrf52840`, no bootloader)
   exists only because Zephyr needs it; the apps have no overlay for it.
-- Plain `west build` also works but skips the version check, and needs `-b`
-  again after `-p`.
+
+> [!TIP]
+> **SDK not found, or the wrong version**
+>
+> `build.sh` keeps `ZEPHYR_BASE` if it's already set; otherwise it uses
+> `~/ncs/<version>/zephyr` for the version in `firmware/ncs-version`. If it
+> reports no SDK or the wrong one, check `echo $ZEPHYR_BASE`: a value left
+> over from another SDK or project wins. Unset it, or point it at the pinned
+> SDK's `zephyr` folder.
 
 ### Output files
 
-Sysbuild puts each image in a subfolder named after the app, inside the
-target's folder (`<dir>`, [Building](#building)):
+Images are in `<build folder>/<app>/zephyr/`:
+
+- Controller: `firmware/xbx-nrf/build/xbx-nrf/zephyr/`
+- Dongle: `firmware/dongle/build/dongle/zephyr/`
+
+Other targets and release builds swap `build` for their folder
+(`build-promicro`, `build-release`, …).
 
 | File | Use |
 |---|---|
-| `<dir>/<app>/zephyr/zephyr.uf2` | UF2 bootloader (custom boards, Pro Micro) |
-| `<dir>/<app>/zephyr/zephyr.hex` | SWD flashing; PCA10059 DFU (`dfu.zip`) |
-| `<dir>/<app>/zephyr/zephyr.elf` | Debugging |
+| `zephyr.uf2` | UF2 flashing (custom boards, Pro Micro) |
+| `zephyr.hex` | SWD flashing; PCA10059 DFU (`dfu.zip`) |
+| `zephyr.elf` | Debugging |
 
-`<dir>/zephyr/` is sysbuild's own and has no firmware.
+The build folder's own `zephyr/` (e.g. `firmware/xbx-nrf/build/zephyr/`) is
+sysbuild's and has no firmware.
 
 ### Board overlays
 
@@ -203,18 +186,26 @@ Shorter names are **silently ignored**; look for `-- Found devicetree overlay:`
 in the build log. Board `.conf` files follow the same rule
 (`xbx_controller_nrf52840_uf2.conf`).
 
-### Default board: why it's in the script
-
-Sysbuild resolves the board before reading the app, so `set(BOARD …)` in an
-app's `CMakeLists.txt` has no effect.
-
 ## Bootloader
 
-`firmware/bootloader/`: the Adafruit nRF52 Bootloader, fetched at a pinned
-tag (`UPSTREAM` in `bootloader/VERSION`) into `src/` (gitignored), plus our
-board folders in `boards/`. `./build.sh xbx-nrf-bootloader` /
-`xbx-dongle-bootloader` build into `bootloader/build/<board>/`; `-f swd`
-installs it ([flashing](flashing.md)).
+Custom versions of the Adafruit nRF52 Bootloader. The repo holds only
+the custom board files(`firmware/bootloader/boards/`) and `VERSION`; the first 
+build clones Adafruit's repo at the pinned tag (`UPSTREAM` in `VERSION`) into
+`firmware/bootloader/src/`, copies in the custom files, and runs its
+Makefile.
+
+```sh
+firmware/build.sh xbx-controller-bootloader     # build
+firmware/build.sh xbx-dongle-bootloader -f swd  # build, erase all, flash
+firmware/build.sh xbx-controller-bootloader -f swd --hex <file>
+```
+
+The `--hex` option flashes a downloaded `.hex` without building (needs only
+OpenOCD). `-f swd` erases the app and its settings too
+([flashing](flashing.md)).
+
+Output, in `firmware/bootloader/build/<board>/` (`xbx_controller`,
+`xbx_dongle`):
 
 | File | Use |
 |---|---|
@@ -224,8 +215,24 @@ installs it ([flashing](flashing.md)).
 - Needs the **Arm GNU Toolchain** (`ARM_GCC_DIR`, default
   `~/.local/opt/arm-gnu-toolchain-14.2.rel1-x86_64-arm-none-eabi`). openSUSE's
   newlib links a semihosting `crt0` that faults without a debugger.
+- After a `VERSION` bump to a new upstream tag, delete `src/` to fetch it
+  again.
 - USB IDs: pid.codes test PIDs `1209:0005` (dongle), `1209:0006`
   (controller).
+
+## Configurator
+
+Run from source: `python3 tools/configurator/xbx-config.py` (Windows:
+`python`). One-file build:
+
+```sh
+tools/configurator/build.sh             # Current OS
+tools/configurator/build.sh --release   # Linux release (in a container)
+```
+
+Output, in `tools/configurator/output/`: `xbx-config-<version>-<os>-<cpu>`
+(`.exe` on Windows; `-local` added on Linux without `--release`). Details:
+[Building](configurator.md#building).
 
 ## Versions
 
@@ -245,6 +252,7 @@ matching numbers.
 |---|---|---|
 | **Radio protocol** | `XBX_PROTOCOL_VERSION` in `protocol.h` | Packet format changes; reflash **both** boards |
 | **Configurator channel** | `CFG_USB_VERSION_*` in `config_usb.h` | Major: incompatible; minor: additions ([Versioning](configurator.md#versioning)) |
+
 
 - **Release:** bump the version in its own commit (e.g.
   `Controller: version 0.6.0`), then an annotated tag on that commit:
@@ -272,7 +280,7 @@ matching numbers.
 1. Read Nordic's release notes and migration guide.
 2. `nrfutil sdk-manager install --ncs-version <new>`; note the toolchain bundle
    ID (`~/ncs/toolchains/toolchains.json`).
-3. Update `firmware/ncs-version`, `~/bin/ncs-shell` and the table above.
+3. Update `firmware/ncs-version` and [Pinned versions](#pinned-versions).
 4. Pristine-build both apps; fix warnings.
 5. Re-run the link test on hardware.
 6. Commit it all together ("Upgrade to NCS vX.Y.Z").

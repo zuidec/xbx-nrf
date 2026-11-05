@@ -89,7 +89,7 @@ controller, but this is just for testing.
 | Doc | Covers |
 |---|---|
 | [docs/controller.md](docs/controller.md) | Using it: power, pairing, LED, wired modes, calibration, waking the PC |
-| [docs/building.md](docs/building.md) | SDK setup, versions, build script |
+| [docs/building.md](docs/building.md) | Setup; building the firmware, bootloader and configurator; versions |
 | [docs/flashing.md](docs/flashing.md) | Flashing and debugging |
 | [docs/protocol.md](docs/protocol.md) | Radio (pairing, time slots) and USB (HID, XInput) protocols |
 | [docs/gip.md](docs/gip.md) | Xbox GIP protocol notes (optional mode) |
@@ -101,15 +101,14 @@ Desktop app for settings, calibration, input and rumble tests and firmware
 updates of both devices over USB using Python + Tkinter. So far only tested on 
 Linux, but in theory should be buildable on Mac and Windows.
 
-Getting started: 
-    [docs/getting_started.md](docs/getting_started.md#setting-up-the-configurator)
-Details: 
-    [docs/configurator.md](docs/configurator.md).
+- Getting started:
+  [docs/getting_started.md](docs/getting_started.md#setting-up-the-configurator)
+- Details: [docs/configurator.md](docs/configurator.md)
 
 ## Repository layout
 
 ```
-docs/                project notes (Obsidian format)
+docs/                documentation
 firmware/
   boards/            our board definitions (xbx_controller, xbx_dongle)
   bootloader/        UF2 bootloader build (upstream + our boards)
@@ -122,10 +121,12 @@ firmware/
 pcb/xbx-nrf/         KiCad project, controller board (lib/: symbols,
                      footprints, 3D)
 pcb/xbx-nrf-dongle/  KiCad project, dongle board
-mech/                FreeCAD parts (controller-bottom-board/: board outline)
+mech/                FreeCAD parts: controller-bottom-board/ (board outline),
+                     dongle-enclosure/, aux-button-guide/ (CC BY-NC-SA remix)
 references/          schematics, scans, datasheets, pinouts
-tools/               configurator/, test tools (test-rumble.sh)
-todo.md              task list (Obsidian format)
+tools/               configurator/, release scripts (pcb-release.sh,
+                     release-notices.sh), test-rumble.sh
+todo.md              task list
 ```
 
 ## Disclosures

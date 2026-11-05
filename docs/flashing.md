@@ -1,7 +1,7 @@
 ---
 title: Flashing & debugging the nRF52840 boards
 created: 2026-09-28
-updated: 2026-10-31
+updated: 2026-11-04
 tags:
   - xbx-nrf
   - firmware
@@ -12,7 +12,7 @@ aliases:
   - SWD
 ---
 
-# Equipment and configuration
+# Flashing & debugging the nRF52840 boards
 
 ## Hardware
 
@@ -138,7 +138,7 @@ app after the SoftDevice area it expects.
 2. Build and flash, from `firmware/`, giving the drive's block device (mounted
    for you) or its mount point:
    ```sh
-   ./build.sh xbx-nrf-promicro -f /dev/sdX
+   ./build.sh xbx-controller-promicro -f /dev/sdX
    ```
    Or copy `xbx-nrf/build-promicro/xbx-nrf/zephyr/zephyr.uf2` onto the
    drive by hand.
@@ -155,9 +155,9 @@ app after the SoftDevice area it expects.
 Newer nRF52840s might lock debug access unless the firmware unlocks it: the 
 probe connects but can't halt or read memory.
 
-1. OpenOCD 0.12+ with the **DAP-mode** ST-Link interface:
+1. OpenOCD 0.12+:
    ```sh
-   openocd -f interface/stlink-dap.cfg -f target/nrf52.cfg \
+   openocd -f interface/cmsis-dap.cfg -f target/nrf52.cfg \
            -c "init; nrf52_recover; exit"
    ```
 2. Without `nrf52_recover`, write CTRL-AP (AP 1) directly:
@@ -168,8 +168,6 @@ probe connects but can't halt or read memory.
    nrf52.dap apreg 1 0x00 0x01   ; reset
    nrf52.dap apreg 1 0x00 0x00
    ```
-3. If the ST-Link can't (old/clone firmware without DAP mode), recover with a
-   CMSIS-DAP probe.
 
 Keep debug unlocked during development: Zephyr's APPROTECT Kconfig choice
 (`CONFIG_NRF_APPROTECT_USE_UICR` default, `_LOCK`, `_USER_HANDLING`); check
@@ -186,11 +184,11 @@ first ([Restoring bootloaders](#restoring-bootloaders)).
   bootloader releases), over SWD:
   ```sh
   BL=nice_nano_bootloader-0.9.2_s140_6.1.1.hex
-  openocd -f interface/stlink.cfg -f target/nrf52.cfg \
+  openocd -f interface/cmsis-dap.cfg -f target/nrf52.cfg \
           -c "init; reset halt; nrf5 mass_erase" \
           -c "program $BL verify reset exit"
   ```
-- **Custom boards:** `./build.sh xbx-nrf-bootloader -f swd` /
+- **Custom boards:** `./build.sh xbx-controller-bootloader -f swd` /
   `./build.sh xbx-dongle-bootloader -f swd`.
 - **PCA10059:** nRF5 SDK `examples/dfu/open_bootloader/pca10059_usb_debug`,
   over SWD.
@@ -199,10 +197,10 @@ first ([Restoring bootloaders](#restoring-bootloaders)).
 
 | Symptom | Likely cause |
 |---|---|
-| ST-Link won't connect ("target voltage 0 V") | Target 3.3 V not on the sense pin |
+| OpenOCD can't connect ("Error connecting DP") | Target not powered (the probe doesn't supply 3.3 V), or SWDIO/SWCLK swapped |
 | Connects, can't halt or read memory | Chip locked → [Locked chip (APPROTECT)](#locked-chip-approtect) |
 | Dongle app doesn't run after SWD flashing | Bootloader gone → build for the `bare` variant |
-| Custom board app doesn't run after `-f swd` | No UF2 bootloader (the app starts at `0x26000`) → install it ([Custom boards — UF2 bootloader (Preferred)](#custom-boards--uf2-bootloader-preferred)) |
+| Custom board app doesn't run after `-f swd` | No UF2 bootloader (the app starts at `0x26000`) → install it ([Custom boards (Preferred UF2 bootloader)](#custom-boards-preferred-uf2-bootloader)) |
 | No UF2 drive | Double tap too slow; charge-only USB cable |
 | `west flash`: no matching UF2 partition | Drive not mounted |
 | No `/dev/ttyACM*` after flashing | App crashed early; user not in `dialout` |

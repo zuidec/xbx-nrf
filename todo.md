@@ -1,7 +1,7 @@
 ---
 title: xbx-nrf TODO
 created: 2026-09-28
-updated: 2026-10-31
+updated: 2026-11-03
 tags:
   - xbx-nrf
   - todo
