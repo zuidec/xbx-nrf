@@ -1,7 +1,7 @@
 ---
 title: xbx-nrf TODO
 created: 2026-09-28
-updated: 2026-11-03
+updated: 2026-11-07
 tags:
   - xbx-nrf
   - todo
@@ -44,11 +44,15 @@ tags:
        work (tested with 4 controllers); open only for Windows.
 6. [ ] USB IDs: pid.codes test PIDs `0x0001`–`0x0004` for now (dongle HID /
        XInput, controller HID / XInput: one per interface set, since Windows
-       and SDL/Steam cache drivers and mappings per VID:PID). Apply for our
-       own once the repo is public, bootloaders too (now `0x0005` dongle,
-       `0x0006` controller).
+       binds drivers and SDL picks mappings by VID:PID), bootloaders `0x0005`
+       dongle, `0x0006` controller. Requested `0xED00` bootloader (both
+       boards), `0xED01`/`0xED02` dongle, `0xED03`/`0xED04` controller; switch
+       once merged (configurator and udev rule accept the old IDs too).
 - [ ] Test `build.sh <xbx-controller|xbx-dongle>-bootloader -f swd --hex`
       with a release `.hex` on both boards.
+- [ ] Debug UART (J3) on non-release builds: logs there as well as on the
+      USB console, for wireless tests without USB; off in `release.conf`.
+      Update the logs note in [Flashing](docs/flashing.md) then.
 - [ ] Boot reason: Guide / Pair (→ pairing) / USB.
 - [ ] Pair shouldn't power the controller on (SW2 → R46 → Q14 does in
       hardware). On AAs, with Pair held at boot and Guide not, release the
@@ -67,6 +71,11 @@ tags:
 - [ ] Steam / SDL don't show it: SDL's Linux joystick backend never reads
       `power_supply` (SDL2 reports "unknown"). Look into an upstream SDL
       patch; pairs with our own USB ID and an SDL_GameControllerDB entry.
+- [ ] XInput battery: send the receiver's status packet (29 bytes,
+      `00 00 00 13`, battery 0–255 in byte 4; byte 17 of the `00 0F 00 F0`
+      connect packet). SDL's `SDL_hidapi_xbox360w.c` reads it and takes
+      `0x1209` with our interface class. Test whether Steam shows it on Linux
+      (SDL may leave the dongle to `xpad`) and on Windows.
 - [ ] **Wired USB gamepad mode:** a PC enumerating the controller = wired
       (radio off); a charger alone keeps it wireless. `CONFIG_XBX_WIRED`
       (default on) off for wireless tests with the USB console attached.
@@ -80,6 +89,9 @@ tags:
 
 ### Configurator
 - [ ] Windows and macOS builds (on those systems; `hidapi` path untested).
+- [ ] Save a device's settings to a file, and load them onto a device from
+      one (backup, or the same setup on another device; calibration belongs
+      to its sticks, so maybe not that).
 ---
 
 ## Future / v2
