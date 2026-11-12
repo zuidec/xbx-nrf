@@ -1,7 +1,7 @@
 ---
 title: xbx-nrf TODO
 created: 2026-09-28
-updated: 2026-11-07
+updated: 2026-11-11
 tags:
   - xbx-nrf
   - todo
@@ -22,6 +22,8 @@ tags:
 - [ ] No back-powering: float GPIOs before a rail goes down.
 - [ ] Next rev: a test point on every module GPIO, to check each joint
       after assembly (short to GND / drive and read back over SWD).
+- [ ] Next rev (controller): move J3 (debug UART) closer to J1 (SWD); one
+      side of it collides with the chassis.
 
 ---
 
@@ -107,6 +109,10 @@ tags:
   with the nRF52840. On the nRF52840, I2S plus a software resampler.
 - Firmware: USB Audio Class; mic first, then ADPCM, then LC3; drift
   compensation, jitter buffer, loss concealment.
+
+### Gyro / accelerometer
+- [ ] Next controller rev: an IMU. Decide the bus (probably I2C), shared
+      with the PCAL6416 or its own, and check its power use and sleep modes.
 
 ### Dynamic TX power
 - +8 dBm costs battery at 1 kHz. Dongle sends RSSI back in the ACK payload;
