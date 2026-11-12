@@ -4,6 +4,11 @@ A replacement bottom board for the **Xbox Series X|S controller (model 1914)**
 built on a Nordic **nRF52840**. Uses a custom **2.4 GHz USB dongle** instead of 
 Xbox Wireless / Bluetooth for improved connectivity. 
 
+<p align="center">
+  <img src="docs/images/controller-and-dongle.jpg" width="480"
+       alt="A controller with the xbx-nrf board inside, next to its dongle">
+</p>
+
 > **Status:** Hardware Rev 1.1 up and running. Still in active development.
 > Open tasks: [todo.md](todo.md).
 

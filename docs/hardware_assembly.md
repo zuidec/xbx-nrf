@@ -1,7 +1,7 @@
 ---
 title: Hardware assembly
 created: 2026-11-03
-updated: 2026-11-04
+updated: 2026-11-11
 tags:
   - xbx-nrf
   - hardware
@@ -34,6 +34,20 @@ yourself. `…_positions.csv` covers placement.
 
 Design notes: [hardware](hardware.md).
 Once built: [Getting started](getting_started.md).
+
+## The assembled board
+
+Rev1.1 controller board, before the sticks are fitted.
+
+![Module side: the Raytac module, reset button and paddle pads](images/controller-board-module-side.jpg)
+
+Module side: the Raytac module (u.FL version), the reset button, and the
+paddle pads (AUX1–AUX4) with their GND pads.
+
+![J2 side: J2 and the J1 and J3 debug connectors](images/controller-board-j2-side.jpg)
+
+J2 side: J2 to the top board, the two JST-SH debug connectors (J1 SWD, J3
+UART) at the bottom edge, and the stick footprints (S1, S2).
 
 ## Downloads
 
