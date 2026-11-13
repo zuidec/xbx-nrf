@@ -187,6 +187,13 @@ static void led_pattern(enum led_pattern p)
 	k_work_reschedule(&led_work, K_NO_WAIT);
 }
 
+void pairing_indicate_error(void)
+{
+	if (pattern == LED_OFF) { /* pairing mode and its patterns win */
+		led_pattern(LED_ERROR);
+	}
+}
+
 static int pairing_settings_set(const char *name, size_t len, settings_read_cb read_cb,
 				void *cb_arg)
 {

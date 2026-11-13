@@ -22,9 +22,11 @@ enum usb_mode usb_mode_get(void);
 int usb_start(void);
 
 /*
- * A controller joined: wake the host if it's asleep and allowed us to (remote
- * wakeup). Any context.
+ * A controller joined on this link: wake the host if it's asleep. Not allowed
+ * to (remote wakeup off, e.g. the dongle was plugged in with the PC off): the
+ * controller and the dongle's pairing LED show the error blink and the
+ * controller stays on. Any context.
  */
-void usb_host_wake(void);
+void usb_host_wake(uint8_t link);
 
 #endif /* XBX_DONGLE_USB_H_ */

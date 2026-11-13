@@ -13,6 +13,7 @@
 
 #include <app_version.h>
 
+#include "pairing.h"
 #include "radio.h"
 #include "usb.h"
 
@@ -63,6 +64,32 @@ USBD_CONFIGURATION_DEFINE(xbx_fs_config, USB_SCD_REMOTE_WAKEUP /* bus powered */
  */
 #define SLEEP_OFF_MS 1000
 
+/*
+ * After we wake the host, its USB stays suspended until the OS has resumed
+ * (seconds): within this long of a wake, a suspend waits until the end of it.
+ * A host that doesn't wake still gets its controllers off then.
+ */
+#define WAKE_GRACE_MS 30000
+
+static atomic_t wake_links; /* joined since host_wake_fn last ran: bit per link */
+static atomic_t woke;       /* a wake request went out at woke_at_ms */
+static atomic_t woke_at_ms; /* k_uptime_get_32() */
+
+static uint32_t sleep_off_delay_ms(void)
+{
+	uint32_t since;
+
+	if (!atomic_get(&woke)) {
+		return SLEEP_OFF_MS;
+	}
+	since = k_uptime_get_32() - (uint32_t)atomic_get(&woke_at_ms);
+	if (since >= WAKE_GRACE_MS) {
+		atomic_clear(&woke);
+		return SLEEP_OFF_MS;
+	}
+	return MAX(WAKE_GRACE_MS - since, SLEEP_OFF_MS);
+}
+
 static void host_asleep_fn(struct k_work *work)
 {
 	ARG_UNUSED(work);
@@ -74,20 +101,43 @@ static K_WORK_DELAYABLE_DEFINE(host_asleep_work, host_asleep_fn);
 
 static void host_wake_fn(struct k_work *work)
 {
+	uint32_t joined = (uint32_t)atomic_clear(&wake_links);
+	k_ticks_t off_left;
 	int err;
 
 	ARG_UNUSED(work);
 	if (!usbd_is_suspended(&xbx_usbd)) {
 		return;
 	}
+	off_left = k_work_delayable_remaining_get(&host_asleep_work);
+	/* set before the request, so the host's resume always cancels it; still
+	 * asleep then (no resume or reset): the controller off
+	 */
+	atomic_set(&woke_at_ms, (atomic_val_t)k_uptime_get_32());
+	atomic_set(&woke, 1);
+	k_work_reschedule(&host_asleep_work, K_MSEC(WAKE_GRACE_MS));
 	err = usbd_wakeup_request(&xbx_usbd); /* -EACCES: the host didn't allow it */
 	LOG_INF("controller joined: waking the host: %d", err);
+	if (err) {
+		/* the joined controllers stay on, so the PC's power button finds
+		 * them linked; others keep the power-off they had pending
+		 */
+		atomic_clear(&woke);
+		radio_no_wake(joined);
+		pairing_indicate_error();
+		if (off_left) {
+			k_work_reschedule(&host_asleep_work, K_TICKS(off_left));
+		} else {
+			k_work_cancel_delayable(&host_asleep_work);
+		}
+	}
 }
 
 static K_WORK_DEFINE(host_wake_work, host_wake_fn);
 
-void usb_host_wake(void)
+void usb_host_wake(uint8_t link)
 {
+	atomic_or(&wake_links, BIT(link));
 	k_work_submit(&host_wake_work);
 }
 
@@ -97,11 +147,12 @@ static void usb_msg_cb(struct usbd_context *const ctx, const struct usbd_msg *co
 	LOG_INF("USB: %s", usbd_msg_type_string(msg->type));
 	switch (msg->type) {
 	case USBD_MSG_SUSPEND:
-		k_work_reschedule(&host_asleep_work, K_MSEC(SLEEP_OFF_MS));
+		k_work_reschedule(&host_asleep_work, K_MSEC(sleep_off_delay_ms()));
 		break;
 	case USBD_MSG_RESUME:
 	case USBD_MSG_RESET:
 		k_work_cancel_delayable(&host_asleep_work);
+		radio_no_wake_clear();
 		break;
 	default:
 		break;

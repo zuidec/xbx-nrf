@@ -42,6 +42,7 @@
 #define XBX_OUT_FLAG_FULL  (1u << 0) /* no slot free: retry slowly */
 #define XBX_OUT_FLAG_POWER_OFF (1u << 1) /* host asked: power off */
 #define XBX_OUT_FLAG_XINPUT    (1u << 2) /* dongle in XInput mode: map the paddles */
+#define XBX_OUT_FLAG_NO_WAKE   (1u << 3) /* joined, the host can't be woken: error blink */
 /* Radio TX power in dBm, both ends (the dongle's ACKs too). The nRF52840 maximum is +8.
  * Fixed for now; see todo.md for dynamic power adjustment.
  */

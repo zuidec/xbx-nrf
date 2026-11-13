@@ -46,6 +46,9 @@ void pairing_on_request(const struct xbx_pair_req *req, uint8_t rssi);
 /* From the radio interrupt: a confirm on a controller pipe (1..7). */
 void pairing_on_confirm(uint8_t pipe, const struct xbx_pair_confirm *confirm);
 
+/* Three slow blinks on the pairing LED. System work queue. */
+void pairing_indicate_error(void);
+
 /* A paired controller's link came up: it becomes the most recently connected. */
 void pairing_link_connected(uint8_t pipe);
 

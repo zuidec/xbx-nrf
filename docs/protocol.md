@@ -89,7 +89,7 @@ through:
 | 1 | 1 | `seq` | +1 per report queued |
 | 2 | 4 | `rumble[4]` | Heavy, weak, LT, RT; 0…255 |
 | 6 | 1 | `led` | Guide LED brightness, 0…255; unused: the controller shows its own state |
-| 7 | 1 | `flags` | Bit 0: dongle full (no slot free, retry slowly). Bit 1: power off (host request, or the host suspended the dongle for 1 s: asleep or off; set until the link is lost). Bit 2: dongle in XInput mode (the controller maps its paddles onto other buttons) |
+| 7 | 1 | `flags` | Bit 0: dongle full (no slot free, retry slowly). Bit 1: power off (host request, or the host suspended the dongle for 1 s: asleep or off; set until the link is lost). Bit 2: dongle in XInput mode (the controller maps its paddles onto other buttons). Bit 3: no wake (joined, but the host is suspended and remote wakeup is off: error blink, stay on; set until the link is lost or the host resumes) |
 | 8 | 1 | `slot` | Time slot, 0…; `0xFF` = none yet |
 | 9 | 1 | `slots` | Slots per frame; frame = `slots` × 500 µs |
 | 10 | 2 | `sync_seq` | Input report `seq` the timing was measured on |
@@ -264,7 +264,8 @@ aborted (ambiguity).
 
 **LEDs** (dongle: pairing LED; controller: the indicator, on-board on the Pro
 Micro): fast blink (5 Hz) = pairing mode; three slow blinks = error (refused,
-aborted, version mismatch, dongle full); solid = factory reset.
+aborted, version mismatch, dongle full, the PC can't be woken); solid =
+factory reset.
 
 ### Time slots (TDMA)
 One radio can't receive two controllers at once, so the dongle runs a

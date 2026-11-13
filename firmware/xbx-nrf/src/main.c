@@ -140,7 +140,7 @@ static bool wired;
 /*
  * Wired, the PC asleep: no reports, motors and LED off, Guide wakes the PC.
  * No wake within WAKE_WAIT_MS of the press (PC off, or wake not allowed):
- * wireless instead until the bus comes back.
+ * the error blink, and wireless instead until the bus comes back.
  */
 #define WAKE_WAIT_MS 3000
 static bool host_asleep;
@@ -157,6 +157,16 @@ static struct k_spinlock host_lock;
  */
 #define OUTPUT_TIMEOUT_MS 100
 static atomic_t ack_age_ms; /* ms since the last ACK payload, counted by the TX loop */
+
+/*
+ * ACK payloads in a row with XBX_OUT_FLAG_POWER_OFF. The dongle queues each
+ * payload a packet ahead, so after a power-off its pipe still holds one with
+ * the flag, which the next join's first ACK carries: it takes two. Likewise
+ * XBX_OUT_FLAG_NO_WAKE.
+ */
+#define POWER_OFF_ACKS 2
+static atomic_t power_off_acks;
+static atomic_t no_wake_acks;
 
 static uint32_t rng_state;
 
@@ -271,6 +281,16 @@ static void radio_event_handler(struct esb_evt const *event)
 				memcpy(&last_output, rx.data, sizeof(last_output));
 				stats.acks_with_payload++;
 				atomic_set(&ack_age_ms, 0);
+				if (last_output.flags & XBX_OUT_FLAG_POWER_OFF) {
+					atomic_inc(&power_off_acks);
+				} else {
+					atomic_clear(&power_off_acks);
+				}
+				if (!(last_output.flags & XBX_OUT_FLAG_NO_WAKE)) {
+					atomic_clear(&no_wake_acks);
+				} else if (atomic_inc(&no_wake_acks) == POWER_OFF_ACKS - 1) {
+					pair_indicate_error(); /* the PC can't be woken */
+				}
 				sync_from_ack(&last_output);
 				if (last_output.flags & XBX_OUT_FLAG_FULL) {
 					pair_indicate_error();
@@ -730,6 +750,7 @@ static void asleep_tick(const struct xbx_input_report *report, uint32_t elapsed_
 	if (wake_wait_ms && (wake_wait_ms += elapsed_ms) > WAKE_WAIT_MS) {
 		LOG_INF("host didn't wake: wireless");
 		asleep_gave_up = true;
+		pair_indicate_error();
 	}
 }
 
@@ -888,7 +909,7 @@ static void after_send(const struct xbx_input_report *report, uint32_t elapsed_m
 	rumble_leds_update();
 #endif
 	power_tick(report, wired || slot_held(), pair_active(), elapsed_ms);
-	if (!wired && slot_held() && (last_output.flags & XBX_OUT_FLAG_POWER_OFF)) {
+	if (!wired && slot_held() && atomic_get(&power_off_acks) >= POWER_OFF_ACKS) {
 		power_off("host request");
 	}
 

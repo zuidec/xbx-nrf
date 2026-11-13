@@ -56,7 +56,7 @@ factory reset: pairing and settings erased.
 | Slow blink, 1 Hz | Searching for the dongle |
 | Fast blink, 5 Hz | Pairing |
 | Three quick blinks | Paired |
-| Three slow blinks | Error: pairing refused or failed, dongle full |
+| Three slow blinks | Error: pairing refused or failed, dongle full, PC can't be woken |
 | Off (on USB) | The PC is asleep: Guide wakes it |
 
 ## Wired and wireless
@@ -107,4 +107,7 @@ Needs, once per PC:
   replug.
 - **BIOS:** wake from USB allowed (usually on).
 
-This wakes from sleep, not from a full shutdown.
+This wakes from sleep, not from a full shutdown. The PC allows wake as it
+goes to sleep: a dongle plugged in while the PC is asleep or off can't wake it
+until the PC has been on once. A wake that can't happen shows three slow blinks on the
+controller (and on the dongle); the controller stays on for the power button.

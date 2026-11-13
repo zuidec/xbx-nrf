@@ -55,6 +55,7 @@ struct link {
 	uint8_t slot;        /* XBX_SLOT_NONE until assigned */
 	bool full;           /* turned away: no slot free */
 	bool power_off;      /* until the link is lost */
+	bool no_wake;        /* the host couldn't be woken: stay on; until the link is lost */
 	uint16_t sync_seq;   /* last measured report */
 	int16_t sync_err_us;
 };
@@ -101,6 +102,7 @@ static void queue_ack_payload(uint8_t link)
 	out->led = l->out_led;
 	out->flags = (l->full ? XBX_OUT_FLAG_FULL : 0) |
 		     (l->power_off ? XBX_OUT_FLAG_POWER_OFF : 0) |
+		     (l->no_wake ? XBX_OUT_FLAG_NO_WAKE : 0) |
 		     (xinput_host ? XBX_OUT_FLAG_XINPUT : 0);
 	out->slot = l->slot;
 	out->slots = frame_slots;
@@ -198,7 +200,7 @@ static bool handle_input(uint8_t link, const struct esb_payload *rx, int32_t pos
 
 	if (!l->have_seq) {
 		/* joined: a controller turned on (Guide), not one already linked */
-		usb_host_wake();
+		usb_host_wake(link);
 	} else {
 		uint16_t gap = (uint16_t)(in->seq - l->expected_seq);
 
@@ -570,6 +572,7 @@ void radio_link_lost(uint8_t link)
 	links[link].have_seq = false;
 	links[link].full = false;
 	links[link].power_off = false;
+	links[link].no_wake = false;
 	irq_unlock(key);
 }
 
@@ -604,9 +607,31 @@ void radio_power_off_all(void)
 
 	/* not idle links: the flag would turn off the next controller to join */
 	for (int i = 0; i < RADIO_LINKS; i++) {
-		if (links[i].have_seq || links[i].slot != XBX_SLOT_NONE) {
+		if (!links[i].no_wake && (links[i].have_seq || links[i].slot != XBX_SLOT_NONE)) {
 			links[i].power_off = true;
 		}
+	}
+	irq_unlock(key);
+}
+
+void radio_no_wake(uint32_t link_mask)
+{
+	unsigned int key = irq_lock();
+
+	for (int i = 0; i < RADIO_LINKS; i++) {
+		if (link_mask & BIT(i)) {
+			links[i].no_wake = true;
+		}
+	}
+	irq_unlock(key);
+}
+
+void radio_no_wake_clear(void)
+{
+	unsigned int key = irq_lock();
+
+	for (int i = 0; i < RADIO_LINKS; i++) {
+		links[i].no_wake = false;
 	}
 	irq_unlock(key);
 }

@@ -83,7 +83,19 @@ void radio_set_xinput(bool xinput);
 /* Ask the controller to power off; in its ACK payloads until the link is lost. */
 void radio_power_off(uint8_t link);
 
-/* radio_power_off() for every controller linked now (the host went to sleep). */
+/*
+ * radio_power_off() for every controller linked now (the host went to sleep),
+ * except those marked by radio_no_wake().
+ */
 void radio_power_off_all(void);
+
+/*
+ * These links (bit n = link n) joined but the host can't be woken: they show
+ * the error blink and stay on. Until the link is lost or radio_no_wake_clear().
+ */
+void radio_no_wake(uint32_t link_mask);
+
+/* The host is back (resume or reset): no link is marked any more. */
+void radio_no_wake_clear(void);
 
 #endif /* XBX_DONGLE_RADIO_H_ */
