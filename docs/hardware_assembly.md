@@ -1,7 +1,7 @@
 ---
 title: Hardware assembly
 created: 2026-11-03
-updated: 2026-11-11
+updated: 2026-11-12
 tags:
   - xbx-nrf
   - hardware
@@ -169,6 +169,14 @@ J5 on the top board) through a coax pigtail. The feed is already matched to
 50 Ω, so no tuning is needed. Any u.FL pigtail works, e.g. a u.FL-to-SMA
 adapter cable with the SMA end cut off.
 
+The stock board has two antennas: stock cables come from J5 and J8 on the
+top board. Their connectors are smaller than u.FL and don't fit the module,
+so J5's cable is replaced; J8's stays unused.
+
+![The two stock cables, soldered at J5 and J8 on the top board](images/antenna-stock-cables.jpg)
+
+The stock cables at J5 (tweezers) and J8.
+
 ```
      Top board (back)
 
@@ -182,19 +190,44 @@ adapter cable with the SMA end cut off.
                                                       Raytac module
 ```
 
-1. Strip 2–3 mm of the free end: just enough centre conductor to solder.
-2. Solder the centre conductor to **J5**. Its GND pad sits in line, a little
+1. Desolder the stock cable from **J5**.
+2. Strip 2–3 mm of the pigtail's free end: just enough centre conductor to
+   solder.
+3. Solder the centre conductor to **J5**. Its GND pad sits in line, a little
    further along: solder the braid to it, leaving a gap between the two.
-3. Route the cable back through the slot in our board and plug it into the
+4. Route the cable back through the slot in our board and plug it into the
    module's u.FL.
+
+![The pigtail at J5: centre conductor on J5, braid on the GND pad](images/antenna-j5.jpg)
+
+The pigtail at J5: centre conductor on the pad, braid on the GND pad below
+it. J8's stock cable is on the right.
 
 ## Fitting in the shell
 
 - **Extra GND pad (J5 on our board):** where the stock board had a ground
-  spring. Wire it to ground on the top board, e.g. the AA − terminal.
+  spring. Wire it to the top board's SH1 terminal (at WH2), the − side of
+  the AA contacts, and tape the wire down along its route.
+
+![The ground wire soldered to SH1 on the top board](images/ground-wire-sh1.jpg)
+
+The ground wire on SH1, the AA − terminal.
+
+![The ground wire's other end on the GND pad of our board](images/ground-wire-gnd-pad.jpg)
+
+Its other end on our GND pad (tweezers).
 
 > [!WARNING]
 > **Tape down the unused antenna**
 >
 > Cover the leftover antenna that isn't connected with non-conductive tape
 > (e.g. Kapton), so it can't short against the board.
+
+![J8's stock cable taped down on our board](images/antenna-unused-taped.jpg)
+
+J8's stock cable, its connector taped down beside the module.
+
+![The finished wiring: pigtail, ground wire and J8's cable taped](images/controller-wired.jpg)
+
+Done: the pigtail from J5 to the module, the ground wire and J8's cable
+taped down.
