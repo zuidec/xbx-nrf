@@ -117,7 +117,8 @@ class App(tk.Tk):
                 panels.RumblePanel, panels.PaddlesPanel, panels.ControllerLedPanel,
                 panels.ResetPanel, panels.FirmwarePanel]),
             "dongle": DeviceTab(self.book, self, "dongle", [
-                panels.InfoPanel, panels.DongleLedPanel, panels.DongleResetPanel,
+                panels.InfoPanel, panels.RadioPanel, panels.DongleLedPanel,
+                panels.DongleResetPanel,
                 panels.FirmwarePanel]),
         }
         for kind, tab in self.tabs.items():

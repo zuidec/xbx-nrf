@@ -1,7 +1,7 @@
 ---
 title: Configurator
 created: 2026-10-31
-updated: 2026-11-09
+updated: 2026-11-17
 tags:
   - xbx-nrf
   - firmware
@@ -31,8 +31,8 @@ source or as one Linux file ([Building](#building)). Steps:
   without changing the commands.
 - **Vendor HID interface** on both devices, in every USB mode: no driver on
   any OS [USB Channel](#usb-channel).
-- Same code as a **CLI** (`info`, `bootloader`, …) for development and
-  tests.
+- Same code as a **CLI** (`--help`): everything the window does except
+  its own view (theme, About).
 
 ## App
 
@@ -74,6 +74,7 @@ channel's usage page; lists every one found.
 | Section | Does |
 |---|---|
 | Info | Firmware version, USB mode (SW3), serial, paired controllers (suggested) |
+| Radio | Channel: a candidate or auto (rescan for the quietest); the dongle restarts on it and every controller must pair again (CLI `channel`) |
 | LED brightness | Pair, player and power LEDs, 1–255 each; player and power can be switched off, pair can't. A change lights that group for 1.5 s (the pair LED is off outside pairing) |
 | Factory reset | Settings (LED brightness), pairing (forget all controllers; also: Pair held 10 s): each or both |
 | Firmware update | As the controller |
@@ -92,7 +93,7 @@ The user always picks the `.uf2` file; the app ships no firmware.
 
 Linux: a drive the desktop didn't mount is mounted with `udisksctl` (no root)
 and unmounted again after the sync, never before. Without a desktop session
-(SSH) that needs an admin password, which the CLI lets `udisksctl` ask for.
+that needs an admin password, which the CLI lets `udisksctl` ask for.
 If mounting fails, the app shows a `sudo mount` command and waits 2 minutes;
 a drive it can't write to stops the update with the `sudo cp` that finishes
 it (the device stays in its bootloader).
@@ -221,7 +222,7 @@ is dropped. Input-test data comes unrequested as `STREAM` reports (command
 |---|---|---|---|
 | `0x01` | `INFO` | Both | → [INFO result](#info-result) |
 | `0x02` | `SETTING_GET` | Both | id → id, value ([Settings](#settings)); id 0 → count, the ids this firmware has |
-| `0x03` | `SETTING_SET` | Both | id, value → applied at once, saved to flash 1 s after the last change (sliders don't wear flash) |
+| `0x03` | `SETTING_SET` | Both | id, value → applied at once, saved to flash 1 s after the last change (sliders don't wear flash); the radio channel: saved, then restart |
 | `0x04` | `STREAM` | Controller | rate in Hz (0 = off, ≤ 100); stops when the interface goes down ([STREAM report](#stream-report)) |
 | `0x05` | `CALIBRATE` | Controller | step, targets → [CALIBRATE result](#calibrate-result) |
 | `0x06` | `RUMBLE` | Controller | levels heavy, weak, LT, RT (u8), duration ms (u16 LE, ≤ 2000, 0 stops); overrides the host while it runs |
@@ -316,6 +317,7 @@ look even; off is a separate switch.
 | `0x05` | Trigger full pull threshold | Controller | 2 × u8 %, LT, RT (5–100; default 95): calibrated triggers report full from there |
 | `0x06` | LED brightness | Dongle | 4 × u8: pair, player, power (1–255, default 255); on bits `0x01` player, `0x02` power (default both) |
 | `0x07` | Trigger effects | Controller | 6 × u8: flags (`0x01` click, `0x02` trigger rumble; default both), click strength 1–255 (255), trigger rumble from heavy % (30), from weak % (30), from trigger pull % of the output 1–100 (10), click length 5–100 ms (30) |
+| `0x08` | Radio channel | Dongle | Get: current, count, candidates (`XBX_RF_CHANNELS`). Set: u8, a candidate or 0 (auto: rescan at the restart); stored with the pairing (`pair/chan`), then restart |
 
 ### Versioning
 

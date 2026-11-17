@@ -106,7 +106,7 @@ def find_drive(kind):
 
 def _udisks(*args, interactive=False):
     """Linux: udisksctl as the user; True if it worked. Without a desktop
-    session (SSH) polkit wants an admin password: interactive lets udisksctl
+    session polkit wants an admin password: interactive lets udisksctl
     ask for it in the terminal, otherwise it fails at once."""
     tool = shutil.which("udisksctl")
     if not tool:
@@ -139,16 +139,6 @@ def check_drive(mount, kind):
                   if l.startswith("Board-ID:")), "")
     if not board.startswith(BOARD_IDS[kind]):
         raise Uf2Error(f"the drive is a different board ({board or 'unknown'})")
-
-
-def _wait(what, timeout, fn, progress):
-    end = time.monotonic() + timeout
-    while time.monotonic() < end:
-        r = fn()
-        if r:
-            return r
-        time.sleep(0.25)
-    raise Uf2Error(f"timed out waiting for {what}")
 
 
 def _write(target, data):
@@ -278,21 +268,9 @@ def update(device, image, progress=print, interactive=False):
 
     progress("Waiting for the restart...")
 
-    def back():
-        for f in dev.find():
-            if f.kind != kind:
-                continue
-            try:
-                d = dev.Device(f)
-            except (OSError, p.ProtocolError):
-                continue
-            if d.info.serial == serial:
-                d.close()
-                return d.info
-            d.close()
-        return None
-
-    info = _wait(f"the {kind} to come back", RESTART_TIMEOUT, back, progress)
+    info = dev.wait_back(kind, serial, RESTART_TIMEOUT)
+    if info is None:
+        raise Uf2Error(f"timed out waiting for the {kind} to come back")
     if info.firmware != image.version:
         raise Uf2Error(f"the {kind} came back with firmware {info.firmware_str}, not "
                        f"{image.version_str}: the copy didn't take")

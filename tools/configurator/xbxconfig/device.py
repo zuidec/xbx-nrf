@@ -7,6 +7,7 @@ One request at a time (the firmware drops a second one).
 
 import queue
 import threading
+import time
 
 from . import protocol as p
 from . import transport
@@ -136,6 +137,15 @@ class Device:
         self.setting_set(p.SET_DONGLE_LEDS,
                          bytes([leds["pair"], leds["player"], leds["power"], on]))
 
+    def rf_channel(self):
+        """Dongle: (current channel, [candidates])."""
+        v = self.setting_get(p.SET_RF_CHANNEL)
+        return v[0], list(v[2:2 + v[1]])
+
+    def set_rf_channel(self, channel):
+        """Dongle: a candidate or RF_CHANNEL_AUTO; it restarts on it (wait_back())."""
+        self.setting_set(p.SET_RF_CHANNEL, bytes([channel]))
+
     def trigger_full(self):
         """(LT, RT) full pull thresholds, %."""
         v = self.setting_get(p.SET_TRG_FULL)
@@ -180,6 +190,25 @@ class Device:
 
 def find():
     return transport.find()
+
+
+def wait_back(kind, serial, timeout):
+    """After a restart: the Info of the device with this serial, or None at the timeout."""
+    end = time.monotonic() + timeout
+    while time.monotonic() < end:
+        for f in find():
+            if f.kind != kind:
+                continue
+            try:
+                d = Device(f)
+            except (OSError, p.ProtocolError):
+                continue
+            info = d.info
+            d.close()
+            if info.serial == serial:
+                return info
+        time.sleep(0.25)
+    return None
 
 
 def open_first(kind=None):

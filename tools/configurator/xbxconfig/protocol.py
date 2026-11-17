@@ -38,6 +38,8 @@ TRG_FX_RUMBLE = 0x02
 SET_DONGLE_LEDS = 0x06  # dongle: pair, player, power levels (1-255), on flags
 LEDS_PLAYER_ON = 0x01
 LEDS_POWER_ON = 0x02
+SET_RF_CHANNEL = 0x08  # dongle: current, count, candidates; set one or AUTO, then it restarts
+RF_CHANNEL_AUTO = 0  # rescan for the quietest at the restart
 TRG_FULL_MIN = 5  # hair trigger
 
 # FACTORY_RESET scope

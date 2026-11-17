@@ -105,6 +105,81 @@ def cmd_led(args):
     d.close()
 
 
+def _open_kind(args, kind):
+    d = dev.open_first(args.device or kind)
+    if d.info.device != kind:
+        d.close()
+        sys.exit(f"that's a {d.info.device}: this is a {kind} setting")
+    return d
+
+
+def _has(d, sid, what):
+    if sid not in d.setting_ids():
+        d.close()
+        sys.exit(f"this {d.info.device} firmware has no {what}: update it")
+
+
+def cmd_channel(args):
+    d = _open_kind(args, "dongle")
+    _has(d, p.SET_RF_CHANNEL, "channel setting")
+    current, candidates = d.rf_channel()
+    if args.channel is None:
+        print(f"channel {current} ({2400 + current} MHz); candidates "
+              f"{' '.join(map(str, candidates))}, or auto")
+        d.close()
+        return
+    if args.channel == "auto":
+        ch = p.RF_CHANNEL_AUTO
+    elif args.channel.isdigit() and int(args.channel) in candidates:
+        ch = int(args.channel)
+    else:
+        d.close()
+        sys.exit(f"channel {args.channel}: one of {' '.join(map(str, candidates))}, or auto")
+    serial = d.info.serial
+    d.set_rf_channel(ch)
+    d.close()
+    print("restarting" + (": rescanning for the quietest channel" if ch == 0 else "") + "...")
+    info = dev.wait_back("dongle", serial, 20)
+    if info is None:
+        sys.exit("the dongle didn't come back within 20 s")
+    d = dev.open_first("dongle")
+    new = d.rf_channel()[0]
+    d.close()
+    print(f"channel {current} -> {new}" + ("" if new == current else
+                                          ": pair the controllers again"))
+
+
+FX_RANGES = {"click": (1, 255), "click_ms": (5, 100), "from_heavy": (0, 100),
+             "from_weak": (0, 100), "threshold": (1, 100)}
+
+
+def cmd_trigger_fx(args):
+    d = _open_kind(args, "controller")
+    _has(d, p.SET_TRG_FX, "trigger effects")
+    fx = d.trigger_fx()
+    changed = False
+    for key, (lo, hi) in FX_RANGES.items():
+        v = getattr(args, key)
+        if v is None:
+            continue
+        if not lo <= v <= hi:
+            d.close()
+            sys.exit(f"--{key.replace('_', '-')} takes {lo}-{hi}")
+        fx[key], changed = v, True
+    for key in ("click_on", "rumble_on"):
+        v = getattr(args, key)
+        if v is not None:
+            fx[key], changed = v == "on", True
+    if changed:
+        d.set_trigger_fx(fx)
+        fx = d.trigger_fx()
+    print(f"click {'on' if fx['click_on'] else 'off'}: strength {fx['click']}, "
+          f"{fx['click_ms']} ms\ntrigger rumble {'on' if fx['rumble_on'] else 'off'}: "
+          f"from heavy {fx['from_heavy']} %, weak {fx['from_weak']} %, "
+          f"from trigger pull {fx['threshold']} %")
+    d.close()
+
+
 def cmd_stream(args):
     d = _open(args)
     d.stream(args.hz)
@@ -265,6 +340,22 @@ def main(argv=None):
     s.add_argument("pct", nargs="*", type=int, metavar="PCT",
                    help=f"LT RT, {p.TRG_FULL_MIN}-100 %% of the calibrated travel")
     s.set_defaults(fn=cmd_triggers)
+    s = sub.add_parser("trigger-fx", help="show or set the trigger effects (controller)")
+    s.add_argument("--click", dest="click_on", choices=("on", "off"),
+                   help="click when a trigger reaches full pull")
+    s.add_argument("--strength", dest="click", type=int, metavar="1-255")
+    s.add_argument("--click-ms", type=int, metavar="5-100")
+    s.add_argument("--rumble", dest="rumble_on", choices=("on", "off"),
+                   help="trigger rumble from the game's rumble while pulled")
+    s.add_argument("--from-heavy", type=int, metavar="PCT", help="0-100 %% of heavy")
+    s.add_argument("--from-weak", type=int, metavar="PCT", help="0-100 %% of weak")
+    s.add_argument("--threshold", type=int, metavar="PCT",
+                   help="1-100 %% trigger pull before it rumbles")
+    s.set_defaults(fn=cmd_trigger_fx)
+    s = sub.add_parser("channel", help="show or set the radio channel, then restart "
+                       "(dongle; controllers must pair again)")
+    s.add_argument("channel", nargs="?", help="a candidate channel, or auto (the quietest)")
+    s.set_defaults(fn=cmd_channel)
     s = sub.add_parser("led", help="show or set the LED brightness")
     s.add_argument("level", nargs="?", type=led_level, help="controller: Guide LED, 1-255")
     s.add_argument("--pair", metavar="LEVEL", help="dongle: pair LED, 1-255")

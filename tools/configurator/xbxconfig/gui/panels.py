@@ -571,6 +571,61 @@ class DongleLedPanel(LedPanel):
         self.call("set_dongle_leds", values)
 
 
+class RadioPanel(Panel):
+    """Dongle radio channel: changing it restarts the dongle; controllers pair again."""
+
+    title = "Radio"
+    AUTO = "Auto: the quietest, scanned at the restart"
+
+    def __init__(self, master):
+        super().__init__(master)
+        self.choices = {}  # combobox text -> channel
+        self.current = ttk.Label(self, text="Channel: -")
+        self.current.pack(anchor="w")
+        ttk.Label(self, text="Change it if the link drops in use: Wi-Fi or another device "
+                  "may be busy on this channel. The dongle restarts on the new channel, and "
+                  "every controller must be paired again.", wraplength=460).pack(
+            anchor="w", pady=(8, 12))
+        row = ttk.Frame(self)
+        row.pack(anchor="w")
+        self.choice = ttk.Combobox(row, state="readonly", width=44)
+        self.choice.pack(side="left")
+        self.button = ttk.Button(row, text="Change and restart", command=self.change)
+        self.button.pack(side="left", padx=8)
+        self.missing = ttk.Label(self, text="This firmware has no channel setting; update it.")
+
+    def on_show(self):
+        if not self.device:
+            return
+        has = p.SET_RF_CHANNEL in (self.call("setting_ids") or [])
+        self.button.state(["!disabled"] if has else ["disabled"])
+        if not has:
+            self.current.configure(text="Channel: -")
+            self.missing.pack(anchor="w", pady=(12, 0))
+            return
+        self.missing.pack_forget()
+        v = self.call("rf_channel")
+        if v is None:
+            return
+        current, candidates = v
+        self.current.configure(text=f"Channel: {current} ({2400 + current} MHz)")
+        self.choices = {f"{c} ({2400 + c} MHz)": c for c in candidates if c != current}
+        self.choices[self.AUTO] = p.RF_CHANNEL_AUTO
+        self.choice.configure(values=list(self.choices))
+        self.choice.set(self.AUTO)
+
+    def change(self):
+        text = self.choice.get()
+        if text not in self.choices:
+            return
+        what = "rescan for the quietest channel" if text == self.AUTO else \
+            f"switch to channel {text}"
+        if messagebox.askyesno("Radio channel", f"The dongle will {what} and restart.\n\n"
+                               "Every controller must be paired again afterwards.",
+                               parent=self):
+            self.call("set_rf_channel", self.choices[text])
+
+
 class ResetPanel(Panel):
     title = "Factory reset"
     SCOPES = (("Settings (paddles, LED, trigger full pull and effects, stored USB mode)",

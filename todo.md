@@ -1,7 +1,7 @@
 ---
 title: xbx-nrf TODO
 created: 2026-09-28
-updated: 2026-11-11
+updated: 2026-11-17
 tags:
   - xbx-nrf
   - todo
@@ -28,6 +28,10 @@ tags:
 ---
 
 ## Firmware
+- [ ] Channel change without pairing again (stage 2 of the configurator's
+      channel option, which now needs every controller paired again): a
+      controller that loses the link searches the other candidates for its
+      own dongle's address, then stays on the channel it finds.
 - [ ] Adaptive channel instead of hopping: the dongle watches loss and noise
       on its channel and scans the other candidates in the background; when
       the channel degrades it announces "channel N at frame F" in the ACK
