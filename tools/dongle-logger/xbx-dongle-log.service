@@ -1,0 +1,11 @@
+[Unit]
+Description=Log the XBX-NRF dongle's USB console
+After=local-fs.target
+
+[Service]
+ExecStart=/usr/bin/python3 /usr/local/bin/xbx-dongle-log --dir /var/log/xbx-dongle
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
