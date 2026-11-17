@@ -1,7 +1,7 @@
 ---
 title: Configurator
 created: 2026-10-31
-updated: 2026-11-04
+updated: 2026-11-09
 tags:
   - xbx-nrf
   - firmware
@@ -91,8 +91,15 @@ The user always picks the `.uf2` file; the app ships no firmware.
    version.
 
 Linux: a drive the desktop didn't mount is mounted with `udisksctl` (no root)
-and unmounted again after the sync, never before; without `udisksctl` the
-app asks the user to mount it.
+and unmounted again after the sync, never before. Without a desktop session
+(SSH) that needs an admin password, which the CLI lets `udisksctl` ask for.
+If mounting fails, the app shows a `sudo mount` command and waits 2 minutes;
+a drive it can't write to stops the update with the `sudo cp` that finishes
+it (the device stays in its bootloader).
+
+The copy runs in a child process with a 30 s limit: a drive that stops
+responding blocks the write in the kernel for minutes, out of reach of
+Ctrl+C. The app then goes on to check whether the device restarted.
 
 ### Platforms
 

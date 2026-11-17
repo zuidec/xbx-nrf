@@ -6,6 +6,7 @@ import shutil
 import struct
 import subprocess
 import sys
+import threading
 import time
 from dataclasses import dataclass
 
@@ -21,6 +22,8 @@ DRIVES = {"controller": "XBXCTRL", "dongle": "XBXDONGLE"}
 BOARD_IDS = {"controller": "nRF52840-xbx-controller", "dongle": "nRF52840-xbx-dongle"}
 
 DRIVE_TIMEOUT = 20  # s: bootloader start + the desktop mounting it
+MOUNT_TIMEOUT = 120  # s: the user mounting it by hand
+COPY_TIMEOUT = 30  # s: a drive that stops responding holds the write in the kernel
 RESTART_TIMEOUT = 20
 
 
@@ -101,14 +104,19 @@ def find_drive(kind):
     raise Uf2Error(f"unsupported platform {sys.platform}")
 
 
-def _udisks(*args):
-    """Linux: udisksctl as the desktop user (no root, no prompt); True if it worked."""
+def _udisks(*args, interactive=False):
+    """Linux: udisksctl as the user; True if it worked. Without a desktop
+    session (SSH) polkit wants an admin password: interactive lets udisksctl
+    ask for it in the terminal, otherwise it fails at once."""
     tool = shutil.which("udisksctl")
     if not tool:
         return False
     try:
-        r = subprocess.run([tool, *args, "--no-user-interaction"], capture_output=True,
-                           timeout=10)
+        if interactive:
+            r = subprocess.run([tool, *args], stdout=subprocess.DEVNULL, timeout=120)
+        else:
+            r = subprocess.run([tool, *args, "--no-user-interaction"], capture_output=True,
+                               timeout=10)
     except (OSError, subprocess.TimeoutExpired):
         return False
     return r.returncode == 0
@@ -143,9 +151,73 @@ def _wait(what, timeout, fn, progress):
     raise Uf2Error(f"timed out waiting for {what}")
 
 
-def update(device, image, progress=print):
+def _write(target, data):
+    with open(target, "wb") as f:
+        f.write(data)
+        f.flush()
+        os.fsync(f.fileno())
+
+
+def _copy(target, data, timeout):
+    """Write and sync target; True when done, False after timeout. A drive
+    that stops responding blocks write/fsync in the kernel (no signal gets
+    through) until its error handling gives up, minutes later: POSIX copies
+    in a child process, which is left to finish on its own, so this process
+    can go on and exit. Raises OSError for a failed write."""
+    if not hasattr(os, "fork"):  # Windows: a thread (its process can't exit early)
+        result = []
+
+        def run():
+            try:
+                _write(target, data)
+                result.append(None)
+            except OSError as e:
+                result.append(e)
+
+        t = threading.Thread(target=run, daemon=True)
+        t.start()
+        t.join(timeout)
+        if not result:
+            return False
+        if result[0]:
+            raise result[0]
+        return True
+
+    r, w = os.pipe()
+    pid = os.fork()
+    if pid == 0:  # child: only the copy, then out without any cleanup
+        code = 1
+        try:
+            os.close(r)
+            _write(target, data)
+            code = 0
+        except BaseException as e:  # never back into the parent's code
+            try:
+                os.write(w, f"{getattr(e, 'errno', 0) or 0}\0{e}".encode())
+            except BaseException:
+                pass  # the parent gave up waiting: nobody to tell
+        finally:
+            os._exit(code)
+    os.close(w)
+    try:
+        end = time.monotonic() + timeout
+        while time.monotonic() < end:
+            done, status = os.waitpid(pid, os.WNOHANG)
+            if done:
+                if os.waitstatus_to_exitcode(status) == 0:
+                    return True
+                errno_, _, msg = os.read(r, 4096).decode(errors="replace").partition("\0")
+                raise OSError(int(errno_ or 0) or None, msg or "copy failed")
+            time.sleep(0.1)
+        return False
+    finally:
+        os.close(r)
+
+
+def update(device, image, progress=print, interactive=False):
     """BOOTLOADER, copy the image, wait for the app again. device is closed
-    on return; returns the new Info."""
+    on return; returns the new Info. interactive (a terminal): an admin
+    password prompt is allowed for mounting the drive."""
     kind = device.info.device
     serial = device.info.serial
     if image.device != kind:
@@ -157,40 +229,51 @@ def update(device, image, progress=print):
 
     progress(f"Waiting for the {DRIVES[kind]} drive...")
 
-    node = f"/dev/disk/by-label/{DRIVES[kind]}"
+    label = DRIVES[kind]
+    node = f"/dev/disk/by-label/{label}"
     tried = False
     mounted_here = False
-
-    def drive():
-        nonlocal tried, mounted_here
-        m = find_drive(kind)
-        if not m and not tried and drive_present_unmounted(kind):
+    end = time.monotonic() + DRIVE_TIMEOUT
+    while True:
+        mount = find_drive(kind)
+        if mount:
+            break
+        if not tried and drive_present_unmounted(kind):
             tried = True
-            if _udisks("mount", "-b", node):
+            if interactive:
+                progress(f"Mounting {label} (may ask for an admin password)...")
+            if _udisks("mount", "-b", node, interactive=interactive):
                 mounted_here = True
-                return find_drive(kind)
-            progress(f"{DRIVES[kind]} is there but not mounted: mount it (file manager)...")
-        return m
-
-    mount = _wait(f"the {DRIVES[kind]} drive", DRIVE_TIMEOUT, drive, progress)
+                continue
+            progress(f"{label} is there but couldn't be mounted (no access). Mount it, "
+                     f"e.g. in another terminal: sudo mount {node} /mnt")
+            end = time.monotonic() + MOUNT_TIMEOUT
+        if time.monotonic() >= end:
+            raise Uf2Error(f"timed out waiting for the {label} drive; the {kind} stays in "
+                           f"its bootloader: copy the file onto {label} to finish")
+        time.sleep(0.25)
     check_drive(mount, kind)
+    if not os.access(mount, os.W_OK):
+        raise Uf2Error(f"no write access to {mount} (mounted by another user?); the {kind} "
+                       f"stays in its bootloader: finish with "
+                       f"sudo cp '{image.path}' '{mount}/' && sync")
 
     progress(f"Copying {os.path.basename(image.path)} ({len(image.data) // 1024} KiB)...")
     target = os.path.join(mount, "firmware.uf2")
     try:
-        with open(target, "wb") as f:
-            f.write(image.data)
-            f.flush()
-            os.fsync(f.fileno())
+        done = _copy(target, image.data, COPY_TIMEOUT)
     except OSError:
         # the bootloader restarts after the last block: the drive may vanish first
         if find_drive(kind):
             raise
     else:
-        # fsync returned: every block is on the device. Unmount (never power
-        # off) what we mounted, so the desktop doesn't warn when it goes; it
-        # may be gone already.
-        if mounted_here:
+        if not done:
+            progress(f"{label} stopped responding during the copy; checking whether the "
+                     f"{kind} restarted anyway...")
+        elif mounted_here:
+            # every block is on the device. Unmount (never power off) what we
+            # mounted, so the desktop doesn't warn when it goes; it may be
+            # gone already.
             _udisks("unmount", "-b", node)
 
     progress("Waiting for the restart...")

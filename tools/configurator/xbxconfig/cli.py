@@ -197,7 +197,7 @@ def cmd_update(args):
     print(f"{args.file}: {image.device} firmware {image.version_str}")
     d = _open(args)
     print(f"device: {d.info.device} firmware {d.info.firmware_str}")
-    uf2.update(d, image)
+    uf2.update(d, image, interactive=sys.stdin.isatty())
 
 
 def cmd_bootloader(args):
