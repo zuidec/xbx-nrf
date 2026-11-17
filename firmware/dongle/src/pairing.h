@@ -35,6 +35,13 @@ const struct pairing_addr *pairing_addr(void);
 /* The dongle's channel (chosen at first use); valid after pairing_init(). */
 uint8_t pairing_channel(void);
 
+/*
+ * Store the channel for the next start: one of XBX_RF_CHANNELS, or 0 to
+ * rescan for the quietest. Paired controllers stay on the old one until
+ * paired again. -EINVAL: not a candidate.
+ */
+int pairing_channel_save(uint8_t ch);
+
 /* Enter pairing mode (restarts the timeout if already in it). */
 void pairing_start(const char *why);
 

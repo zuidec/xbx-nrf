@@ -35,6 +35,14 @@
 #define CFG_USB_SETTING_LED         0x03 /* controller: Guide LED, u8 1–255 */
 #define CFG_USB_SETTING_DONGLE_LEDS 0x06 /* dongle: struct below */
 
+/*
+ * Dongle radio channel. Get: current, count, the candidates. Set: a
+ * candidate or CFG_USB_RF_CHANNEL_AUTO (rescan); saved, applied by the
+ * restart that follows.
+ */
+#define CFG_USB_SETTING_RF_CHANNEL 0x08
+#define CFG_USB_RF_CHANNEL_AUTO    0
+
 /* CFG_USB_SETTING_DONGLE_LEDS value */
 struct cfg_usb_dongle_leds {
 	uint8_t pair;   /* 1–255 */
@@ -71,7 +79,10 @@ struct config_usb_app {
 	size_t id_count;
 	/* Copy setting id into value (size bytes free): its length. */
 	int (*get)(uint8_t id, uint8_t *value, size_t size);
-	/* Apply setting id; value: the rest of the request (len bytes). */
+	/*
+	 * Apply setting id; value: the rest of the request (len bytes). 1: saved,
+	 * applied by a restart after the response.
+	 */
 	int (*set)(uint8_t id, const uint8_t *value, size_t len);
 	/* Before a reset: write pending changes to flash now. */
 	void (*flush)(void);

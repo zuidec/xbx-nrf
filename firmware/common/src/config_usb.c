@@ -240,12 +240,17 @@ static void request_fn(struct k_work *work)
 	case CMD_SETTING_GET:
 		status = setting_get(args[0], out);
 		break;
-	case CMD_SETTING_SET:
+	case CMD_SETTING_SET: {
 		/* args: id, value (the rest of the message; each setting knows its size) */
-		status = app && app->set ? status_of(app->set(args[0], &args[1],
-							      CFG_USB_ARGS_SIZE - 1))
-					 : ST_UNSUPPORTED;
+		int ret = app && app->set ? app->set(args[0], &args[1], CFG_USB_ARGS_SIZE - 1)
+					  : -ENOTSUP;
+
+		status = status_of(ret);
+		if (ret == 1) {
+			reset_soon(false);
+		}
 		break;
+	}
 	case CFG_USB_CMD_STREAM:
 	case CFG_USB_CMD_CALIBRATE:
 	case CFG_USB_CMD_RUMBLE: {

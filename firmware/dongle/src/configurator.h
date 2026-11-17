@@ -1,6 +1,6 @@
 /*
- * The dongle's part of the configurator channel (config_usb.h): the LED
- * levels setting and FACTORY_RESET (settings, pairing); INFO, BOOTLOADER and
+ * The dongle's part of the configurator channel (config_usb.h): the radio
+ * channel and LED levels settings, and FACTORY_RESET (settings, pairing); INFO, BOOTLOADER and
  * REBOOT are config_usb.c's.
  */
 

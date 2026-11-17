@@ -1,5 +1,6 @@
 /*
- * Configurator commands on the dongle (see configurator.h). Settings: the LED
+ * Configurator commands on the dongle (see configurator.h). Settings: the
+ * radio channel (stored by pairing.c, the restart applies it) and the LED
  * levels, key "cfg/leds", saved 1 s after the last change; other "cfg/" keys
  * (older firmware) are deleted at boot. Requests, the save and the flush all
  * run on the system work queue.
@@ -79,8 +80,25 @@ static void save_fn(struct k_work *work)
 
 static K_WORK_DELAYABLE_DEFINE(save_work, save_fn);
 
+/* current, count, the candidates */
+static int channel_get(uint8_t *value, size_t size)
+{
+	static const uint8_t candidates[] = XBX_RF_CHANNELS;
+
+	if (size < 2 + sizeof(candidates)) {
+		return -EINVAL;
+	}
+	value[0] = pairing_channel();
+	value[1] = sizeof(candidates);
+	memcpy(&value[2], candidates, sizeof(candidates));
+	return 2 + sizeof(candidates);
+}
+
 static int setting_get(uint8_t id, uint8_t *value, size_t size)
 {
+	if (id == CFG_USB_SETTING_RF_CHANNEL) {
+		return channel_get(value, size);
+	}
 	if (id != CFG_USB_SETTING_DONGLE_LEDS) {
 		return -ENOTSUP;
 	}
@@ -117,6 +135,12 @@ static int setting_set(uint8_t id, const uint8_t *value, size_t len)
 {
 	struct cfg_usb_dongle_leds c;
 
+	if (id == CFG_USB_SETTING_RF_CHANNEL) {
+		/* the radio takes it at the restart; the old one is kept on failure */
+		int err = len ? pairing_channel_save(value[0]) : -EINVAL;
+
+		return err ? err : 1;
+	}
 	if (id != CFG_USB_SETTING_DONGLE_LEDS) {
 		return -ENOTSUP;
 	}
@@ -158,7 +182,7 @@ static int factory_reset(uint8_t scope)
 	return 0;
 }
 
-static const uint8_t setting_ids[] = {CFG_USB_SETTING_DONGLE_LEDS};
+static const uint8_t setting_ids[] = {CFG_USB_SETTING_DONGLE_LEDS, CFG_USB_SETTING_RF_CHANNEL};
 
 static const struct config_usb_app app = {
 	.ids = setting_ids,

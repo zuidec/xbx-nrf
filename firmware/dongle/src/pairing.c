@@ -1,6 +1,7 @@
 /*
  * Dongle pairing (see pairing.h). Settings keys "pair/addr" (address),
- * "pair/chan" (channel, the quietest candidate at first use) and "pair/table"
+ * "pair/chan" (channel: the quietest candidate at first use, or the
+ * configurator's choice; 0 = rescan at the next start) and "pair/table"
  * (paired controllers). Mode timing, the LED blink, answers and
  * flash writes run on the system work queue; interrupts only store and
  * schedule.
@@ -82,6 +83,7 @@ struct stored_table {
 static struct pairing_addr addr;
 static bool addr_loaded;
 static uint8_t channel; /* 0 = not chosen yet */
+static bool chan_loaded; /* "pair/chan" exists; stored 0: rescan (pairing_channel_save()) */
 static struct stored_table table = {.version = TABLE_VERSION};
 static uint8_t dongle_id[8];
 
@@ -215,6 +217,7 @@ static int pairing_settings_set(const char *name, size_t len, settings_read_cb r
 
 		if (len == sizeof(ch) && read_cb(cb_arg, &ch, sizeof(ch)) == sizeof(ch)) {
 			channel = ch;
+			chan_loaded = true;
 		}
 		return 0;
 	}
@@ -725,7 +728,7 @@ int pairing_init(void)
 	} else {
 		prefixes_check();
 	}
-	if (!channel && !table_empty()) {
+	if (!chan_loaded && !table_empty()) {
 		/* paired before channel choice existed: on the old fixed channel */
 		channel = 76;
 		settings_save_one("pair/chan", &channel, sizeof(channel));
@@ -733,30 +736,13 @@ int pairing_init(void)
 	if (!channel) {
 		static const uint8_t candidates[] = XBX_RF_CHANNELS;
 
-		LOG_INF("first use: choosing the quietest channel");
+		LOG_INF("%s: choosing the quietest channel", chan_loaded ? "rescan" : "first use");
 		if (radio_channel_scan(&channel)) {
 			channel = candidates[0];
 			LOG_WRN("channel scan failed: using %u", channel);
 		}
 		if (settings_save_one("pair/chan", &channel, sizeof(channel))) {
 			LOG_WRN("channel save failed");
-		}
-	}
-	if (CONFIG_XBX_RF_CHANNEL_FORCE && channel != CONFIG_XBX_RF_CHANNEL_FORCE) {
-		static const uint8_t candidates[] = XBX_RF_CHANNELS;
-		bool known = false;
-
-		for (size_t i = 0; i < ARRAY_SIZE(candidates); i++) {
-			known |= candidates[i] == CONFIG_XBX_RF_CHANNEL_FORCE;
-		}
-		if (known) {
-			LOG_WRN("channel %u -> %u (forced): pair the controllers again", channel,
-				CONFIG_XBX_RF_CHANNEL_FORCE);
-			channel = CONFIG_XBX_RF_CHANNEL_FORCE;
-			settings_save_one("pair/chan", &channel, sizeof(channel));
-		} else {
-			LOG_ERR("forced channel %u isn't a pairing candidate: ignored",
-				CONFIG_XBX_RF_CHANNEL_FORCE);
 		}
 	}
 	for (int i = 0; i < PAIRING_PIPES; i++) {
@@ -786,6 +772,22 @@ const struct pairing_addr *pairing_addr(void)
 uint8_t pairing_channel(void)
 {
 	return channel;
+}
+
+int pairing_channel_save(uint8_t ch)
+{
+	static const uint8_t candidates[] = XBX_RF_CHANNELS;
+	bool known = ch == 0;
+
+	for (size_t i = 0; i < ARRAY_SIZE(candidates); i++) {
+		known |= candidates[i] == ch;
+	}
+	if (!known) {
+		return -EINVAL;
+	}
+	LOG_WRN("channel %u -> %u (0: rescan) at the restart: pair the controllers again",
+		channel, ch);
+	return settings_save_one("pair/chan", &ch, sizeof(ch));
 }
 
 bool pairing_active(void)
