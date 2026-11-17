@@ -39,6 +39,41 @@ struct radio_stats {
 	uint32_t ack_queue_full;
 };
 
+/*
+ * Link events for the log, found from the reports' sequence numbers and the
+ * controller's uptime (timestamp_us):
+ *
+ * Gap: a report 10 ms or more after the previous one, or one at rejoin pacing
+ * (in sequence, but over 4 frames late: the controller lost its slot after
+ * 100 ms without ACK payloads). Ends after 100 normal reports in a row, or
+ * when the link is lost. lost > 0: the dongle missed reports; only rejoining:
+ * the controller missed the ACKs.
+ *
+ * Restart: the controller's uptime disagrees with the dongle's by over 50 ms.
+ */
+enum radio_event_type {
+	RADIO_EVENT_GAP,
+	RADIO_EVENT_RESTART,
+};
+
+struct radio_event {
+	uint8_t type;        /* RADIO_EVENT_* */
+	uint8_t link;
+	bool link_lost;      /* gap: ended by the link timing out */
+	uint8_t rssi_max;    /* gap: weakest report (ESB magnitude, dBm) */
+	uint32_t at_ms;      /* dongle uptime at the start */
+	uint32_t dur_ms;     /* gap: first to last late report; restart: no reports */
+	uint32_t max_gap_ms; /* gap: longest wait between two reports */
+	uint16_t lost;       /* gap: reports the dongle missed */
+	uint16_t rejoining;  /* gap: reports at rejoin pacing */
+};
+
+/* The next link event, oldest first (thread context). False: none. */
+bool radio_event_get(struct radio_event *event);
+
+/* Events dropped because nobody read them in time (since start). */
+uint32_t radio_events_dropped(void);
+
 /* Configure ESB, queue the first ACK payloads and start receiving. */
 int radio_start(void);
 

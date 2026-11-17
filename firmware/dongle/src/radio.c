@@ -58,7 +58,24 @@ struct link {
 	bool no_wake;        /* the host couldn't be woken: stay on; until the link is lost */
 	uint16_t sync_seq;   /* last measured report */
 	int16_t sync_err_us;
+	/* link events (radio.h) */
+	uint32_t last_ts_us; /* the controller's timestamp_us in the last report */
+	uint32_t last_rx_us; /* our uptime then, same units */
+	bool in_gap;
+	uint16_t gap_normal; /* normal reports since the last late one */
+	uint32_t gap_last_ms;
+	struct radio_event gap;
 };
+
+#define GAP_MIN_US      10000 /* a report this late starts a gap */
+#define GAP_PACED       4     /* frames: later than this, in sequence = rejoining */
+#define GAP_END_REPORTS 100   /* normal reports in a row end it */
+#define RESTART_SKEW_US 50000 /* uptimes disagreeing by this much: a restart */
+#define EVENT_QUEUE     8
+
+static struct radio_event events[EVENT_QUEUE];
+static uint8_t event_head, event_count;
+static uint32_t events_dropped;
 
 static struct radio_stats stats;
 static struct link links[RADIO_LINKS];
@@ -186,6 +203,81 @@ static int16_t slot_error_us(uint8_t slot, int32_t pos_us)
 	return (int16_t)err;
 }
 
+/* irq locked or radio interrupt */
+static void event_push(const struct radio_event *e)
+{
+	if (event_count == EVENT_QUEUE) {
+		events_dropped++;
+		return;
+	}
+	events[(event_head + event_count++) % EVENT_QUEUE] = *e;
+}
+
+/* irq locked or radio interrupt */
+static void gap_end(struct link *l, bool link_lost)
+{
+	if (!l->in_gap) {
+		return;
+	}
+	l->gap.dur_ms = l->gap_last_ms - l->gap.at_ms;
+	l->gap.link_lost = link_lost;
+	event_push(&l->gap);
+	l->in_gap = false;
+}
+
+/* The report's timing against the last one: gaps and restarts (radio.h). */
+static void track_timing(uint8_t link, const struct xbx_input_report *in, uint8_t rssi,
+			 uint16_t seq_gap, bool *restarted)
+{
+	struct link *l = &links[link];
+	uint32_t now_us = k_cyc_to_us_floor32(k_cycle_get_32());
+	uint32_t now_ms = k_uptime_get_32();
+	uint32_t ctrl_dt = in->timestamp_us - l->last_ts_us;
+	uint32_t our_dt = now_us - l->last_rx_us;
+	uint32_t frame_us = frame_slots * XBX_SLOT_US;
+	int32_t skew = (int32_t)(ctrl_dt - our_dt);
+
+	l->last_ts_us = in->timestamp_us;
+	l->last_rx_us = now_us;
+	*restarted = false;
+	if (skew > RESTART_SKEW_US || skew < -RESTART_SKEW_US) {
+		struct radio_event e = {
+			.type = RADIO_EVENT_RESTART,
+			.link = link,
+			.at_ms = now_ms - our_dt / 1000,
+			.dur_ms = our_dt / 1000,
+		};
+
+		gap_end(l, false);
+		event_push(&e);
+		*restarted = true;
+		return;
+	}
+
+	bool rejoining = seq_gap == 0 && ctrl_dt > GAP_PACED * frame_us;
+
+	if (rejoining || ctrl_dt >= GAP_MIN_US) {
+		if (!l->in_gap) {
+			l->in_gap = true;
+			l->gap = (struct radio_event){
+				.type = RADIO_EVENT_GAP,
+				.link = link,
+				.at_ms = now_ms - ctrl_dt / 1000,
+			};
+		}
+		l->gap.rejoining += rejoining;
+		l->gap.max_gap_ms = MAX(l->gap.max_gap_ms, ctrl_dt / 1000);
+		l->gap_last_ms = now_ms;
+		l->gap_normal = 0;
+	} else if (l->in_gap && ++l->gap_normal >= GAP_END_REPORTS) {
+		gap_end(l, false);
+	}
+	if (l->in_gap) {
+		l->gap.lost += seq_gap;
+		l->gap.rssi_max = MAX(l->gap.rssi_max, rssi);
+	}
+}
+
 /* Returns true if the report was valid. pos_us: frame position at arrival. */
 static bool handle_input(uint8_t link, const struct esb_payload *rx, int32_t pos_us)
 {
@@ -201,11 +293,19 @@ static bool handle_input(uint8_t link, const struct esb_payload *rx, int32_t pos
 	if (!l->have_seq) {
 		/* joined: a controller turned on (Guide), not one already linked */
 		usb_host_wake(link);
+		l->last_ts_us = in->timestamp_us;
+		l->last_rx_us = k_cyc_to_us_floor32(k_cycle_get_32());
+		l->in_gap = false;
 	} else {
 		uint16_t gap = (uint16_t)(in->seq - l->expected_seq);
+		bool restarted;
 
 		/* a huge gap means the controller restarted (sequence back near 0), not ~65k losses */
-		if (gap < 0x8000) {
+		if (gap >= 0x8000) {
+			gap = 0;
+		}
+		track_timing(link, in, rx->rssi, gap, &restarted);
+		if (!restarted) {
 			ls->lost += gap;
 		}
 	}
@@ -569,6 +669,7 @@ void radio_link_lost(uint8_t link)
 		frame_shrink();
 	}
 	stats.link[link].slot = XBX_SLOT_NONE;
+	gap_end(&links[link], true);
 	links[link].have_seq = false;
 	links[link].full = false;
 	links[link].power_off = false;
@@ -634,4 +735,23 @@ void radio_no_wake_clear(void)
 		links[i].no_wake = false;
 	}
 	irq_unlock(key);
+}
+
+bool radio_event_get(struct radio_event *event)
+{
+	unsigned int key = irq_lock();
+	bool got = event_count > 0;
+
+	if (got) {
+		*event = events[event_head];
+		event_head = (event_head + 1) % EVENT_QUEUE;
+		event_count--;
+	}
+	irq_unlock(key);
+	return got;
+}
+
+uint32_t radio_events_dropped(void)
+{
+	return events_dropped;
 }
