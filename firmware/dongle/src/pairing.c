@@ -742,6 +742,23 @@ int pairing_init(void)
 			LOG_WRN("channel save failed");
 		}
 	}
+	if (CONFIG_XBX_RF_CHANNEL_FORCE && channel != CONFIG_XBX_RF_CHANNEL_FORCE) {
+		static const uint8_t candidates[] = XBX_RF_CHANNELS;
+		bool known = false;
+
+		for (size_t i = 0; i < ARRAY_SIZE(candidates); i++) {
+			known |= candidates[i] == CONFIG_XBX_RF_CHANNEL_FORCE;
+		}
+		if (known) {
+			LOG_WRN("channel %u -> %u (forced): pair the controllers again", channel,
+				CONFIG_XBX_RF_CHANNEL_FORCE);
+			channel = CONFIG_XBX_RF_CHANNEL_FORCE;
+			settings_save_one("pair/chan", &channel, sizeof(channel));
+		} else {
+			LOG_ERR("forced channel %u isn't a pairing candidate: ignored",
+				CONFIG_XBX_RF_CHANNEL_FORCE);
+		}
+	}
 	for (int i = 0; i < PAIRING_PIPES; i++) {
 		paired += table.entry[i].last_connected != 0;
 	}

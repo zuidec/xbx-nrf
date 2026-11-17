@@ -17,6 +17,17 @@ config XBX_PAIR_RSSI_MIN
 	  only a controller held close to the dongle pairs. Raise it if
 	  pairing at arm's length fails.
 
+config XBX_RF_CHANNEL_FORCE
+	int "Radio channel to switch to (0: keep the stored one)"
+	range 0 100
+	default 0
+	help
+	  Replaces the channel chosen at first use (and saved, so it stays
+	  after going back to a build without this). Must be one of
+	  XBX_RF_CHANNELS, which controllers search while pairing. Paired
+	  controllers stay on the old channel: pair them again. For testing
+	  whether a channel is busy.
+
 endmenu
 
 source "Kconfig.zephyr"
