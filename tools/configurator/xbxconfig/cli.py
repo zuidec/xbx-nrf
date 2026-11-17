@@ -146,7 +146,8 @@ def cmd_channel(args):
     new = d.rf_channel()[0]
     d.close()
     print(f"channel {current} -> {new}" + ("" if new == current else
-                                          ": pair the controllers again"))
+                                          ": controllers follow within a few seconds "
+                                          "(older controller firmware: pair them again)"))
 
 
 FX_RANGES = {"click": (1, 255), "click_ms": (5, 100), "from_heavy": (0, 100),
@@ -353,7 +354,7 @@ def main(argv=None):
                    help="1-100 %% trigger pull before it rumbles")
     s.set_defaults(fn=cmd_trigger_fx)
     s = sub.add_parser("channel", help="show or set the radio channel, then restart "
-                       "(dongle; controllers must pair again)")
+                       "(dongle; controllers follow)")
     s.add_argument("channel", nargs="?", help="a candidate channel, or auto (the quietest)")
     s.set_defaults(fn=cmd_channel)
     s = sub.add_parser("led", help="show or set the LED brightness")

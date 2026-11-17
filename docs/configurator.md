@@ -74,7 +74,7 @@ channel's usage page; lists every one found.
 | Section | Does |
 |---|---|
 | Info | Firmware version, USB mode (SW3), serial, paired controllers (suggested) |
-| Radio | Channel: a candidate or auto (rescan for the quietest); the dongle restarts on it and every controller must pair again (CLI `channel`) |
+| Radio | Channel: a candidate or auto (rescan for the quietest); the dongle restarts on it and the controllers find it within a few seconds; older controller firmware must pair again (CLI `channel`) |
 | LED brightness | Pair, player and power LEDs, 1–255 each; player and power can be switched off, pair can't. A change lights that group for 1.5 s (the pair LED is off outside pairing) |
 | Factory reset | Settings (LED brightness), pairing (forget all controllers; also: Pair held 10 s): each or both |
 | Firmware update | As the controller |
