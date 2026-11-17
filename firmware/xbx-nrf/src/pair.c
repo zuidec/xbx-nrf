@@ -233,6 +233,22 @@ bool pair_link_get(struct pair_link *link)
 	return ok;
 }
 
+void pair_link_channel(uint8_t channel)
+{
+	k_spinlock_key_t key = k_spin_lock(&lock);
+	uint8_t old = stored.channel;
+	bool change = paired && state == PAIR_IDLE && channel != old;
+
+	if (change) {
+		stored.channel = channel;
+	}
+	k_spin_unlock(&lock, key);
+	if (change) {
+		LOG_INF("dongle moved: channel %u -> %u", old, channel);
+		k_work_submit(&save_work);
+	}
+}
+
 bool pair_link_changed(struct pair_link *link)
 {
 	k_spinlock_key_t key;

@@ -1,7 +1,7 @@
 ---
 title: xbx-nrf protocols (radio + USB)
 created: 2026-09-29
-updated: 2026-11-03
+updated: 2026-11-17
 tags:
   - xbx-nrf
   - firmware
@@ -151,8 +151,14 @@ through:
   advertising. It samples RSSI 400 times per channel (100 ms each) and takes
   the one with the fewest samples above −85 dBm (then the weakest average);
   stored as `pair/chan`, chosen again after a factory reset. A dongle paired
-  before channel choice existed keeps 76. Later: an adaptive switch to
-  another candidate when the channel degrades ([todo](../todo.md#firmware)).
+  before channel choice existed keeps 76. The configurator can move it to
+  another candidate, or rescan. Later: an adaptive switch when the channel
+  degrades ([todo](../todo.md#firmware)).
+- **Channel search:** a paired controller that hears nothing on its pipe for
+  1 s (3 s while the dongle is full) tries each candidate in turn, 8 join
+  attempts each, starting with its own. An ACK on its pipe can only be its
+  dongle (the dongle's random address), so it stays and, once it holds a
+  slot, stores the new channel.
 - **Pairing scan:** a pairing controller tries each candidate in turn (one
   request per attempt, sparse as when joining); an ACK means a dongle in
   pairing mode listens there, so it stays (moving on after 3 misses). Two

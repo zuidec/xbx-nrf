@@ -785,7 +785,7 @@ int pairing_channel_save(uint8_t ch)
 	if (!known) {
 		return -EINVAL;
 	}
-	LOG_WRN("channel %u -> %u (0: rescan) at the restart: pair the controllers again",
+	LOG_WRN("channel %u -> %u (0: rescan) at the restart; controllers search for it",
 		channel, ch);
 	return settings_save_one("pair/chan", &ch, sizeof(ch));
 }

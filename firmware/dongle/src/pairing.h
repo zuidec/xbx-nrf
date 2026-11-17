@@ -37,8 +37,8 @@ uint8_t pairing_channel(void);
 
 /*
  * Store the channel for the next start: one of XBX_RF_CHANNELS, or 0 to
- * rescan for the quietest. Paired controllers stay on the old one until
- * paired again. -EINVAL: not a candidate.
+ * rescan for the quietest. Paired controllers find it by searching the
+ * candidates (older firmware: pair again). -EINVAL: not a candidate.
  */
 int pairing_channel_save(uint8_t ch);
 

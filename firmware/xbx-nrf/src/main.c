@@ -81,6 +81,17 @@ BUILD_ASSERT(TX_LEAD_US + TRG_LEAD_US < XBX_REPORT_PERIOD_US / 2,
 #define JOIN_GAP_MAX  15
 #define JOIN_FULL_MS  1000 /* between attempts while the dongle is full */
 
+/*
+ * Channel search (the dongle moved: configurator): nothing heard on our pipe
+ * for SEARCH_AFTER_MS, join attempts go round the candidates, SEARCH_TRIES on
+ * each, starting with the one in use. Any ACK on our pipe is our dongle (its
+ * own random address): stay there; with a slot, it's saved.
+ */
+#define SEARCH_AFTER_MS      1000
+#define SEARCH_AFTER_FULL_MS (3 * JOIN_FULL_MS) /* full: attempts come only once a second */
+#define SEARCH_TRIES         8
+#define AGE_MAX_MS           (1 << 30) /* ages stop counting here */
+
 /* Report timing comes from a hardware timer: the 32768 Hz system tick can't do an
  * exact 1 ms (k_timer rounds to 33 ticks = 1.007 ms, ~993 reports/s).
  * TIMER2 is used by ESB.
@@ -157,6 +168,7 @@ static struct k_spinlock host_lock;
  */
 #define OUTPUT_TIMEOUT_MS 100
 static atomic_t ack_age_ms; /* ms since the last ACK payload, counted by the TX loop */
+static atomic_t heard_age_ms; /* ms since the last ACK (payload or not) outside pairing */
 
 /*
  * ACK payloads in a row with XBX_OUT_FLAG_POWER_OFF. The dongle queues each
@@ -261,6 +273,8 @@ static void radio_event_handler(struct esb_evt const *event)
 		timing_pin_set(0);
 		if (pair_active()) {
 			pair_on_tx_result(true);
+		} else {
+			atomic_set(&heard_age_ms, 0);
 		}
 		atomic_set(&in_flight, 0);
 		break;
@@ -815,6 +829,45 @@ static void rumble_leds_update(void)
 #endif
 
 /*
+ * Before a join attempt (radio idle): the channel to try. Unheard for long
+ * enough, the next candidate every SEARCH_TRIES attempts.
+ */
+static void search_channel(void)
+{
+	static const uint8_t channels[] = XBX_RF_CHANNELS;
+	static bool searching;
+	static uint8_t idx, tries;
+	bool full = last_output.flags & XBX_OUT_FLAG_FULL;
+	uint32_t after = full ? SEARCH_AFTER_FULL_MS : SEARCH_AFTER_MS;
+
+	if ((uint32_t)atomic_get(&heard_age_ms) < after) {
+		if (searching) {
+			searching = false;
+			LOG_INF("dongle heard on channel %u", radio_channel);
+		}
+		return;
+	}
+	if (!searching) {
+		searching = true;
+		tries = 0;
+		idx = 0;
+		for (size_t i = 0; i < ARRAY_SIZE(channels); i++) {
+			if (channels[i] == radio_channel) {
+				idx = i;
+			}
+		}
+		LOG_INF("dongle not heard for %u ms: searching the channels", after);
+	}
+	if (++tries > SEARCH_TRIES) {
+		tries = 1;
+		idx = (idx + 1) % ARRAY_SIZE(channels);
+		if (radio_channel_set(channels[idx])) {
+			LOG_ERR("radio channel change failed");
+		}
+	}
+}
+
+/*
  * Radio: queue this tick's report (tx holds it) or pairing message for the
  * next slot, if one is due.
  */
@@ -886,6 +939,11 @@ static void radio_send(struct esb_payload *tx, atomic_val_t gen, uint32_t tick)
 		return;
 	}
 
+	if (!slot_held()) {
+		search_channel();
+	} else if (radio_channel != link.channel) {
+		pair_link_channel(radio_channel); /* found it elsewhere: start there next time */
+	}
 	tx->pipe = link.pipe;
 	report->seq = next_seq; /* the timer ISR advances it once sent */
 	report->timestamp_us = k_cyc_to_us_floor32(k_cycle_get_32());
@@ -961,6 +1019,10 @@ static void tx_thread(void *p1, void *p2, void *p3)
 		wired_update();
 		if (!host_asleep) {
 			pair_tick(elapsed_ms, wired || slot_held());
+		}
+
+		if (atomic_get(&heard_age_ms) < AGE_MAX_MS) {
+			atomic_add(&heard_age_ms, elapsed_ms);
 		}
 
 		/* fires once per outage */

@@ -9,7 +9,8 @@
  * solid while linked, slow blink while searching.
  *
  * Channel: requests cycle through the candidates (XBX_RF_CHANNELS) until one
- * is acknowledged, then stay there (moving on after SCAN_MISSES misses).
+ * is acknowledged, then stay there (moving on after SCAN_MISSES misses). The
+ * link's channel follows the dongle when it moves (main.c's channel search).
  *
  * Exchange: PAIR_REQ on pipe 0 (the pairing address) until OFFER_SETTLE
  * offers for our nonce arrived, all from one dongle (two dongles pairing
@@ -44,6 +45,9 @@ int pair_init(void);
 
 /* The stored link; false while unpaired. */
 bool pair_link_get(struct pair_link *link);
+
+/* The dongle was found on another channel: store it in the link. */
+void pair_link_channel(uint8_t channel);
 
 /*
  * The radio should now use this link's address (offer accepted, pairing
