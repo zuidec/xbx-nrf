@@ -198,4 +198,32 @@ def apply(root):
         ("*TCombobox*Listbox.selectForeground", "select_text"),
     ]:
         root.option_add(pattern, c[key])
+    _file_dialog_colors(root, c)
     return name
+
+
+def _file_dialog_colors(root, c):
+    """Linux file dialog: its file list (Tk's iconlist.tcl) hard-codes a white
+    canvas and black text, out of reach of the option database. A mixin sets
+    both after each list is created; Tk without it (Windows, macOS native
+    dialogs) is left alone."""
+    try:
+        root.tk.eval(f"""
+            auto_load ::tk::IconList
+            if {{![llength [info commands ::xbx::IconListColors]]}} {{
+                namespace eval ::xbx {{}}
+                oo::class create ::xbx::IconListColors {{
+                    method Create {{}} {{
+                        next
+                        my variable canvas fill
+                        $canvas configure -background $::xbx::field
+                        set fill $::xbx::text
+                    }}
+                }}
+                oo::define ::tk::IconList mixin ::xbx::IconListColors
+            }}
+            set ::xbx::field {{{c["field"]}}}
+            set ::xbx::text {{{c["foreground"]}}}
+        """)
+    except tk.TclError as e:
+        _warn(f"file dialog colors: {e}")
