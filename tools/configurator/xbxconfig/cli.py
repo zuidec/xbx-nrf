@@ -122,10 +122,11 @@ def _has(d, sid, what):
 def cmd_channel(args):
     d = _open_kind(args, "dongle")
     _has(d, p.SET_RF_CHANNEL, "channel setting")
-    current, candidates = d.rf_channel()
+    current, candidates, auto = d.rf_channel()
     if args.channel is None:
-        print(f"channel {current} ({2400 + current} MHz); candidates "
-              f"{' '.join(map(str, candidates))}, or auto")
+        print(f"channel {current} ({2400 + current} MHz)"
+              + (", auto (the quietest at every start)" if auto else "")
+              + f"; candidates {' '.join(map(str, candidates))}, or auto")
         d.close()
         return
     if args.channel == "auto":
@@ -138,14 +139,15 @@ def cmd_channel(args):
     serial = d.info.serial
     d.set_rf_channel(ch)
     d.close()
-    print("restarting" + (": rescanning for the quietest channel" if ch == 0 else "") + "...")
+    print("restarting" + (": auto, rescanning for the quietest channel" if ch == 0 else "")
+          + "...")
     info = dev.wait_back("dongle", serial, 20)
     if info is None:
         sys.exit("the dongle didn't come back within 20 s")
     d = dev.open_first("dongle")
-    new = d.rf_channel()[0]
+    new, _, auto = d.rf_channel()
     d.close()
-    print(f"channel {current} -> {new}" + ("" if new == current else
+    print(f"channel {current} -> {new}" + (", auto" if auto else "") + ("" if new == current else
                                           ": controllers follow within a few seconds "
                                           "(older controller firmware: pair them again)"))
 

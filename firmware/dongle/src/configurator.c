@@ -80,18 +80,19 @@ static void save_fn(struct k_work *work)
 
 static K_WORK_DELAYABLE_DEFINE(save_work, save_fn);
 
-/* current, count, the candidates */
+/* current, count, the candidates, auto */
 static int channel_get(uint8_t *value, size_t size)
 {
 	static const uint8_t candidates[] = XBX_RF_CHANNELS;
 
-	if (size < 2 + sizeof(candidates)) {
+	if (size < 3 + sizeof(candidates)) {
 		return -EINVAL;
 	}
 	value[0] = pairing_channel();
 	value[1] = sizeof(candidates);
 	memcpy(&value[2], candidates, sizeof(candidates));
-	return 2 + sizeof(candidates);
+	value[2 + sizeof(candidates)] = pairing_channel_auto();
+	return 3 + sizeof(candidates);
 }
 
 static int setting_get(uint8_t id, uint8_t *value, size_t size)

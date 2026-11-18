@@ -36,9 +36,9 @@
 #define CFG_USB_SETTING_DONGLE_LEDS 0x06 /* dongle: struct below */
 
 /*
- * Dongle radio channel. Get: current, count, the candidates. Set: a
- * candidate or CFG_USB_RF_CHANNEL_AUTO (rescan); saved, applied by the
- * restart that follows.
+ * Dongle radio channel. Get: current, count, the candidates, auto (u8 0 / 1).
+ * Set: a candidate or CFG_USB_RF_CHANNEL_AUTO (rescan at every start); saved,
+ * applied by the restart that follows.
  */
 #define CFG_USB_SETTING_RF_CHANNEL 0x08
 #define CFG_USB_RF_CHANNEL_AUTO    0

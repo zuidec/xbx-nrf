@@ -1,8 +1,8 @@
 /*
  * Dongle pairing (see pairing.h). Settings keys "pair/addr" (address),
  * "pair/chan" (channel: the quietest candidate at first use, or the
- * configurator's choice; 0 = rescan at the next start) and "pair/table"
- * (paired controllers). Mode timing, the LED blink, answers and
+ * configurator's choice), "pair/auto" (1: rescan for the quietest at every
+ * start) and "pair/table" (paired controllers). Mode timing, the LED blink, answers and
  * flash writes run on the system work queue; interrupts only store and
  * schedule.
  *
@@ -83,7 +83,8 @@ struct stored_table {
 static struct pairing_addr addr;
 static bool addr_loaded;
 static uint8_t channel; /* 0 = not chosen yet */
-static bool chan_loaded; /* "pair/chan" exists; stored 0: rescan (pairing_channel_save()) */
+static bool chan_loaded; /* "pair/chan" exists (stored 0, older builds: rescan once) */
+static bool chan_auto;   /* "pair/auto": rescan at every start */
 static struct stored_table table = {.version = TABLE_VERSION};
 static uint8_t dongle_id[8];
 
@@ -218,6 +219,14 @@ static int pairing_settings_set(const char *name, size_t len, settings_read_cb r
 		if (len == sizeof(ch) && read_cb(cb_arg, &ch, sizeof(ch)) == sizeof(ch)) {
 			channel = ch;
 			chan_loaded = true;
+		}
+		return 0;
+	}
+	if (strcmp(name, "auto") == 0) {
+		uint8_t on;
+
+		if (len == sizeof(on) && read_cb(cb_arg, &on, sizeof(on)) == sizeof(on)) {
+			chan_auto = on;
 		}
 		return 0;
 	}
@@ -626,6 +635,7 @@ void pairing_forget(void)
 	settings_delete("pair/table");
 	settings_delete("pair/addr");
 	settings_delete("pair/chan");
+	settings_delete("pair/auto");
 }
 
 void pairing_start(const char *why)
@@ -733,15 +743,16 @@ int pairing_init(void)
 		channel = 76;
 		settings_save_one("pair/chan", &channel, sizeof(channel));
 	}
-	if (!channel) {
+	if (!channel || chan_auto) {
 		static const uint8_t candidates[] = XBX_RF_CHANNELS;
+		uint8_t old = channel;
 
-		LOG_INF("%s: choosing the quietest channel", chan_loaded ? "rescan" : "first use");
+		LOG_INF("%s: choosing the quietest channel", chan_auto ? "auto" : "first use");
 		if (radio_channel_scan(&channel)) {
-			channel = candidates[0];
+			channel = old ? old : candidates[0];
 			LOG_WRN("channel scan failed: using %u", channel);
 		}
-		if (settings_save_one("pair/chan", &channel, sizeof(channel))) {
+		if (channel != old && settings_save_one("pair/chan", &channel, sizeof(channel))) {
 			LOG_WRN("channel save failed");
 		}
 	}
@@ -785,9 +796,20 @@ int pairing_channel_save(uint8_t ch)
 	if (!known) {
 		return -EINVAL;
 	}
-	LOG_WRN("channel %u -> %u (0: rescan) at the restart; controllers search for it",
+	uint8_t on = ch == 0;
+	int err = settings_save_one("pair/auto", &on, sizeof(on));
+
+	if (!err && ch) {
+		err = settings_save_one("pair/chan", &ch, sizeof(ch));
+	}
+	LOG_WRN("channel %u -> %u (0: auto) at the restart; controllers search for it",
 		channel, ch);
-	return settings_save_one("pair/chan", &ch, sizeof(ch));
+	return err;
+}
+
+bool pairing_channel_auto(void)
+{
+	return chan_auto;
 }
 
 bool pairing_active(void)

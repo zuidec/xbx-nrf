@@ -152,8 +152,8 @@ through:
   the one with the fewest samples above −85 dBm (then the weakest average);
   stored as `pair/chan`, chosen again after a factory reset. A dongle paired
   before channel choice existed keeps 76. The configurator can move it to
-  another candidate, or rescan. Later: an adaptive switch when the channel
-  degrades ([todo](../todo.md#firmware)).
+  another candidate, or set auto (`pair/auto`): rescan at every start. Later:
+  an adaptive switch when the channel degrades ([todo](../todo.md#firmware)).
 - **Channel search:** a paired controller that hears nothing on its pipe for
   1 s (3 s while the dongle is full) tries each candidate in turn, 8 join
   attempts each, starting with its own. An ACK on its pipe can only be its

@@ -36,11 +36,15 @@ const struct pairing_addr *pairing_addr(void);
 uint8_t pairing_channel(void);
 
 /*
- * Store the channel for the next start: one of XBX_RF_CHANNELS, or 0 to
- * rescan for the quietest. Paired controllers find it by searching the
- * candidates (older firmware: pair again). -EINVAL: not a candidate.
+ * Store the channel for the next start: one of XBX_RF_CHANNELS, or 0 for auto
+ * (rescan for the quietest at every start). Paired controllers find it by
+ * searching the candidates (older firmware: pair again). -EINVAL: not a
+ * candidate.
  */
 int pairing_channel_save(uint8_t ch);
+
+/* The channel is chosen by a scan at every start. */
+bool pairing_channel_auto(void);
 
 /* Enter pairing mode (restarts the timeout if already in it). */
 void pairing_start(const char *why);

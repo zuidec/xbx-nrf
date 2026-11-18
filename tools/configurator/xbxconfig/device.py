@@ -138,9 +138,10 @@ class Device:
                          bytes([leds["pair"], leds["player"], leds["power"], on]))
 
     def rf_channel(self):
-        """Dongle: (current channel, [candidates])."""
+        """Dongle: (current channel, [candidates], auto). Auto is False on
+        firmware without it (the response is zero-padded)."""
         v = self.setting_get(p.SET_RF_CHANNEL)
-        return v[0], list(v[2:2 + v[1]])
+        return v[0], list(v[2:2 + v[1]]), bool(v[2 + v[1]])
 
     def set_rf_channel(self, channel):
         """Dongle: a candidate or RF_CHANNEL_AUTO; it restarts on it (wait_back())."""

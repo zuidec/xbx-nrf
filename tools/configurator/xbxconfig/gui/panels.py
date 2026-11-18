@@ -575,12 +575,12 @@ class RadioPanel(Panel):
     """Dongle radio channel: changing it restarts the dongle; controllers follow."""
 
     title = "Radio"
-    AUTO = "Auto: the quietest, scanned at the restart"
+    AUTO = "Auto: the quietest, scanned at every start"
 
     def __init__(self, master):
         super().__init__(master)
         self.choices = {}  # combobox text -> channel
-        self.channel = None  # the dongle's current one
+        self.channel = None  # the dongle's current one; RF_CHANNEL_AUTO in auto
         self.current = ttk.Label(self, text="Channel: -")
         self.current.pack(anchor="w")
         ttk.Label(self, text="Change it if the link drops in use: Wi-Fi or another device "
@@ -609,19 +609,21 @@ class RadioPanel(Panel):
         v = self.call("rf_channel")
         if v is None:
             return
-        current, candidates = v
-        self.current.configure(text=f"Channel: {current} ({2400 + current} MHz)")
+        current, candidates, auto = v
+        self.current.configure(text=f"Channel: {current} ({2400 + current} MHz)"
+                                    + (", auto" if auto else ""))
         self.choices = {f"{c} ({2400 + c} MHz)": c for c in candidates}
         self.choices[self.AUTO] = p.RF_CHANNEL_AUTO
-        self.channel = current
+        self.channel = p.RF_CHANNEL_AUTO if auto else current
         self.choice.configure(values=list(self.choices))
-        self.choice.set(next((t for t, c in self.choices.items() if c == current), self.AUTO))
+        self.choice.set(next((t for t, c in self.choices.items() if c == self.channel),
+                             self.AUTO))
 
     def change(self):
         text = self.choice.get()
         if self.choices.get(text, self.channel) == self.channel:
             return  # nothing chosen, or the current channel
-        what = "rescan for the quietest channel" if text == self.AUTO else \
+        what = "pick the quietest channel at every start" if text == self.AUTO else \
             f"switch to channel {text}"
         if messagebox.askyesno("Radio channel", f"The dongle will {what} and restart.\n\n"
                                "Controllers with older firmware must be paired again "
