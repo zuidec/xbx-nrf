@@ -17,6 +17,7 @@ MAGIC0, MAGIC1, MAGIC_END = 0x0A324655, 0x9E5D5157, 0x0AB16F30
 FLAG_FAMILY = 0x2000
 FAMILY_NRF52840 = 0xADA52840
 MARKER_MAGIC = b"XBXIMG\x01\x00"
+BOARD_MAGIC = b"XBXBRD\x01\x00"  # the board target, 32 bytes NUL-padded; newer images
 
 DRIVES = {"controller": "XBXCTRL", "dongle": "XBXDONGLE"}
 BOARD_IDS = {"controller": "nRF52840-xbx-controller", "dongle": "nRF52840-xbx-dongle"}
@@ -37,6 +38,7 @@ class Image:
     data: bytes  # the raw file
     device: str  # from the marker
     version: tuple
+    board: str = None  # Zephyr board target; None: built before the board record
 
     @property
     def version_str(self):
@@ -67,7 +69,23 @@ def load(path):
     if i < 0:
         raise Uf2Error("no xbx-nrf image marker: not our firmware, or built before the marker")
     m = payload[i + 8:i + 12]
-    return Image(path, data, p.DEVICES.get(m[0], f"unknown ({m[0]})"), tuple(m[1:4]))
+    board = None
+    i = payload.find(BOARD_MAGIC)
+    if i >= 0:
+        board = payload[i + 8:i + 40].split(b"\0")[0].decode(errors="replace")
+    return Image(path, data, p.DEVICES.get(m[0], f"unknown ({m[0]})"), tuple(m[1:4]), board)
+
+
+def mismatch(image, info):
+    """Why image doesn't fit the device with this Info, or None."""
+    if image.device != info.device:
+        return f"this file is {image.device} firmware; the device is a {info.device}"
+    if not info.board.endswith("/uf2"):
+        return (f"the {info.device} has no UF2 bootloader ({info.board}): install it first "
+                "(docs/flashing.md)")
+    if image.board and image.board != info.board:
+        return f"this file is for board {image.board}; the {info.device} is {info.board}"
+    return None
 
 
 def _mounts_linux():
@@ -210,8 +228,9 @@ def update(device, image, progress=print, interactive=False):
     password prompt is allowed for mounting the drive."""
     kind = device.info.device
     serial = device.info.serial
-    if image.device != kind:
-        raise Uf2Error(f"this file is {image.device} firmware; the device is a {kind}")
+    why = mismatch(image, device.info)
+    if why:
+        raise Uf2Error(why)
 
     progress("Restarting into the bootloader...")
     device.bootloader()

@@ -62,6 +62,14 @@ static const struct xbx_image_marker marker __used __attribute__((section(".xbx_
 	.version = {APP_VERSION_MAJOR, APP_VERSION_MINOR, APP_PATCHLEVEL},
 };
 
+BUILD_ASSERT(sizeof(CONFIG_BOARD_TARGET) <= sizeof(((struct xbx_image_board *)0)->board),
+	     "board target too long for the image board record");
+static const struct xbx_image_board board_record __used
+	__attribute__((section(".xbx_image_marker"))) = {
+	.magic = {'X', 'B', 'X', 'B', 'R', 'D', 1, 0},
+	.board = CONFIG_BOARD_TARGET,
+};
+
 static const uint8_t report_desc[] = {
 	HID_USAGE_PAGE16(VENDOR_PAGE),
 	HID_USAGE(0x01),

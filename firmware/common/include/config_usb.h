@@ -70,6 +70,16 @@ struct xbx_image_marker {
 };
 
 /*
+ * Next to the marker (a separate record, so older apps still read the marker):
+ * the board target, so a dongle image built for the PCA10059 doesn't go on the
+ * custom dongle or the other way round.
+ */
+struct xbx_image_board {
+	char magic[8]; /* "XBXBRD" + record version (1) + 0 */
+	char board[32]; /* CONFIG_BOARD_TARGET, NUL-padded */
+};
+
+/*
  * The app's part (docs/configurator.md). Any member may be NULL: "unsupported
  * here". Callbacks run on the system work queue; errors: -ENOTSUP
  * (unsupported here), -EINVAL (bad argument), -EBUSY.

@@ -340,3 +340,16 @@ payloads and searches for the magic, then refuses a mismatch.
 `config_usb.c` defines it in its own section; `common/image_marker.ld` keeps
 it (otherwise the compiler folds it into `INFO` and drops it). Each app sets
 `XBX_DEVICE` in its CMakeLists.
+
+A second record names the board, so a PCA10059 dongle image can't go on the
+custom dongle or the other way round. Separate from the marker, so older
+apps still read the marker; images without it are only checked by device.
+
+| Byte | Field |
+|---|---|
+| 0–7 | Magic `XBXBRD` `01` `00` (record version 1) |
+| 8–39 | Board target (`CONFIG_BOARD_TARGET`), NUL-padded |
+
+The update needs the running app's board (`INFO`) to match it and to end in
+`/uf2`: a PCA10059 still on Nordic's bootloader is told to install ours
+first.

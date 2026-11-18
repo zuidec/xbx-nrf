@@ -695,7 +695,7 @@ class FirmwarePanel(Panel):
         self._ready()
 
     def _ready(self):
-        ok = self.device and self.image and self.image.device == self.kind
+        ok = self.device and self.image and not uf2.mismatch(self.image, self.device.info)
         self.update_btn.state(["!disabled" if ok else "disabled"])
 
     def choose(self):
@@ -710,11 +710,12 @@ class FirmwarePanel(Panel):
             self.image = None
             self.file.configure(text=f"{path}: {e}", foreground=w.BAD)
         else:
-            match = self.image.device == self.kind
+            why = uf2.mismatch(self.image, self.device.info) if self.device else (
+                None if self.image.device == self.kind else f"not for the {self.kind}")
             self.file.configure(
                 text=f"{path}\n{self.image.device} firmware {self.image.version_str}"
-                     + ("" if match else f": not for the {self.kind}"),
-                foreground=w.FG if match else w.BAD)
+                     + (f": {why}" if why else ""),
+                foreground=w.BAD if why else w.FG)
         self._ready()
 
     def update(self):
