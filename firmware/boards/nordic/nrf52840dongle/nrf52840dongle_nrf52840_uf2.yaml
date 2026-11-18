@@ -1,0 +1,14 @@
+identifier: nrf52840dongle/nrf52840/uf2
+name: nRF52840 Dongle (UF2 bootloader)
+type: mcu
+arch: arm
+ram: 256
+flash: 1024
+toolchain:
+  - zephyr
+supported:
+  - adc
+  - gpio
+  - pwm
+  - usbd
+  - watchdog

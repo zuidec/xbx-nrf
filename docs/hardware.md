@@ -1,7 +1,7 @@
 ---
 title: Hardware (stock top board, J3, controller and dongle boards)
 created: 2026-09-29
-updated: 2026-11-03
+updated: 2026-11-17
 tags:
   - xbx-nrf
   - reference
@@ -307,9 +307,9 @@ flashing over J1 (SWD). Pins from the Rev1.1 schematic:
 ### nRF52840 Dongle (PCA10059)
 
 Nordic's USB dongle, for anyone not building the custom board. Board target
-`nrf52840dongle/nrf52840` (`xbx-dongle-pca10059` target); flashing over its USB
-bootloader:
-[nRF52840 Dongle (PCA10059) — USB DFU (no probe)](flashing.md#nrf52840-dongle-pca10059--usb-dfu-no-probe).
+`nrf52840dongle/nrf52840/uf2` (`xbx-dongle-pca10059` target): our UF2
+bootloader, installed once over SWD, then updated like the custom dongle:
+[nRF52840 Dongle (PCA10059): UF2 bootloader](flashing.md#nrf52840-dongle-pca10059-uf2-bootloader-once-swd).
 Runs from VDDH (USB), GPIOs at 3.0 V (set by Zephyr's board code).
 
 | Signal | Pin | Notes |

@@ -1,0 +1,7 @@
+# Extends Zephyr's nrf52840dongle with the UF2 bootloader variant
+# (firmware/bootloader/boards/xbx_dongle_pca10059/).
+board:
+  extend: nrf52840dongle
+  variants:
+    - name: uf2
+      qualifier: nrf52840

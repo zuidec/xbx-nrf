@@ -1,7 +1,7 @@
 ---
 title: Flashing & debugging the nRF52840 boards
 created: 2026-09-28
-updated: 2026-11-04
+updated: 2026-11-17
 tags:
   - xbx-nrf
   - firmware
@@ -19,7 +19,7 @@ aliases:
 | Board | Role | Built-in programming | Board target |
 |---|---|---|---|
 | Pro Micro nRF52840 (nice!nano clone) | Controller test build | nice!nano UF2 bootloader  | `promicro_nrf52840/nrf52840/uf2` |
-| Nordic nRF52840 Dongle (PCA10059) | Dongle (off-the-shelf option) | Nordic USB DFU bootloader  | `nrf52840dongle/nrf52840` |
+| Nordic nRF52840 Dongle (PCA10059) | Dongle (off-the-shelf option) | Nordic USB DFU bootloader; replace it once with ours (SWD) | `nrf52840dongle/nrf52840/uf2` (Nordic's: `nrf52840dongle/nrf52840`) |
 | Custom controller board | Controller | None; needs flashed with Semi-custom UF2 bootloader | `xbx_controller/nrf52840/uf2` |
 | Custom dongle board | Dongle | None; needs flashed with Semi-custom UF2 bootloader | `xbx_dongle/nrf52840/uf2` |
 
@@ -48,7 +48,8 @@ Board overlay naming: see [Board overlays](building.md#board-overlays).
 
 - **Pro Micro:** SWDIO/SWCLK pads on the underside (check the clone's
   silkscreen).
-- **PCA10059:** pads on the underside (*nRF52840 Dongle User Guide*).
+- **PCA10059:** SWDIO/SWCLK test pads on the underside (*nRF52840 Dongle
+  User Guide*): solder wires or use pogo pins, once.
 - **Custom dongle:** J1 (JST-SH, Raspberry Pi Debug Probe cable).
 - **Custom controller board:** J1 (JST-SH, Raspberry Pi Debug Probe cable)
 
@@ -71,7 +72,7 @@ flash, a drive should automatically appear.
 If the bootloader has been previously programmed, enter it as follows:
 
 - **Controller:** Hold **LS+RS** at power on
-- **Dongle:** Hold **PAIR** at power on
+- **Dongle:** Hold **PAIR** at power on (PCA10059: SW1)
 - **Both:** double-tap the reset button (only on USB for the controller)
 
 > [!WARNING]
@@ -116,15 +117,29 @@ From `firmware/`:
 not implemented for logging
 
 
-### nRF52840 Dongle (PCA10059) — USB DFU (no probe)
+### nRF52840 Dongle (PCA10059): UF2 bootloader (once, SWD)
+
+Gives the PCA10059 the custom dongle's bootloader (`XBXDONGLE` drive, same
+entry: SW1 held at power-on, or a RESET double tap), so it updates like the
+custom dongle. Erases Nordic's bootloader and everything else. From
+`firmware/`, the probe on the underside pads, the dongle on USB:
+```sh
+./build.sh xbx-dongle-pca10059-bootloader -f swd
+./build.sh xbx-dongle-pca10059 -f swd    # first app, or copy it to the drive
+```
+The configurator refuses a custom-dongle image on it and the other way
+round (board record in the image, [Image
+marker](configurator.md#image-marker)); a copy by hand isn't checked.
+
+### nRF52840 Dongle (PCA10059): Nordic's DFU (not converted, no probe)
 
 1. Press the sideways **RESET** button (red LED pulses).
 2. Find the bootloader's port (`ls -l /dev/serial/by-id/`, "Open DFU
    Bootloader"), then build and flash from `firmware/`:
    ```sh
-   ./build.sh xbx-dongle-pca10059 -f /dev/ttyACMx
+   ./build.sh xbx-dongle-pca10059-nordic -f /dev/ttyACMx
    ```
-   The script packages `dongle/build-pca10059/dfu.zip` and runs
+   The script packages `dongle/build-pca10059-nordic/dfu.zip` and runs
    `nrfutil nrf5sdk-tools dfu usb-serial`. GUI alternative: nRF Connect for
    Desktop → Programmer.
 
@@ -190,7 +205,8 @@ first ([Restoring bootloaders](#restoring-bootloaders)).
   ```
 - **Custom boards:** `./build.sh xbx-controller-bootloader -f swd` /
   `./build.sh xbx-dongle-bootloader -f swd`.
-- **PCA10059:** nRF5 SDK `examples/dfu/open_bootloader/pca10059_usb_debug`,
+- **PCA10059:** ours: `./build.sh xbx-dongle-pca10059-bootloader -f swd`.
+  Nordic's: nRF5 SDK `examples/dfu/open_bootloader/pca10059_usb_debug`,
   over SWD.
 
 ## Troubleshooting

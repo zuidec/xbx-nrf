@@ -1,0 +1,2 @@
+/* PCA10059 with the UF2 bootloader: same pins as with Nordic's bootloader */
+#include "nrf52840dongle_nrf52840.overlay"

@@ -1,7 +1,7 @@
 ---
 title: Building
 created: 2026-09-29
-updated: 2026-11-04
+updated: 2026-11-17
 tags:
   - xbx-nrf
   - firmware
@@ -110,7 +110,8 @@ root).
 | `xbx-controller` | `xbx_controller/nrf52840/uf2` | `firmware/xbx-nrf/build/` |
 | `xbx-controller-promicro` | `promicro_nrf52840/nrf52840/uf2` (test build) | `firmware/xbx-nrf/build-promicro/` |
 | `xbx-dongle` | `xbx_dongle/nrf52840/uf2` | `firmware/dongle/build/` |
-| `xbx-dongle-pca10059` | `nrf52840dongle/nrf52840` (PCA10059, off the shelf) | `firmware/dongle/build-pca10059/` |
+| `xbx-dongle-pca10059` | `nrf52840dongle/nrf52840/uf2` (PCA10059 with our bootloader; `firmware/boards/nordic/` extends Zephyr's board) | `firmware/dongle/build-pca10059/` |
+| `xbx-dongle-pca10059-nordic` | `nrf52840dongle/nrf52840` (PCA10059 with Nordic's bootloader) | `firmware/dongle/build-pca10059-nordic/` |
 
 ### Commands
 
@@ -164,8 +165,8 @@ Other targets and release builds swap `build` for their folder
 
 | File | Use |
 |---|---|
-| `zephyr.uf2` | UF2 flashing (custom boards, Pro Micro) |
-| `zephyr.hex` | SWD flashing; PCA10059 DFU (`dfu.zip`) |
+| `zephyr.uf2` | UF2 flashing (custom boards, PCA10059, Pro Micro) |
+| `zephyr.hex` | SWD flashing; PCA10059 Nordic DFU (`dfu.zip`) |
 | `zephyr.elf` | Debugging |
 
 The build folder's own `zephyr/` (e.g. `firmware/xbx-nrf/build/zephyr/`) is
@@ -179,6 +180,7 @@ Name them after the **full** board target, `/` → `_`:
 |---|---|
 | `promicro_nrf52840/nrf52840/uf2` | `promicro_nrf52840_nrf52840_uf2.overlay` |
 | `nrf52840dongle/nrf52840` | `nrf52840dongle_nrf52840.overlay` |
+| `nrf52840dongle/nrf52840/uf2` | `nrf52840dongle_nrf52840_uf2.overlay` (includes the one above) |
 | `xbx_dongle/nrf52840/uf2` | `xbx_dongle_nrf52840_uf2.overlay` |
 | `xbx_controller/nrf52840/uf2` | `xbx_controller_nrf52840_uf2.overlay` |
 

@@ -3,20 +3,23 @@
 #
 # Usage (from anywhere; starts the pinned SDK toolchain itself if needed):
 #   ./build.sh <target> [-r] [-f <device>] [extra west build args]
-#   ./build.sh <xbx-controller|xbx-dongle>-bootloader [-f swd [--hex <file>]]
+#   ./build.sh <xbx-controller|xbx-dongle|xbx-dongle-pca10059>-bootloader [-f swd [--hex <file>]]
 #
 # Targets: board, folder in the app (xbx-nrf/ or dongle/)
 #   xbx-controller            xbx_controller/nrf52840/uf2      build/
 #   xbx-controller-promicro   promicro_nrf52840/nrf52840/uf2   build-promicro/ (test)
 #   xbx-dongle                xbx_dongle/nrf52840/uf2          build/
-#   xbx-dongle-pca10059       nrf52840dongle/nrf52840          build-pca10059/
-#   *-bootloader              bootloader/build.sh (UF2 bootloader, own options)
+#   xbx-dongle-pca10059       nrf52840dongle/nrf52840/uf2      build-pca10059/
+#   xbx-dongle-pca10059-nordic  nrf52840dongle/nrf52840        build-pca10059-nordic/
+#                             (Nordic's DFU bootloader, not yet converted)
+#   *-bootloader              bootloader/build.sh (UF2 bootloader, own options);
+#                             also xbx-dongle-pca10059-bootloader
 #   Old names still work: xbx-nrf, xbx-nrf-promicro, xbx-nrf-bootloader.
 #
 #   e.g. ./build.sh xbx-controller -p                # pristine rebuild
 #        ./build.sh xbx-controller -f swd            # build + flash app over SWD
 #        ./build.sh xbx-dongle -f /dev/sdX           # build + flash, UF2 drive
-#        ./build.sh xbx-dongle-pca10059 -f /dev/ttyACM0
+#        ./build.sh xbx-dongle-pca10059-nordic -f /dev/ttyACM0
 #        ./build.sh xbx-dongle -r                    # release build
 #        ./build.sh xbx-dongle-bootloader -f swd     # its bootloader (erases all)
 #        ./build.sh xbx-controller-bootloader -f swd --hex <file>  # downloaded
@@ -25,7 +28,7 @@
 # builds into the target's folder with -release added.
 #
 # -f / --flash <device>, by board:
-#   PCA10059  serial port of its DFU bootloader (press RESET)
+#   -nordic   serial port of Nordic's DFU bootloader (press RESET)
 #   */uf2     UF2 drive: mount point or block device (/dev/sdX); "swd"
 #             writes only the app (bootloader stays)
 #
@@ -41,6 +44,8 @@ case "${1:-}" in
 xbx-controller-bootloader | xbx-nrf-bootloader)
 	shift; exec "$script_dir/bootloader/build.sh" xbx_controller "$@" ;;
 xbx-dongle-bootloader) shift; exec "$script_dir/bootloader/build.sh" xbx_dongle "$@" ;;
+xbx-dongle-pca10059-bootloader)
+	shift; exec "$script_dir/bootloader/build.sh" xbx_dongle_pca10059 "$@" ;;
 esac
 
 # shellcheck source=check-sdk.sh
@@ -48,8 +53,8 @@ source "$script_dir/check-sdk.sh"
 xbx_relaunch_in_toolchain "$script_dir" "$script_dir/$(basename "${BASH_SOURCE[0]}")" "$@"
 
 usage() {
-	echo "usage: $0 <xbx-controller|xbx-controller-promicro|xbx-dongle|xbx-dongle-pca10059> [-r] [-f <device>] [extra west build args]" >&2
-	echo "       $0 <xbx-controller|xbx-dongle>-bootloader [-f swd [--hex <file>]]" >&2
+	echo "usage: $0 <xbx-controller|xbx-controller-promicro|xbx-dongle|xbx-dongle-pca10059|xbx-dongle-pca10059-nordic> [-r] [-f <device>] [extra west build args]" >&2
+	echo "       $0 <xbx-controller|xbx-dongle|xbx-dongle-pca10059>-bootloader [-f swd [--hex <file>]]" >&2
 	exit 2
 }
 
@@ -65,7 +70,9 @@ xbx-controller-promicro | xbx-nrf-promicro)
 xbx-dongle)
 	app=dongle; board="xbx_dongle/nrf52840/uf2"; build_name=build ;;
 xbx-dongle-pca10059)
-	app=dongle; board="nrf52840dongle/nrf52840"; build_name=build-pca10059 ;;
+	app=dongle; board="nrf52840dongle/nrf52840/uf2"; build_name=build-pca10059 ;;
+xbx-dongle-pca10059-nordic)
+	app=dongle; board="nrf52840dongle/nrf52840"; build_name=build-pca10059-nordic ;;
 *) usage ;;
 esac
 

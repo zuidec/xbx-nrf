@@ -1,0 +1,10 @@
+/*
+ * nRF52840 Dongle with the UF2 bootloader (firmware/bootloader/): app after
+ * the SoftDevice area, settings and bootloader at the top of flash, as on
+ * the custom dongle.
+ */
+
+/dts-v1/;
+/* the extended board's folder isn't on the include path; zephyr/include is */
+#include <../boards/nordic/nrf52840dongle/nrf52840dongle_nrf52840_common.dtsi>
+#include <nordic/nrf52840_partition_uf2_sdv6.dtsi>
