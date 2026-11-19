@@ -311,16 +311,25 @@ class RumblePanel(Panel):
         fx = ttk.LabelFrame(self, text="Trigger effects", padding=8)
         fx.grid(row=0, column=0, sticky="w")
         self.checks, self.scales, self.values = {}, {}, {}
-        rows = (("click_on", "Click when a trigger reaches full pull"),
-                ("rumble_on", "Trigger rumble with the game's rumble while pulled"))
+        # check boxes: key, text, the check box it belongs under (None: top level)
+        rows = (("click_on", "Click when a trigger reaches full pull", None),
+                ("release_on", "Also click when it drops back below full", "click_on"),
+                ("rumble_on", "Trigger rumble with the game's rumble while pulled", None))
+        self.subchecks = {}  # key: (Checkbutton, the key it belongs under)
         r = 0
-        for on_key, text in rows:
+        for on_key, text, under in rows:
             v = tk.BooleanVar()
-            ttk.Checkbutton(fx, text=text, variable=v,
-                            command=lambda k=on_key: self.switched(k)).grid(
-                row=r, column=0, columnspan=3, sticky="w", pady=(8 if r else 0, 2))
+            cb = ttk.Checkbutton(fx, text=text, variable=v,
+                                 command=lambda k=on_key: self.switched(k))
+            cb.grid(row=r, column=0, columnspan=3, sticky="w",
+                    padx=(20 if under else 0, 0), pady=(8 if r and not under else 0, 2))
             self.checks[on_key] = v
+            if under:
+                self.subchecks[on_key] = (cb, under)
             r += 1
+            if on_key == "release_on":
+                self._release_row(fx, r)
+                r += 1
             for key, label, lo, hi, on in self.FX:
                 if on != on_key:
                     continue
@@ -359,6 +368,41 @@ class RumblePanel(Panel):
         ttk.Button(row, text="All together", command=lambda: self.run(None)).pack(side="left")
         ttk.Button(row, text="Stop", command=self.stop).pack(side="left", padx=8)
 
+    # the release click's boxes: key, label
+    RELEASE = (("release_strength_cut", "Strength:"), ("release_length_cut", "Duration:"))
+
+    def _release_row(self, parent, r):
+        row = ttk.Frame(parent)
+        row.grid(row=r, column=0, columnspan=3, sticky="w", padx=(40, 0), pady=(0, 2))
+        self.cuts, self.cut_boxes = {}, {}
+        for key, label in self.RELEASE:
+            ttk.Label(row, text=label).pack(side="left", padx=(0 if key == self.RELEASE[0][0]
+                                                               else 16, 4))
+            v = tk.StringVar()
+            sb = ttk.Spinbox(row, from_=0, to=p.TRG_FX_RELEASE_CUT_MAX, increment=1, width=4,
+                             textvariable=v, command=lambda k=key: self.cut_changed(k))
+            sb.pack(side="left")
+            sb.bind("<Return>", lambda _e, k=key: self.cut_changed(k))
+            sb.bind("<FocusOut>", lambda _e, k=key: self.cut_changed(k))
+            ttk.Label(row, text="% reduction").pack(side="left", padx=(4, 0))
+            self.cuts[key], self.cut_boxes[key] = v, sb
+        # shown (enable()) when the firmware has no such fields
+        self.cut_note = ttk.Label(row, text="Update the controller firmware to use these")
+
+    def cut_changed(self, key):
+        if not self.fx or self.fx.get(key) is None:
+            return
+        try:
+            v = int(self.cuts[key].get())
+        except ValueError:
+            v = -1
+        if not 0 <= v <= p.TRG_FX_RELEASE_CUT_MAX:
+            self.cuts[key].set(str(self.fx[key]))  # back to what the device has
+            return
+        if v != self.fx[key]:
+            self.fx[key] = v
+            self.queue()
+
     def on_show(self):
         self.fx = {}
         if not self.device:
@@ -370,7 +414,7 @@ class RumblePanel(Panel):
             self.missing.grid()
         v = self.call("trigger_fx") if has else None
         if v is None:
-            for sc in self.scales.values():
+            for sc in [*self.scales.values(), *self.cut_boxes.values()]:
                 sc.state(["disabled"])
             return
         for key, sc in self.scales.items():
@@ -378,12 +422,26 @@ class RumblePanel(Panel):
             self.values[key].configure(text=str(v[key]))
         for key, var in self.checks.items():
             var.set(v[key])
+        for key, var in self.cuts.items():
+            var.set("" if v[key] is None else str(v[key]))
         self.fx = v
         self.enable()
 
     def enable(self):
         for key, _label, _lo, _hi, on in self.FX:
             self.scales[key].state(["!disabled"] if self.fx.get(on) else ["disabled"])
+        for cb, under in self.subchecks.values():
+            cb.state(["!disabled"] if self.fx.get(under) else ["disabled"])
+        old = self.fx and any(self.fx.get(k) is None for k in self.cut_boxes)
+        if old:
+            self.cut_note.pack(side="left", padx=(16, 0))
+        else:
+            self.cut_note.pack_forget()
+        release = self.fx.get("click_on") and self.fx.get("release_on")
+        for key, sb in self.cut_boxes.items():
+            # None: older firmware without them
+            sb.state(["!disabled"] if release and self.fx.get(key) is not None
+                     else ["disabled"])
 
     def slid(self, key):
         v = round(self.scales[key].get())

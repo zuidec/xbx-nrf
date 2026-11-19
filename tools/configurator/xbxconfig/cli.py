@@ -153,7 +153,9 @@ def cmd_channel(args):
 
 
 FX_RANGES = {"click": (1, 255), "click_ms": (5, 100), "from_heavy": (0, 100),
-             "from_weak": (0, 100), "threshold": (1, 100)}
+             "from_weak": (0, 100), "threshold": (1, 100),
+             "release_strength_cut": (0, p.TRG_FX_RELEASE_CUT_MAX),
+             "release_length_cut": (0, p.TRG_FX_RELEASE_CUT_MAX)}
 
 
 def cmd_trigger_fx(args):
@@ -165,11 +167,15 @@ def cmd_trigger_fx(args):
         v = getattr(args, key)
         if v is None:
             continue
+        if key.startswith("release_") and fx[key] is None:
+            d.close()
+            sys.exit("the release click strength and duration need newer controller firmware")
         if not lo <= v <= hi:
             d.close()
-            sys.exit(f"--{key.replace('_', '-')} takes {lo}-{hi}")
+            opt = "release-duration-cut" if key == "release_length_cut" else key.replace("_", "-")
+            sys.exit(f"--{opt} takes {lo}-{hi}")
         fx[key], changed = v, True
-    for key in ("click_on", "rumble_on"):
+    for key in ("click_on", "release_on", "rumble_on"):
         v = getattr(args, key)
         if v is not None:
             fx[key], changed = v == "on", True
@@ -177,7 +183,11 @@ def cmd_trigger_fx(args):
         d.set_trigger_fx(fx)
         fx = d.trigger_fx()
     print(f"click {'on' if fx['click_on'] else 'off'}: strength {fx['click']}, "
-          f"{fx['click_ms']} ms\ntrigger rumble {'on' if fx['rumble_on'] else 'off'}: "
+          f"{fx['click_ms']} ms\nrelease click {'on' if fx['release_on'] else 'off'}"
+          + ("" if fx["release_strength_cut"] is None else
+             f": strength {fx['release_strength_cut']} % less, "
+             f"duration {fx['release_length_cut']} % less")
+          + f"\ntrigger rumble {'on' if fx['rumble_on'] else 'off'}: "
           f"from heavy {fx['from_heavy']} %, weak {fx['from_weak']} %, "
           f"from trigger pull {fx['threshold']} %")
     d.close()
@@ -346,6 +356,13 @@ def main(argv=None):
     s = sub.add_parser("trigger-fx", help="show or set the trigger effects (controller)")
     s.add_argument("--click", dest="click_on", choices=("on", "off"),
                    help="click when a trigger reaches full pull")
+    s.add_argument("--release-click", dest="release_on", choices=("on", "off"),
+                   help="also click when it drops back below full")
+    s.add_argument("--release-strength-cut", type=int, metavar="PCT",
+                   help=f"0-{p.TRG_FX_RELEASE_CUT_MAX} %% softer than the press click")
+    s.add_argument("--release-duration-cut", dest="release_length_cut", type=int,
+                   metavar="PCT",
+                   help=f"0-{p.TRG_FX_RELEASE_CUT_MAX} %% shorter than the press click")
     s.add_argument("--strength", dest="click", type=int, metavar="1-255")
     s.add_argument("--click-ms", type=int, metavar="5-100")
     s.add_argument("--rumble", dest="rumble_on", choices=("on", "off"),
