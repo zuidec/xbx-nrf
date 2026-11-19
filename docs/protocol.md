@@ -155,7 +155,7 @@ through:
   another candidate, or set auto (`pair/auto`): rescan at every start. Later:
   an adaptive switch when the channel degrades ([todo](../todo.md#firmware)).
 - **Channel search:** a paired controller that hears nothing on its pipe for
-  1 s (3 s while the dongle is full) tries each candidate in turn, 8 join
+  3 s (past any fade the dongle rides out) tries each candidate in turn, 8 join
   attempts each, starting with its own. An ACK on its pipe can only be its
   dongle (the dongle's random address), so it stays and, once it holds a
   slot, stores the new channel.
@@ -310,7 +310,11 @@ repeating **frame** and gives each connected controller its own **slot**:
   in an active slot.
 
 ### Connecting and disconnecting
-- **Join:** a controller without a slot (just started, or no ACK for 100 ms)
+- **Fade:** no ACK for 100 ms turns rumble and the LED off; the
+  controller keeps sending in its slot at the full rate for 800 ms, since
+  the dongle holds the slot until the 1000 ms drop. Recovery then takes the
+  first packet that gets through, not a join.
+- **Join:** a controller without a slot (just started, or no ACK for 800 ms)
   sends one report every 5–15 periods, each at a random phase, until one lands
   in a gap and its ACK assigns a slot. Collisions with active slots cost them
   at most one report per attempt.

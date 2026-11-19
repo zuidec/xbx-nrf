@@ -85,10 +85,10 @@ BUILD_ASSERT(TX_LEAD_US + TRG_LEAD_US < XBX_REPORT_PERIOD_US / 2,
  * Channel search (the dongle moved: configurator): nothing heard on our pipe
  * for SEARCH_AFTER_MS, join attempts go round the candidates, SEARCH_TRIES on
  * each, starting with the one in use. Any ACK on our pipe is our dongle (its
- * own random address): stay there; with a slot, it's saved.
+ * own random address): stay there; with a slot, it's saved. Long enough that
+ * a fade doesn't send us off the channel the dongle is still on.
  */
-#define SEARCH_AFTER_MS      1000
-#define SEARCH_AFTER_FULL_MS (3 * JOIN_FULL_MS) /* full: attempts come only once a second */
+#define SEARCH_AFTER_MS      3000
 #define SEARCH_TRIES         8
 #define AGE_MAX_MS           (1 << 30) /* ages stop counting here */
 
@@ -163,10 +163,13 @@ static uint8_t host_rumble[4];
 static struct k_spinlock host_lock;
 
 /*
- * No ACK payload for this long (dongle gone, off or out of range): rumble and
- * LED off, and the slot counts as lost (join again).
+ * No ACK payload for OUTPUT_TIMEOUT_MS (dongle gone, off or out of range):
+ * rumble and LED off. The slot is kept, at the full rate, for SLOT_HOLD_MS:
+ * the dongle reserves it until its 1 s link timeout, so a fade costs only
+ * its own length; sparse joins would stretch it. Then join again.
  */
 #define OUTPUT_TIMEOUT_MS 100
+#define SLOT_HOLD_MS      800
 static atomic_t ack_age_ms; /* ms since the last ACK payload, counted by the TX loop */
 static atomic_t heard_age_ms; /* ms since the last ACK (payload or not) outside pairing */
 
@@ -235,7 +238,7 @@ static void sync_from_ack(const struct xbx_output_report *out)
 /* A slot from the dongle, and ACKs still arriving. */
 static bool slot_held(void)
 {
-	return last_output.slot != XBX_SLOT_NONE && atomic_get(&ack_age_ms) < OUTPUT_TIMEOUT_MS;
+	return last_output.slot != XBX_SLOT_NONE && atomic_get(&ack_age_ms) < SLOT_HOLD_MS;
 }
 
 /* Joining: queue a random phase shift, so the next attempt lands elsewhere. */
@@ -837,10 +840,8 @@ static void search_channel(void)
 	static const uint8_t channels[] = XBX_RF_CHANNELS;
 	static bool searching;
 	static uint8_t idx, tries;
-	bool full = last_output.flags & XBX_OUT_FLAG_FULL;
-	uint32_t after = full ? SEARCH_AFTER_FULL_MS : SEARCH_AFTER_MS;
 
-	if ((uint32_t)atomic_get(&heard_age_ms) < after) {
+	if ((uint32_t)atomic_get(&heard_age_ms) < SEARCH_AFTER_MS) {
 		if (searching) {
 			searching = false;
 			LOG_INF("dongle heard on channel %u", radio_channel);
@@ -856,7 +857,7 @@ static void search_channel(void)
 				idx = i;
 			}
 		}
-		LOG_INF("dongle not heard for %u ms: searching the channels", after);
+		LOG_INF("dongle not heard for %u ms: searching the channels", SEARCH_AFTER_MS);
 	}
 	if (++tries > SEARCH_TRIES) {
 		tries = 1;
