@@ -81,11 +81,8 @@ If the bootloader has been previously programmed, enter it as follows:
 > Settings can be lost if the stored format has changed.
 > Commonly affected settings are the stick calibration and pairing
 
-1. Download the latest release:
-    - [Controller 
-    Releases](https://github.com/zuidec/xbx-nrf/releases?q=controller&expanded=true)
-    - [Dongle 
-    Releases](https://github.com/zuidec/xbx-nrf/releases?q=dongle&expanded=true)
+1. Download the controller or dongle `.uf2` from the [latest
+   release](https://github.com/zuidec/xbx-nrf/releases/latest).
 2. Enter the bootloader as described above. Make sure the device is powered over 
    USB.
 3. Open the USB drive that appears, either `XBXDONGLE` or `XBXCTRL`

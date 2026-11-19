@@ -20,16 +20,18 @@ hardware](flashing.md#hardware)
 
 ## Downloads
 
-From the [releases page](https://github.com/zuidec/xbx-nrf/releases), the
-newest of each:
+Everything is in the [latest
+release](https://github.com/zuidec/xbx-nrf/releases/latest):
 
 | File | For |
 |---|---|
-| `xbx-config-<version>-<platform>` | Configurator|
-| `xbx-dongle-<version>.uf2` | Dongle firmware |
+| `xbx-config-<version>-<platform>` | Configurator |
 | `xbx-controller-<version>.uf2` | Controller firmware |
+| `xbx-dongle-<version>.uf2` | Dongle firmware (custom board) |
+| `xbx-dongle-pca10059-<version>.uf2` | Dongle firmware (nRF52840 Dongle, PCA10059) |
 | `xbx_controller_bootloader-<version>_s140_6.1.1.hex` | Controller bootloader |
-| `xbx_dongle_bootloader-<version>_s140_6.1.1.hex` | Dongle bootloader |
+| `xbx_dongle_bootloader-<version>_s140_6.1.1.hex` | Dongle bootloader (custom board) |
+| `xbx_dongle_pca10059_bootloader-<version>_s140_6.1.1.hex` | Dongle bootloader (PCA10059) |
 
 `SHA256SUMS` lists the checksums.
 
@@ -46,8 +48,8 @@ newest of each:
 >
 > This includes firmware, pairing, and calibration settings!
 
-1. Download the latest bootloader: [bootloader 
-   releases](https://github.com/zuidec/xbx-nrf/releases?q=bootloader&expanded=true)
+1. Download your board's bootloader `.hex` from the [latest
+   release](https://github.com/zuidec/xbx-nrf/releases/latest).
 2. Make sure `openocd` is installed.
     - On linux, this should be available through your package manager
         - **Debian / Ubuntu:**
@@ -125,11 +127,8 @@ as a drive when connected via USB.
 > - **Dongle:** Hold **PAIR** while plugging into USB
 > - **Both:** double-tap the reset button (USB must be plugged in)
 
-1. Download the latest release:
-    - [Controller 
-    Releases](https://github.com/zuidec/xbx-nrf/releases?q=controller&expanded=true)
-    - [Dongle 
-    Releases](https://github.com/zuidec/xbx-nrf/releases?q=dongle&expanded=true)
+1. Download the controller or dongle `.uf2` from the [latest
+   release](https://github.com/zuidec/xbx-nrf/releases/latest).
 2. Open the USB drive that appears, either `XBXDONGLE` or `XBXCTRL`
 3. Copy the corresponding UF2 file to the USB drive. It should disconnect 
    automatically when it completes
