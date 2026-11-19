@@ -169,6 +169,20 @@ Other targets and release builds swap `build` for their folder
 | `zephyr.hex` | SWD flashing; PCA10059 Nordic DFU (`dfu.zip`) |
 | `zephyr.elf` | Debugging |
 
+Each build also copies its `.uf2` into `firmware/output/` under its release
+name, from `git describe` over the component's tags (as the build ID):
+
+| Build | File |
+|---|---|
+| `-r` on the tag | `xbx-controller-0.8.6.uf2` |
+| `-r`, commits after it | `xbx-controller-0.8.6-2-g<hash>.uf2` |
+| Without `-r` | the same, with `-dev` added |
+
+The PCA10059 and Pro Micro builds are `xbx-dongle-pca10059-…` and
+`xbx-controller-promicro-…`; the bootloaders keep their names. `-r` warns
+about uncommitted changes (the name can't show them) and a tag that doesn't
+match the `VERSION` file.
+
 The build folder's own `zephyr/` (e.g. `firmware/xbx-nrf/build/zephyr/`) is
 sysbuild's and has no firmware.
 
@@ -260,7 +274,9 @@ matching numbers.
 - **Release:** bump the version in its own commit (e.g.
   `Controller: version 0.6.0`), then an annotated tag on that commit:
   `git tag -a controller-v0.6.0 -m "<what's new>"`.
-- **Release binaries:** attach the `-r` firmware build or the configurator
+- **Release binaries:** build each firmware at its tag (`git switch --detach
+  <tag>`) for a clean name and build ID, then take them from
+  `firmware/output/`. Attach them or the configurator
   (Linux `--release`, Windows `.exe`), and the notices for the third-party
   code inside them. Firmware: `tools/release-notices.sh <out dir>` writes
   `THIRD-PARTY-NOTICES-firmware.txt`. Configurator: its build writes

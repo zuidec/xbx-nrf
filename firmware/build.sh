@@ -34,6 +34,14 @@
 #
 # BUILD_DIR=<dir> builds into <app>/<dir> instead (a second configuration,
 # e.g. a fake-input controller, without overwriting the main build).
+#
+# Each .uf2 build is also copied into output/, named for release:
+#   <target>-<version>.uf2               -r, on the component's tag
+#   <target>-<version>-<n>-g<hash>.uf2   -r, n commits after it
+#   ...-dev.uf2                          without -r
+# from `git describe` over the component's tags, like the build ID. -r warns
+# about uncommitted changes (the name can't show them) and a tag that isn't
+# the VERSION file's.
 
 set -euo pipefail
 
@@ -62,15 +70,19 @@ usage() {
 target="$1"
 shift
 
+# name: the output file's (old target names map to the new)
 case "$target" in
 xbx-controller | xbx-nrf)
-	app=xbx-nrf; board="xbx_controller/nrf52840/uf2"; build_name=build ;;
+	app=xbx-nrf; board="xbx_controller/nrf52840/uf2"; build_name=build
+	name=xbx-controller ;;
 xbx-controller-promicro | xbx-nrf-promicro)
-	app=xbx-nrf; board="promicro_nrf52840/nrf52840/uf2"; build_name=build-promicro ;;
+	app=xbx-nrf; board="promicro_nrf52840/nrf52840/uf2"; build_name=build-promicro
+	name=xbx-controller-promicro ;;
 xbx-dongle)
-	app=dongle; board="xbx_dongle/nrf52840/uf2"; build_name=build ;;
+	app=dongle; board="xbx_dongle/nrf52840/uf2"; build_name=build; name=xbx-dongle ;;
 xbx-dongle-pca10059)
-	app=dongle; board="nrf52840dongle/nrf52840/uf2"; build_name=build-pca10059 ;;
+	app=dongle; board="nrf52840dongle/nrf52840/uf2"; build_name=build-pca10059
+	name=xbx-dongle-pca10059 ;;
 xbx-dongle-pca10059-nordic)
 	app=dongle; board="nrf52840dongle/nrf52840"; build_name=build-pca10059-nordic ;;
 *) usage ;;
@@ -118,6 +130,34 @@ echo
 echo "images:"
 find "$build_dir" -maxdepth 3 -path "*/zephyr/zephyr.*" \( -name '*.uf2' -o -name '*.hex' \) \
 	-printf '  %p\n' | sort
+
+# the .uf2 into output/, named as above
+uf2_built="$build_dir/$app/zephyr/zephyr.uf2"
+if [ -f "$uf2_built" ]; then
+	component=$([ "$app" = xbx-nrf ] && echo controller || echo dongle)
+	version_file="$app_dir/VERSION"
+	file_version="$(sed -n 's/^VERSION_MAJOR = //p' "$version_file").$(
+		sed -n 's/^VERSION_MINOR = //p' "$version_file").$(
+		sed -n 's/^PATCHLEVEL = //p' "$version_file")"
+	id="$(git -C "$script_dir" describe --match "$component-v*" --abbrev=12 2>/dev/null)" ||
+		id="$component-v$file_version-g$(git -C "$script_dir" rev-parse --short=12 HEAD)"
+	version="${id#"$component-v"}"
+	if $release; then
+		if [ -n "$(git -C "$script_dir" status --porcelain --untracked-files=no)" ]; then
+			echo "warning: uncommitted changes; the file name and build ID don't show them" >&2
+		fi
+		if [ "${version%%-*}" != "$file_version" ]; then
+			echo "warning: tag $component-v${version%%-*}, but $version_file says" \
+				"$file_version" >&2
+		fi
+	else
+		version="$version-dev"
+	fi
+	mkdir -p "$script_dir/output"
+	out_file="$script_dir/output/$name-$version.uf2"
+	cp "$uf2_built" "$out_file"
+	echo "  $out_file"
+fi
 
 [ -n "$flash_dev" ] || exit 0
 

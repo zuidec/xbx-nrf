@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # UF2 bootloader build: the Adafruit nRF52 Bootloader at a pinned tag (fetched
 # into src/) plus our board folders (boards/<board>/), output in
-# build/<board>/. Version from VERSION (<upstream>-xbx.<revision>): in the
-# file names and the drive's INFO_UF2.TXT.
+# build/<board>/ and ../output/ (with the app releases). Version from VERSION
+# (<upstream>-xbx.<revision>): in the file names and the drive's INFO_UF2.TXT.
 #
 # Usage: ../build.sh <xbx-controller|xbx-dongle>-bootloader [-f swd [--hex <file>]],
 # or from anywhere: ./build.sh <board> [-f swd [--hex <file>]]
@@ -112,10 +112,14 @@ make -C "$src" BOARD="$board" PYTHON=python3 CROSS_COMPILE="$ARM_GCC_DIR/bin/arm
 out="$script_dir/build/$board"
 mkdir -p "$out"
 cp "$src/_build/build-$board/$hex" "$src/_build/build-$board/$uf2" "$out/"
+mkdir -p "$fw_dir/output"
+cp "$out/$hex" "$out/$uf2" "$fw_dir/output/"
 echo
 echo "images:"
 echo "  $out/$hex"
 echo "  $out/$uf2"
+echo "  $fw_dir/output/$hex"
+echo "  $fw_dir/output/$uf2"
 
 $flash || exit 0
 flash_swd "$out/$hex"

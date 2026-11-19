@@ -24,6 +24,8 @@ build_*/
 build-*/
 # configurator binaries (tools/configurator/build.sh)
 tools/configurator/output/
+# firmware images, named for release (firmware/build.sh)
+firmware/output/
 twister-out*/
 *.hex
 *.bin
