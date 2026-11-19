@@ -1,7 +1,8 @@
 /*
  * Impulse trigger effects made on the controller: a click when a trigger
- * reaches full, and trigger rumble from the grip rumble while a trigger is
- * pulled. Settings: configurator setting 0x07 (config.c).
+ * reaches full (optionally also when it leaves full), and trigger rumble
+ * from the grip rumble while a trigger is pulled. Settings: configurator
+ * setting 0x07 (config.c).
  */
 
 #ifndef XBX_CTRL_TRIGGER_FX_H_
@@ -9,8 +10,9 @@
 
 #include <stdint.h>
 
-#define TRIGGER_FX_CLICK  0x01 /* flags */
-#define TRIGGER_FX_RUMBLE 0x02
+#define TRIGGER_FX_CLICK         0x01 /* flags */
+#define TRIGGER_FX_RUMBLE        0x02
+#define TRIGGER_FX_CLICK_RELEASE 0x04 /* also click on the way back from full */
 
 struct trigger_fx_config {
 	uint8_t flags;
@@ -19,15 +21,24 @@ struct trigger_fx_config {
 	uint8_t from_weak;  /* trigger rumble: share of the weak motor, % */
 	uint8_t threshold;  /* trigger rumble from this pull, % of the output (1–100) */
 	uint8_t click_ms;   /* click length, TRIGGER_FX_CLICK_MS_MIN–_MAX */
+	/*
+	 * from 0.8.6: the release click, % of the press click's strength and
+	 * length (TRIGGER_FX_RELEASE_MIN–100). 0 in a setting: left as it is
+	 * (an older configurator's message ends before these).
+	 */
+	uint8_t release_strength;
+	uint8_t release_length;
 };
 
 #define TRIGGER_FX_CLICK_MS_MIN 5
 #define TRIGGER_FX_CLICK_MS_MAX 100
+#define TRIGGER_FX_RELEASE_MIN  10 /* % */
 
 #define TRIGGER_FX_DEFAULTS                                                                    \
 	{                                                                                          \
-		.flags = TRIGGER_FX_CLICK | TRIGGER_FX_RUMBLE, .click = 255, .from_heavy = 30,     \
-		.from_weak = 30, .threshold = 10, .click_ms = 30,                                  \
+		.flags = TRIGGER_FX_CLICK | TRIGGER_FX_CLICK_RELEASE | TRIGGER_FX_RUMBLE,          \
+		.click = 220, .from_heavy = 30, .from_weak = 30, .threshold = 10, .click_ms = 35,  \
+		.release_strength = 85, .release_length = 90,                                      \
 	}
 
 void trigger_fx_set(const struct trigger_fx_config *cfg);

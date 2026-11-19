@@ -28,7 +28,7 @@ struct config_data {
 	uint8_t trigger_full[2]; /* LT, RT full pull threshold, %; 0 (older entry): default */
 	uint8_t led_dim; /* Guide LED: 255 - level (1–255), so an older entry's 0 is full */
 	struct input_paddle_config paddles;
-	struct trigger_fx_config trigger_fx; /* from 0.8.2 */
+	struct trigger_fx_config trigger_fx; /* from 0.8.2; release fields from 0.8.6 */
 };
 
 /* the shortest entry that loads: up to the paddles (0.8.1 and older) */

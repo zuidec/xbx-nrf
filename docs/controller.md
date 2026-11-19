@@ -93,7 +93,10 @@ reports full pull (5–100 % of its travel).
 Made on the controller, so they work in every game, wired or wireless:
 
 - **Click:** a short pulse when a trigger reaches full pull (disabled when the
-  aux trigger buttons are detected as the input source).
+  aux trigger buttons are detected as the input source). A second, softer
+  one when it drops back below full (about 94 % of the output): by default
+  15 % weaker and 10 % shorter. A trigger only clicks again after leaving
+  full.
 - **Trigger rumble:** while a trigger is pulled, part of the game's rumble
   in that trigger.
 

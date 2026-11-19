@@ -60,6 +60,10 @@ static int cfg_load(const char *name, size_t len, settings_read_cb read_cb, void
 			CFG_VERSION);
 		return 0;
 	}
+	if (len < offsetof(struct config_data, trigger_fx) + sizeof(data.trigger_fx) &&
+	    len > CONFIG_DATA_MIN_SIZE) {
+		data.trigger_fx.flags |= TRIGGER_FX_CLICK_RELEASE; /* stored before it: the new default */
+	}
 	current = data;
 	loaded = true;
 	return 0;
@@ -84,7 +88,7 @@ int config_init(void)
 	}
 	if (current.trigger_fx.click_ms < TRIGGER_FX_CLICK_MS_MIN ||
 	    current.trigger_fx.click_ms > TRIGGER_FX_CLICK_MS_MAX) {
-		current.trigger_fx.click_ms = 30; /* 0.8.2 test builds: 0 */
+		current.trigger_fx.click_ms = defaults.trigger_fx.click_ms; /* 0.8.2 test builds: 0 */
 	}
 	if (current.led_dim == 255) {
 		current.led_dim = 254; /* level 0 (an earlier build): lowest level, not off */
@@ -243,10 +247,18 @@ int config_setting_set(uint8_t id, const uint8_t *value, size_t len)
 			return -EINVAL;
 		}
 		memcpy(&fx, value, sizeof(fx));
-		if ((fx.flags & ~(TRIGGER_FX_CLICK | TRIGGER_FX_RUMBLE)) || fx.click == 0 ||
-		    fx.from_heavy > 100 || fx.from_weak > 100 || fx.threshold == 0 ||
+		if (fx.release_strength == 0) {
+			fx.release_strength = cfg.trigger_fx.release_strength;
+		}
+		if (fx.release_length == 0) {
+			fx.release_length = cfg.trigger_fx.release_length;
+		}
+		if ((fx.flags & ~(TRIGGER_FX_CLICK | TRIGGER_FX_RUMBLE | TRIGGER_FX_CLICK_RELEASE)) ||
+		    fx.click == 0 || fx.from_heavy > 100 || fx.from_weak > 100 || fx.threshold == 0 ||
 		    fx.threshold > 100 || fx.click_ms < TRIGGER_FX_CLICK_MS_MIN ||
-		    fx.click_ms > TRIGGER_FX_CLICK_MS_MAX) {
+		    fx.click_ms > TRIGGER_FX_CLICK_MS_MAX ||
+		    fx.release_strength < TRIGGER_FX_RELEASE_MIN || fx.release_strength > 100 ||
+		    fx.release_length < TRIGGER_FX_RELEASE_MIN || fx.release_length > 100) {
 			return -EINVAL;
 		}
 		cfg.trigger_fx = fx;
